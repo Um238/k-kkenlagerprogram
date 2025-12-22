@@ -938,6 +938,29 @@ a:hover{color:#45a049;text-decoration:none}
               <button onclick="downloadManuelOptaeling()" style="background:#0078D4; color:white;">Download fil</button>
             </div>
           </div>
+          <div class="settings-option">
+            <div class="settings-option-label">
+              <h3>📷 Download Stregkode Scanner til telefon</h3>
+              <p>Download Stregkode Scanner HTML filen til din telefon eller tablet.</p>
+            </div>
+            <div class="settings-option-action">
+              <button onclick="downloadStregkodeScanner()" style="background:#0078D4; color:white;">Download fil</button>
+            </div>
+          </div>
+          <div class="settings-option">
+            <div class="settings-option-label">
+              <h3>📱 Synkroniser Varelager til Scanner</h3>
+              <p>Generer QR-kode med varelager data. Scan QR-koden med scanner-appen på telefonen for automatisk import.</p>
+            </div>
+            <div class="settings-option-action">
+              <button onclick="generateVarelagerQR()" style="background:#4CAF50; color:white;">📱 Generer QR-kode</button>
+            </div>
+            <div id="varelagerQRContainer" style="margin-top:15px; display:none; text-align:center; padding:15px; background:#f9f9f9; border-radius:8px;">
+              <p style="margin-bottom:10px; font-weight:600;">Scan denne QR-kode med scanner-appen:</p>
+              <div id="varelagerQRCode" style="display:inline-block; padding:10px; background:white; border-radius:8px;"></div>
+              <p style="margin-top:10px; font-size:12px; color:#666;">QR-koden indeholder varelager data. Scan med scanner-appen for at importere.</p>
+            </div>
+          </div>
         </div>
         
         <!-- Branding Section -->
@@ -6598,6 +6621,134 @@ function downloadManuelOptaeling(){
   } catch(e) {
     console.error('Download error:', e);
     alert('⚠️ Kunne ikke downloade filen automatisk.\n\n📋 Gør dette i stedet:\n\n1. Gå til projektmappen på din computer\n2. Find filen: "manuel-optaelling.html"\n3. Send filen til din telefon via email, OneDrive eller USB\n\n4. På telefonen: Åbn filen med din browser');
+  }
+}
+
+// Generate QR code with varelager data for scanner app
+function generateVarelagerQR(){
+  try {
+    // Prepare data - only masterVarelager to keep QR code small
+    const dataToExport = {
+      masterVarelager: masterVarelager || [],
+      lagerLokationer: lagerLokationer || [],
+      version: '1.0',
+      exportedAt: Date.now()
+    };
+    
+    if (!dataToExport.masterVarelager || dataToExport.masterVarelager.length === 0) {
+      alert('⚠️ Ingen varelager data at eksportere.\n\nTilføj varer i varelager administration først.');
+      return;
+    }
+    
+    // Convert to JSON string
+    const jsonString = JSON.stringify(dataToExport);
+    
+    // Check size - QR codes can handle up to ~2953 alphanumeric characters
+    // For safety, we'll use base64 encoding which is more compact
+    const base64Data = btoa(unescape(encodeURIComponent(jsonString)));
+    
+    // Create data URL with prefix so scanner knows it's varelager data
+    const qrData = 'VARELAGER:' + base64Data;
+    
+    // Check if data is too large for QR code
+    if (qrData.length > 2500) {
+      // Data too large - split into chunks or compress
+      alert('⚠️ Varelager data er for stor til én QR-kode.\n\nBrug "Eksport CSV" eller "Download Backup" i stedet, og importer via "Import varelager" knappen i scanner-appen.');
+      return;
+    }
+    
+    // Get container
+    const container = document.getElementById('varelagerQRContainer');
+    const qrCodeDiv = document.getElementById('varelagerQRCode');
+    
+    if (!container || !qrCodeDiv) {
+      alert('⚠️ QR-kode container ikke fundet.');
+      return;
+    }
+    
+    // Clear previous QR code
+    qrCodeDiv.innerHTML = '';
+    
+    // Generate QR code
+    if (typeof QRCode !== 'undefined') {
+      new QRCode(qrCodeDiv, {
+        text: qrData,
+        width: 300,
+        height: 300,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H // High error correction
+      });
+      
+      // Show container
+      container.style.display = 'block';
+      
+      // Scroll to QR code
+      container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+      alert('✅ QR-kode genereret!\n\n📱 Næste skridt:\n\n1. Åbn scanner-appen på telefonen\n2. Tryk "📥 Scan QR-kode" knappen\n3. Scan denne QR-kode\n4. Varelageret importeres automatisk!');
+    } else {
+      alert('⚠️ QR-kode bibliotek ikke indlæst.\n\nGenindlæs siden og prøv igen.');
+    }
+  } catch(err) {
+    console.error('Error generating QR code:', err);
+    alert('⚠️ Fejl ved generering af QR-kode: ' + err.message);
+  }
+}
+
+function downloadStregkodeScanner(){
+  try {
+    // Try to fetch the file
+    fetch('stregkode-scanner.html')
+      .then(response => {
+        if(!response.ok) {
+          throw new Error('Filen blev ikke fundet');
+        }
+        return response.text();
+      })
+      .then(html => {
+        // Create a blob and download
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'stregkode-scanner.html';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        // Also download manifest if possible
+        fetch('stregkode-scanner-manifest.json')
+          .then(res => res.text())
+          .then(manifest => {
+            const manifestBlob = new Blob([manifest], { type: 'application/json' });
+            const manifestUrl = URL.createObjectURL(manifestBlob);
+            const manifestLink = document.createElement('a');
+            manifestLink.href = manifestUrl;
+            manifestLink.download = 'stregkode-scanner-manifest.json';
+            document.body.appendChild(manifestLink);
+            manifestLink.click();
+            document.body.removeChild(manifestLink);
+            URL.revokeObjectURL(manifestUrl);
+          })
+          .catch(() => {
+            // Ignore manifest download errors
+          });
+        
+        // Show instructions
+        setTimeout(() => {
+          alert('✅ Filen er downloadet!\n\n📋 Næste skridt:\n\n1. Find filen i din Downloads-mappe\n2. Send filen til din telefon:\n   - Via email\n   - Via USB\n   - Via OneDrive\n   - Via AirDrop (Mac/iPhone)\n\n3. På telefonen:\n   - Åbn filen med din browser\n   - Tilføj til hjem-skærmen\n\n💡 VIGTIGT: Scanner appen kræver HTTPS eller localhost for at bruge kameraet!\n\n💡 Tip: Du kan også bruge "📱 Send link til telefon" knappen hvis du har webserveren kørende!');
+        }, 500);
+      })
+      .catch(err => {
+        console.error('Download error:', err);
+        // Fallback: show instructions
+        alert('⚠️ Kunne ikke downloade filen automatisk.\n\n📋 Gør dette i stedet:\n\n1. Gå til projektmappen på din computer\n2. Find filen: "stregkode-scanner.html"\n3. Send filen til din telefon:\n   - Højreklik → Send til → Mail-modtager\n   - Eller kopiér til OneDrive\n   - Eller send via USB\n\n4. På telefonen:\n   - Åbn filen med din browser\n   - Tilføj til hjem-skærmen\n\n💡 VIGTIGT: Scanner appen kræver HTTPS eller localhost for at bruge kameraet!');
+      });
+  } catch(e) {
+    console.error('Download error:', e);
+    alert('⚠️ Kunne ikke downloade filen automatisk.\n\n📋 Gør dette i stedet:\n\n1. Gå til projektmappen på din computer\n2. Find filen: "stregkode-scanner.html"\n3. Send filen til din telefon via email, OneDrive eller USB\n\n4. På telefonen: Åbn filen med din browser\n\n💡 VIGTIGT: Scanner appen kræver HTTPS eller localhost for at bruge kameraet!');
   }
 }
 
