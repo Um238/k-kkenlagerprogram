@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0078D4" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Manuel Optælling" />
+<link rel="manifest" href="manuel-optaelling-manifest.json" />
+<title>Manuel Optælling</title>
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #f5f5f5;
+  color: #333;
+  padding: 10px;
+}
+
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.header {
+  background: linear-gradient(135deg, #0078D4 0%, #005A9E 100%);
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+
+.header h1 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.session-info {
+  background: #E3F2FD;
+  padding: 15px 20px;
+  border-bottom: 2px solid #0078D4;
+}
+
+.session-info.active {
+  background: #FFF3CD;
+  border-bottom-color: #FFC107;
+}
+
+.session-name {
+  font-weight: 600;
+  font-size: 16px;
+  color: #0078D4;
+}
+
+.session-info.active .session-name {
+  color: #856404;
+}
+
+.session-location {
+  font-size: 14px;
+  color: #666;
+  margin-top: 5px;
+}
+
+.search-section {
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.quantity-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.search-input, select {
+  width: 100%;
+  padding: 15px;
+  font-size: 16px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  outline: none;
+}
+
+.search-input:focus, select:focus {
+  border-color: #0078D4;
+}
+
+.btn {
+  width: 100%;
+  padding: 18px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.btn-primary {
+  background: #0078D4;
+  color: white;
+}
+
+.btn-primary:active {
+  background: #005A9E;
+}
+
+.btn-secondary {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.search-box {
+  position: relative;
+}
+
+.autocomplete-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  display: none;
+}
+
+.autocomplete-item {
+  padding: 15px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+}
+
+.autocomplete-item:hover {
+  background: #f5f5f5;
+}
+
+.quantity-section {
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.quantity-input-wrapper {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.quantity-btn {
+  width: 50px;
+  height: 50px;
+  border: 2px solid #0078D4;
+  background: white;
+  color: #0078D4;
+  font-size: 24px;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.quantity-input {
+  flex: 1;
+  padding: 15px;
+  font-size: 24px;
+  font-weight: 600;
+  text-align: center;
+  border: 2px solid #0078D4;
+  border-radius: 8px;
+  background: white;
+  color: #333;
+}
+
+.quantity-input::placeholder {
+  color: #999;
+  opacity: 1;
+}
+
+.quantity-input:focus {
+  border-color: #005A9E;
+  outline: none;
+}
+
+.action-buttons {
+  padding: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.counted-items {
+  padding: 20px;
+  border-top: 2px solid #e0e0e0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.counted-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.footer-actions {
+  padding: 20px;
+  background: #f9f9f9;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  gap: 10px;
+}
+
+.status-message {
+  padding: 15px 20px;
+  margin: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  display: none;
+}
+
+.status-success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.status-error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📦 Manuel Optælling</h1>
+      <div style="font-size:14px; opacity:0.9;">Optæl varer nemt og hurtigt</div>
+    </div>
+
+    <div id="sessionInfo" class="session-info">
+      <div class="session-name" id="sessionName">Ingen aktiv optælling</div>
+      <div class="session-location" id="sessionLocation">Vælg lokation for at starte</div>
+    </div>
+
+    <div id="locationSection" class="search-section" style="display:block;">
+      <label class="quantity-label">📍 Vælg lokation og start optælling:</label>
+      <select id="locationSelect" class="search-input" style="width:100%; padding:12px; font-size:16px;">
+        <option value="">Vælg lokation...</option>
+      </select>
+      <button class="btn btn-primary" onclick="window.confirmLocation && window.confirmLocation()" style="width:100%; padding:14px; font-size:16px; margin-top:10px;">▶️ Start optælling</button>
+      <p style="margin-top:15px; font-size:13px; color:#666; text-align:center; padding:12px; background:#E3F2FD; border-radius:8px;">
+        💡 Vælg en lokation og klik "Start optælling" for at begynde
+      </p>
+      <div id="debugInfo" style="margin-top:10px; padding:10px; background:#fff3e0; border-radius:8px; font-size:12px; display:none;">
+        <strong>Debug info:</strong>
+        <div id="debugContent"></div>
+      </div>
+    </div>
+
+    <div id="statusMessage" class="status-message"></div>
+
+    <div id="searchSection" class="search-section" style="display:none;">
+      <div class="search-box">
+        <input 
+          type="text" 
+          id="searchInput" 
+          class="search-input" 
+          placeholder="Søg efter vare..."
+          autocomplete="off"
+        />
+        <div id="autocompleteList" class="autocomplete-list"></div>
+      </div>
+    </div>
+
+    <div id="quantitySection" class="quantity-section" style="display:none;">
+      <label class="quantity-label">Antal</label>
+      <div class="quantity-input-wrapper">
+        <button class="quantity-btn" onclick="adjustQuantity(-1)">−</button>
+        <input 
+          type="number" 
+          id="quantityInput" 
+          class="quantity-input" 
+          value="1" 
+          min="0" 
+          step="0.01"
+        />
+        <span style="font-size:18px; color:#0078D4; font-weight:600; min-width:40px;" id="quantityUnit">stk</span>
+        <button class="quantity-btn" onclick="adjustQuantity(1)">+</button>
+      </div>
+    </div>
+
+    <div id="actionButtons" class="action-buttons" style="display:none;">
+      <button class="btn btn-primary" onclick="addItem()" style="flex:1;">➕ Tilføj til optælling</button>
+      <button class="btn btn-secondary" onclick="clearInput()" style="flex:1;">🔄 Nulstil</button>
+    </div>
+
+    <div id="countedItemsSection" class="counted-items" style="display:none;">
+      <div style="font-size:16px; font-weight:600; margin-bottom:15px;">
+        Optalte varer (<span id="itemCount">0</span>)
+      </div>
+      <div id="countedItemsList"></div>
+    </div>
+
+    <div id="footerActions" class="footer-actions" style="display:none;">
+      <button class="btn btn-secondary" onclick="clearAll()" style="flex:1;">🗑️ Ryd alt</button>
+      <button class="btn btn-primary" onclick="finishSession()" style="flex:1;">✅ Afslut optælling</button>
+    </div>
+  </div>
+
+<script>
+// Global state
+let currentSession = null;
+let currentItem = null;
+let countedItems = [];
+let allItems = [];
+let allLocations = [];
+let selectedLocation = '';
+let sessionCounter = 0;
+
+// Define confirmLocation immediately on window object so onclick handlers work
+window.confirmLocation = function() {
+  try {
+    console.log('confirmLocation called');
+    
+    const select = document.getElementById('locationSelect');
+    if(!select) {
+      console.error('locationSelect not found');
+      alert('Fejl: Lokationsvalg ikke fundet. Genindlæs siden.');
+      return;
+    }
+    
+    if(!select.value || select.value === '' || select.value === 'Ingen lokationer fundet') {
+      alert('⚠️ Vælg en lokation først!\n\nHvis der ikke er nogen lokationer, skal du først oprette dem i hovedprogrammet.');
+      select.focus();
+      select.style.borderColor = '#e74c3c';
+      setTimeout(() => {
+        select.style.borderColor = '#ddd';
+      }, 2000);
+      return;
+    }
+    
+    selectedLocation = select.value.trim();
+    
+    if(!selectedLocation) {
+      alert('⚠️ Vælg en lokation først!');
+      return;
+    }
+    
+    console.log('Selected location:', selectedLocation);
+    
+    // Load sessionCounter from localStorage
+    try {
+      const storageKey = 'køkkenlager_data';
+      const existingData = localStorage.getItem(storageKey);
+      if(existingData) {
+        const data = JSON.parse(existingData);
+        if(data.sessionCounter) {
+          sessionCounter = Math.max(sessionCounter, data.sessionCounter);
+        }
+      }
+    } catch(e) {
+      console.warn('Could not load sessionCounter:', e);
+    }
+    
+    // Generate automatic report name like main app (OPTA-XXXXXX)
+    sessionCounter++;
+    const autoName = `OPTA-${String(sessionCounter).padStart(6, '0')}`;
+    
+    // Create session with automatic report name
+    currentSession = {
+      id: 'manuel_' + Date.now(),
+      name: autoName,
+      scope: selectedLocation,
+      tsStart: Date.now(),
+      counts: {},
+      editable: true
+    };
+    
+    // Save session and sessionCounter
+    try {
+      const storageKey = 'køkkenlager_data';
+      let data = {};
+      const existingData = localStorage.getItem(storageKey);
+      if(existingData) {
+        data = JSON.parse(existingData);
+      }
+      data.activeSession = currentSession;
+      data.sessionCounter = sessionCounter; // Save updated counter
+      localStorage.setItem(storageKey, JSON.stringify(data));
+      localStorage.setItem('activeSession', JSON.stringify(currentSession));
+      console.log('Session saved with name:', autoName);
+    } catch(e) {
+      console.error('Error saving session:', e);
+      alert('⚠️ Fejl ved gemning: ' + e.message + '\n\nKontroller at localStorage virker korrekt.');
+      return;
+    }
+    
+    updateSessionInfo();
+    showCountingInterface();
+    showStatus('✅ Optælling startet: ' + autoName + ' - ' + selectedLocation, 'success');
+    
+    // Focus search
+    setTimeout(() => {
+      const searchInput = document.getElementById('searchInput');
+      if(searchInput) searchInput.focus();
+    }, 300);
+  } catch(e) {
+    console.error('Error in confirmLocation:', e);
+    alert('⚠️ Der opstod en fejl: ' + e.message);
+  }
+};
+
+// Initialize on page load
+// Check if running from OneDrive or file:// protocol
+function checkEnvironment() {
+  const isFileProtocol = window.location.protocol === 'file:';
+  const isOneDrive = window.location.href.includes('onedrive') || window.location.href.includes('sharepoint');
+  
+  if(isFileProtocol || isOneDrive) {
+    // Show warning about OneDrive/file protocol
+    const warningDiv = document.createElement('div');
+    warningDiv.style.cssText = 'position:fixed; top:0; left:0; right:0; background:#ff9800; color:white; padding:15px; z-index:10000; text-align:center; box-shadow:0 2px 10px rgba(0,0,0,0.3);';
+    warningDiv.innerHTML = `
+      <div style="max-width:600px; margin:0 auto;">
+        <strong>⚠️ Vigtigt: Manuel Optælling virker bedst via webserver!</strong><br>
+        <div style="margin-top:10px; font-size:14px;">
+          <p style="margin:5px 0;">📥 <strong>Løsning:</strong> Download filen først, eller brug webserveren</p>
+          <button onclick="downloadFile()" style="margin:8px 5px; padding:8px 16px; background:#fff; color:#ff9800; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">📥 Download filen</button>
+          <button onclick="this.parentElement.parentElement.parentElement.style.display='none'" style="margin:8px 5px; padding:8px 16px; background:rgba(255,255,255,0.3); color:white; border:1px solid white; border-radius:4px; cursor:pointer;">Fortsæt alligevel</button>
+        </div>
+      </div>
+    `;
+    document.body.insertBefore(warningDiv, document.body.firstChild);
+    
+    // Add download function
+    window.downloadFile = function() {
+      // Try to download the file
+      try {
+        // Fetch the current file content
+        fetch(window.location.href)
+          .then(response => response.text())
+          .then(html => {
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'manuel-optaelling.html';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            // Show instructions
+            setTimeout(() => {
+              alert('✅ Filen er downloadet!\n\n📋 Næste skridt:\n1. Gå til din Downloads-mappe\n2. Find "manuel-optaelling.html"\n3. Åbn filen med din browser\n4. Tilføj til hjem-skærmen for nem adgang');
+            }, 500);
+          })
+          .catch(err => {
+            console.error('Download error:', err);
+            alert('Kunne ikke downloade filen automatisk.\n\n📋 Gør dette i stedet:\n1. Tryk på "..." menu i OneDrive\n2. Vælg "Download" eller "Eksporter"\n3. Åbn filen fra din Downloads-mappe');
+          });
+      } catch(e) {
+        console.error('Download error:', e);
+        alert('Kunne ikke downloade filen automatisk.\n\n📋 Gør dette i stedet:\n1. Tryk på "..." menu i OneDrive\n2. Vælg "Download" eller "Eksporter"\n3. Åbn filen fra din Downloads-mappe');
+      }
+    };
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  checkEnvironment();
+  console.log('Manuel Optælling initializing...');
+  
+  // Reset state
+  selectedLocation = '';
+  currentSession = null;
+  
+  // Make sure location selector is visible first
+  const locationSection = document.getElementById('locationSection');
+  if(locationSection) {
+    locationSection.style.display = 'block';
+  }
+  
+  // Hide other sections
+  const searchSection = document.getElementById('searchSection');
+  const quantitySection = document.getElementById('quantitySection');
+  const actionButtons = document.getElementById('actionButtons');
+  const countedItemsSection = document.getElementById('countedItemsSection');
+  const footerActions = document.getElementById('footerActions');
+  
+  if(searchSection) searchSection.style.display = 'none';
+  if(quantitySection) quantitySection.style.display = 'none';
+  if(actionButtons) actionButtons.style.display = 'none';
+  if(countedItemsSection) countedItemsSection.style.display = 'none';
+  if(footerActions) footerActions.style.display = 'none';
+  
+  // Load data with delay to ensure DOM is ready
+  setTimeout(() => {
+    loadItems();
+    loadLocations();
+    
+    // Verify location select exists and is visible
+    const locationSelect = document.getElementById('locationSelect');
+    const locationSection = document.getElementById('locationSection');
+    
+    if(!locationSelect) {
+      console.error('CRITICAL: locationSelect not found in DOM!');
+      showStatus('⚠️ Fejl: Kan ikke finde lokationsvalg. Genindlæs siden.', 'error');
+    } else {
+      console.log('Location select found:', locationSelect);
+    }
+    
+    if(locationSection) {
+      locationSection.style.display = 'block';
+      console.log('Location section is visible');
+    }
+    
+    // Setup debug info (hidden by default)
+    const debugInfo = document.getElementById('debugInfo');
+    const debugContent = document.getElementById('debugContent');
+    if(debugInfo && debugContent) {
+      // Update debug info
+      const hasLocations = allLocations && allLocations.length > 0;
+      const hasItems = allItems && allItems.length > 0;
+      const hasConfirmFn = typeof window.confirmLocation === 'function';
+      
+      debugInfo.onclick = function() {
+        const storageKey = 'køkkenlager_data';
+        const mainData = localStorage.getItem(storageKey);
+        const isVisible = debugInfo.style.display !== 'none';
+        
+        if(isVisible) {
+          debugInfo.style.display = 'none';
+        } else {
+          debugInfo.style.display = 'block';
+          debugContent.innerHTML = `
+            <strong>Debug Information:</strong><br>
+            Lokationer: ${hasLocations ? allLocations.length + ' (' + allLocations.join(', ') + ')' : '❌ Ingen fundet'}<br>
+            Varer: ${hasItems ? allItems.length + ' fundet' : '❌ Ingen fundet'}<br>
+            Funktions: ${hasConfirmFn ? '✅ OK' : '❌ Mangler'}<br>
+            localStorage: ${mainData ? '✅ Data fundet' : '❌ Ingen data'}<br>
+            <br>
+            <small>💡 Hvis der ikke er lokationer, opret dem i hovedprogrammet først</small>
+          `;
+        }
+      };
+      
+      // Add a small indicator if something is wrong
+      if(!hasLocations || !hasConfirmFn) {
+        debugInfo.style.display = 'block';
+        debugInfo.style.background = '#ffebee';
+        debugContent.innerHTML = '<small style="color:#c62828;">⚠️ Problemer fundet - klik for detaljer</small>';
+      }
+    }
+    
+    // Setup search
+    setupSearch();
+  }, 100);
+  
+  // Only clear old session on initial page load, NOT after user starts counting
+  // Check if user already started a session
+  setTimeout(() => {
+    const locationSection = document.getElementById('locationSection');
+    const isLocationSelectorVisible = locationSection && locationSection.style.display !== 'none';
+    
+    // Only clear session if location selector is visible (user hasn't started yet)
+    if(isLocationSelectorVisible) {
+      // Force clear any old session
+      selectedLocation = '';
+      currentSession = null;
+      
+      // Clear old session from localStorage completely
+      try {
+        const storageKey = 'køkkenlager_data';
+        const existingData = localStorage.getItem(storageKey);
+        if(existingData) {
+          const data = JSON.parse(existingData);
+          data.activeSession = null;
+          localStorage.setItem(storageKey, JSON.stringify(data));
+        }
+        localStorage.removeItem('activeSession');
+        console.log('Old session cleared on page load');
+      } catch(e) {
+        console.error('Error clearing session:', e);
+      }
+      
+      // Force show location selector
+      updateSessionInfo();
+      showLocationSelector();
+      console.log('Location selector shown');
+    } else {
+      // User has already started counting, don't interfere
+      console.log('User is counting, keeping session active');
+    }
+  }, 300);
+  
+  // Make all functions globally available immediately
+  window.confirmLocation = confirmLocation;
+  window.adjustQuantity = adjustQuantity;
+  window.addItem = addItem;
+  window.clearInput = clearInput;
+  window.clearAll = clearAll;
+  window.finishSession = finishSession;
+  window.editCountedItem = editCountedItem;
+  window.removeCountedItem = removeCountedItem;
+  
+  console.log('Manuel Optælling initialized');
+  console.log('Functions available:', {
+    confirmLocation: typeof window.confirmLocation,
+    adjustQuantity: typeof window.adjustQuantity,
+    addItem: typeof window.addItem
+  });
+});
+
+function showLocationSelector() {
+  const locationSection = document.getElementById('locationSection');
+  const searchSection = document.getElementById('searchSection');
+  const quantitySection = document.getElementById('quantitySection');
+  const actionButtons = document.getElementById('actionButtons');
+  const countedItemsSection = document.getElementById('countedItemsSection');
+  const footerActions = document.getElementById('footerActions');
+  
+  if(locationSection) locationSection.style.display = 'block';
+  if(searchSection) searchSection.style.display = 'none';
+  if(quantitySection) quantitySection.style.display = 'none';
+  if(actionButtons) actionButtons.style.display = 'none';
+  if(countedItemsSection) countedItemsSection.style.display = 'none';
+  if(footerActions) footerActions.style.display = 'none';
+}
+
+function showCountingInterface() {
+  const locationSection = document.getElementById('locationSection');
+  const searchSection = document.getElementById('searchSection');
+  const quantitySection = document.getElementById('quantitySection');
+  const actionButtons = document.getElementById('actionButtons');
+  const countedItemsSection = document.getElementById('countedItemsSection');
+  const footerActions = document.getElementById('footerActions');
+  
+  if(locationSection) locationSection.style.display = 'none';
+  if(searchSection) searchSection.style.display = 'block';
+  if(quantitySection) quantitySection.style.display = 'block';
+  if(actionButtons) actionButtons.style.display = 'flex';
+  if(countedItemsSection) countedItemsSection.style.display = 'block';
+  if(footerActions) footerActions.style.display = 'flex';
+}
+
+function loadItems() {
+  try {
+    const storageKey = 'køkkenlager_data';
+    const mainData = localStorage.getItem(storageKey);
+    if(mainData) {
+      const data = JSON.parse(mainData);
+      if(data.masterVarelager && Array.isArray(data.masterVarelager)) {
+        allItems = data.masterVarelager;
+        console.log('Loaded', allItems.length, 'items');
+        // Load sessionCounter from main app
+        if(data.sessionCounter !== undefined) {
+          sessionCounter = data.sessionCounter;
+        }
+        return;
+      }
+    }
+    const directData = localStorage.getItem('masterVarelager');
+    if(directData) {
+      allItems = JSON.parse(directData);
+      console.log('Loaded', allItems.length, 'items from direct key');
+    }
+  } catch(e) {
+    console.error('Error loading items:', e);
+    showStatus('Kunne ikke indlæse varer', 'error');
+  }
+}
+
+function loadLocations() {
+  try {
+    console.log('Loading locations...');
+    
+    // Try main storage key first
+    const storageKey = 'køkkenlager_data';
+    const mainData = localStorage.getItem(storageKey);
+    if(mainData) {
+      try {
+        const data = JSON.parse(mainData);
+        if(data.lagerLokationer && Array.isArray(data.lagerLokationer) && data.lagerLokationer.length > 0) {
+          allLocations = data.lagerLokationer;
+          console.log('Locations loaded from køkkenlager_data:', allLocations.length);
+          updateLocationSelect();
+          return;
+        }
+      } catch(e) {
+        console.error('Error parsing main data:', e);
+      }
+    }
+    
+    // Try direct key
+    const directData = localStorage.getItem('lagerLokationer');
+    if(directData) {
+      try {
+        const parsed = JSON.parse(directData);
+        if(Array.isArray(parsed) && parsed.length > 0) {
+          allLocations = parsed;
+          console.log('Locations loaded from lagerLokationer:', allLocations.length);
+          updateLocationSelect();
+          return;
+        }
+      } catch(e) {
+        console.error('Error parsing direct locations:', e);
+      }
+    }
+    
+    // No locations found - show helpful message
+    console.warn('No locations found in localStorage');
+    allLocations = [];
+    updateLocationSelect();
+    
+    // Show helpful message to user
+    setTimeout(() => {
+      const statusMsg = document.getElementById('statusMessage');
+      if(statusMsg) {
+        statusMsg.className = 'status-message status-error';
+        statusMsg.style.display = 'block';
+        statusMsg.textContent = '⚠️ Ingen lokationer fundet. Opret lokationer i hovedprogrammet først.';
+      }
+    }, 500);
+    
+  } catch(e) {
+    console.error('Error loading locations:', e);
+    allLocations = [];
+    updateLocationSelect();
+  }
+}
+
+function updateLocationSelect() {
+  const select = document.getElementById('locationSelect');
+  if(!select) {
+    console.error('locationSelect element not found in DOM');
+    return;
+  }
+  
+  select.innerHTML = '<option value="">Vælg lokation...</option>';
+  
+  if(allLocations && allLocations.length > 0) {
+    allLocations.forEach(loc => {
+      const option = document.createElement('option');
+      option.value = loc;
+      option.textContent = loc;
+      select.appendChild(option);
+    });
+    console.log('Location select updated with', allLocations.length, 'locations');
+    
+    // Remove error message if locations were found
+    const statusMsg = document.getElementById('statusMessage');
+    if(statusMsg && statusMsg.textContent.includes('Ingen lokationer')) {
+      statusMsg.style.display = 'none';
+    }
+  } else {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = '⚠️ Ingen lokationer fundet - Opret i hovedprogrammet';
+    option.disabled = true;
+    select.appendChild(option);
+    console.warn('No locations available');
+    
+    // Make select visible and styled to show it's disabled
+    select.style.borderColor = '#ff9800';
+    select.style.backgroundColor = '#fff3e0';
+  }
+}
+
+function checkSession() {
+  // Don't auto-reset if user is actively counting
+  // Only check if we need to sync with main app
+  try {
+    // If user has selected location and started counting, don't interfere
+    if(selectedLocation && selectedLocation !== '') {
+      // Just sync session info, don't reset
+      const storageKey = 'køkkenlager_data';
+      const mainData = localStorage.getItem(storageKey);
+      if(mainData) {
+        const data = JSON.parse(mainData);
+        if(data.activeSession && data.activeSession.scope === selectedLocation) {
+          // Session matches, keep it
+          currentSession = data.activeSession;
+          return;
+        }
+      }
+      // If we have selectedLocation but no matching session, keep current state
+      return;
+    }
+    
+    // Only reset if there's no selected location
+    // This means user hasn't started counting yet
+    const storageKey = 'køkkenlager_data';
+    const mainData = localStorage.getItem(storageKey);
+    
+    if(mainData) {
+      const data = JSON.parse(mainData);
+      // Only reset if session was cleared in main app
+      if(data.activeSession === null || !data.activeSession) {
+        selectedLocation = '';
+        currentSession = null;
+        localStorage.removeItem('activeSession');
+        updateSessionInfo();
+        // Only show location selector if it's not already visible
+        const locationSection = document.getElementById('locationSection');
+        if(locationSection && locationSection.style.display === 'none') {
+          showLocationSelector();
+        }
+      }
+    }
+  } catch(e) {
+    console.error('Error checking session:', e);
+    // Don't reset on error if user is counting
+    if(!selectedLocation || selectedLocation === '') {
+      showLocationSelector();
+    }
+  }
+}
+
+// This function is now defined on window object above - no need for duplicate
+
+function updateSessionInfo() {
+  const sessionName = document.getElementById('sessionName');
+  const sessionLocation = document.getElementById('sessionLocation');
+  const sessionInfo = document.getElementById('sessionInfo');
+  
+  if(!sessionName || !sessionLocation || !sessionInfo) return;
+  
+  if(selectedLocation && selectedLocation !== '') {
+    sessionInfo.classList.add('active');
+    sessionName.textContent = currentSession ? currentSession.name : 'Manuel optælling';
+    sessionLocation.textContent = 'Lokation: ' + selectedLocation;
+  } else {
+    sessionInfo.classList.remove('active');
+    sessionName.textContent = 'Ingen aktiv optælling';
+    sessionLocation.textContent = 'Vælg lokation for at starte';
+  }
+}
+
+function setupSearch() {
+  const searchInput = document.getElementById('searchInput');
+  const autocompleteList = document.getElementById('autocompleteList');
+  
+  if(!searchInput) return;
+  
+  searchInput.addEventListener('input', function() {
+    const query = this.value.toLowerCase().trim();
+    if(query.length < 1) {
+      autocompleteList.style.display = 'none';
+      return;
+    }
+    
+    // Filter items by selected location AND search query
+    const matches = allItems.filter(item => {
+      // First filter by location if one is selected
+      if(selectedLocation && selectedLocation !== '') {
+        const itemLocation = item.placering || '';
+        if(itemLocation !== selectedLocation) {
+          return false; // Skip items not from selected location
+        }
+      }
+      
+      // Then filter by search query
+      const name = (item.navn || '').toLowerCase();
+      const id = (item.id || '').toLowerCase();
+      return name.includes(query) || id.includes(query);
+    }).slice(0, 10);
+    
+    if(matches.length > 0) {
+      renderAutocomplete(matches);
+      autocompleteList.style.display = 'block';
+    } else {
+      autocompleteList.style.display = 'none';
+    }
+  });
+  
+  // Close on outside click
+  document.addEventListener('click', function(e) {
+    if(!searchInput.contains(e.target) && !autocompleteList.contains(e.target)) {
+      autocompleteList.style.display = 'none';
+    }
+  });
+}
+
+function renderAutocomplete(items) {
+  const autocompleteList = document.getElementById('autocompleteList');
+  autocompleteList.innerHTML = '';
+  
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'autocomplete-item';
+    
+    // Build info string with all details
+    const infoParts = [];
+    if(item.maaleenhed) infoParts.push('Enhed: ' + item.maaleenhed);
+    if(item.reolNr) infoParts.push('Reol: ' + item.reolNr);
+    if(item.hylleNr) infoParts.push('Hylle: ' + item.hylleNr);
+    if(item.pris !== undefined && item.pris !== null) {
+      infoParts.push('Pris: ' + Number(item.pris).toFixed(2) + ' kr.');
+    }
+    if(item.placering) infoParts.push('Lokation: ' + item.placering);
+    
+    div.innerHTML = `
+      <div style="font-weight:600; font-size:16px; margin-bottom:4px;">${item.navn || 'Ukendt'}</div>
+      <div style="font-size:13px; color:#666; line-height:1.4;">
+        ${infoParts.join(' • ')}
+      </div>
+    `;
+    div.addEventListener('click', () => selectItem(item));
+    autocompleteList.appendChild(div);
+  });
+}
+
+function selectItem(item) {
+  currentItem = item;
+  const searchInput = document.getElementById('searchInput');
+  const autocompleteList = document.getElementById('autocompleteList');
+  const quantityUnit = document.getElementById('quantityUnit');
+  const quantityInput = document.getElementById('quantityInput');
+  
+  if(searchInput) searchInput.value = item.navn || '';
+  if(autocompleteList) autocompleteList.style.display = 'none';
+  if(quantityUnit) quantityUnit.textContent = item.maaleenhed || 'stk';
+  if(quantityInput) {
+    quantityInput.value = '1';
+    quantityInput.placeholder = '1';
+    quantityInput.style.display = 'block';
+    setTimeout(() => quantityInput.focus(), 100);
+  }
+}
+
+function adjustQuantity(delta) {
+  const input = document.getElementById('quantityInput');
+  if(!input) return;
+  
+  const current = parseFloat(input.value) || parseFloat(input.placeholder) || 1;
+  const newValue = Math.max(1, current + delta);
+  const formattedValue = newValue.toFixed(2).replace(/\.00$/, '');
+  input.value = formattedValue;
+  input.placeholder = formattedValue;
+  input.style.color = '#333';
+}
+
+function clearInput() {
+  currentItem = null;
+  const searchInput = document.getElementById('searchInput');
+  const quantityInput = document.getElementById('quantityInput');
+  const autocompleteList = document.getElementById('autocompleteList');
+  
+  if(searchInput) searchInput.value = '';
+  if(quantityInput) {
+    quantityInput.value = '1';
+    quantityInput.placeholder = '1';
+  }
+  if(autocompleteList) autocompleteList.style.display = 'none';
+}
+
+function addItem() {
+  if(!currentItem) {
+    showStatus('Vælg en vare først', 'error');
+    return;
+  }
+  
+  if(!selectedLocation) {
+    showStatus('Vælg en lokation først', 'error');
+    return;
+  }
+  
+  const quantity = parseFloat(document.getElementById('quantityInput').value) || 0;
+  if(quantity <= 0) {
+    showStatus('Indtast et antal større end 0', 'error');
+    return;
+  }
+  
+  // Find existing item
+  const existingIndex = countedItems.findIndex(item => item.id === currentItem.id);
+  
+  if(existingIndex >= 0) {
+    countedItems[existingIndex].quantity += quantity;
+  } else {
+    countedItems.push({
+      id: currentItem.id,
+      navn: currentItem.navn,
+      quantity: quantity,
+      maaleenhed: currentItem.maaleenhed || 'stk',
+      placering: currentItem.placering || '',
+      pris: currentItem.pris || 0
+    });
+  }
+  
+  renderCountedItems();
+  saveCountedItems();
+  showStatus(`${currentItem.navn} tilføjet (${quantity} ${currentItem.maaleenhed || 'stk'})`, 'success');
+  clearInput();
+  
+  setTimeout(() => {
+    document.getElementById('searchInput').focus();
+  }, 100);
+}
+
+function renderCountedItems() {
+  const list = document.getElementById('countedItemsList');
+  const count = document.getElementById('itemCount');
+  
+  count.textContent = countedItems.length;
+  
+  if(countedItems.length === 0) {
+    list.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">Ingen varer optalt endnu</div>';
+    return;
+  }
+  
+  list.innerHTML = countedItems.map((item, index) => `
+    <div class="counted-item">
+      <div>
+        <div style="font-weight:600; font-size:15px;">${item.navn}</div>
+        <div style="font-size:14px; color:#666;">${item.quantity} ${item.maaleenhed}</div>
+      </div>
+      <div style="display:flex; gap:5px;">
+        <button onclick="editCountedItem(${index})" style="padding:6px 12px; border:1px solid #ddd; background:white; border-radius:6px; cursor:pointer;">✏️</button>
+        <button onclick="removeCountedItem(${index})" style="padding:6px 12px; border:1px solid #ddd; background:white; border-radius:6px; cursor:pointer;">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function editCountedItem(index) {
+  const item = countedItems[index];
+  if(!item) return;
+  
+  const fullItem = allItems.find(i => i.id === item.id);
+  if(fullItem) {
+    selectItem(fullItem);
+    document.getElementById('quantityInput').value = item.quantity;
+    countedItems.splice(index, 1);
+    renderCountedItems();
+    saveCountedItems();
+  }
+}
+
+function removeCountedItem(index) {
+  if(confirm('Slet denne vare?')) {
+    countedItems.splice(index, 1);
+    renderCountedItems();
+    saveCountedItems();
+  }
+}
+
+function clearAll() {
+  if(countedItems.length === 0) return;
+  if(confirm('Ryd alle optalte varer?')) {
+    countedItems = [];
+    renderCountedItems();
+    saveCountedItems();
+    showStatus('Alle varer ryddet', 'success');
+  }
+}
+
+function finishSession() {
+  if(!selectedLocation) {
+    showStatus('Vælg en lokation først', 'error');
+    return;
+  }
+  
+  if(countedItems.length === 0) {
+    showStatus('⚠️ Optælling er tom - Der er ikke indtastet nogen varer. Der bliver ikke lavet en rapport. Tilføj varer til optællingen før du afslutter den.', 'error');
+    return;
+  }
+  
+  try {
+    if(!currentSession) {
+      currentSession = {
+        id: 'manuel_' + Date.now(),
+        name: 'Manuel optælling',
+        scope: selectedLocation,
+        tsStart: Date.now(),
+        counts: {},
+        editable: true
+      };
+    }
+    
+    // Prepare report details (same format as main app)
+    const details = [];
+    let grandTotal = 0;
+    
+    countedItems.forEach(item => {
+      const fullItem = allItems.find(i => i.id === item.id);
+      const antal = Number(item.quantity) || 0;
+      const pris = fullItem ? (Number(fullItem.pris) || 0) : 0;
+      const linjetotal = antal * pris;
+      grandTotal += linjetotal;
+      
+      const detailItem = {
+        vareId: item.id,
+        navn: item.navn || 'Ukendt',
+        maaleenhed: item.maaleenhed || 'stk',
+        pris: pris,
+        antal: antal,
+        linjetotal: linjetotal,
+        placering: selectedLocation
+      };
+      
+      // Add reol and hylle if available
+      if(fullItem && fullItem.reolNr) detailItem.reolNr = fullItem.reolNr;
+      if(fullItem && fullItem.hylleNr) detailItem.hylleNr = fullItem.hylleNr;
+      
+      details.push(detailItem);
+    });
+    
+    // Create report (same format as main app)
+    const report = {
+      ts: Date.now(),
+      handling: currentSession.name || 'Manuel optælling - ' + selectedLocation,
+      type: 'session',
+      scope: selectedLocation,
+      details: details,
+      total: grandTotal
+    };
+    
+    // Save report to main app - preserve ALL existing data exactly like main app does
+    const storageKey = 'køkkenlager_data';
+    let data = {};
+    const existingData = localStorage.getItem(storageKey);
+    if(existingData) {
+      try {
+        data = JSON.parse(existingData);
+      } catch(e) {
+        console.error('Error parsing existing data:', e);
+        data = {};
+      }
+    }
+    
+    // IMPORTANT: Preserve ALL existing data fields exactly as they are
+    // Don't overwrite anything - just add to reports array
+    if(!data.reports || !Array.isArray(data.reports)) {
+      data.reports = [];
+    }
+    
+    // Check if report already exists (by handling name and timestamp)
+    const reportExists = data.reports.some(r => 
+      r.handling === report.handling && 
+      Math.abs(r.ts - report.ts) < 1000 // Within 1 second
+    );
+    
+    if(!reportExists) {
+      // Add report to beginning of reports array (same as main app: reports.unshift(report))
+      data.reports.unshift(report);
+      console.log('✅ New report added:', report.handling);
+    } else {
+      console.log('⚠️ Report already exists, skipping:', report.handling);
+    }
+    
+    // Update sessionCounter if we used a new one
+    if(sessionCounter > (data.sessionCounter || 0)) {
+      data.sessionCounter = sessionCounter;
+    }
+    
+    // Clear active session (optælling er færdig)
+    data.activeSession = null;
+    
+    // Preserve all other fields - don't touch them
+    // data.masterVarelager, data.lagerData, etc. are already in data object
+    
+    // Add/update metadata like main app
+    data.version = data.version || '1.0';
+    data.savedAt = Date.now();
+    
+    // Save all data to localStorage (same as saveAllData() in main app)
+    try {
+      const savedData = JSON.stringify(data);
+      localStorage.setItem(storageKey, savedData);
+      localStorage.removeItem('activeSession');
+      
+      console.log('✅ Report saved successfully:', report.handling);
+      console.log('Total reports in array:', data.reports.length);
+      console.log('Report details count:', report.details.length);
+      console.log('Report structure:', JSON.stringify(report, null, 2).substring(0, 500));
+      
+      // Verify it was saved correctly
+      const verify = localStorage.getItem(storageKey);
+      if(verify) {
+        const verifyData = JSON.parse(verify);
+        console.log('✅ Verification: Reports in localStorage:', verifyData.reports ? verifyData.reports.length : 0);
+      }
+    } catch(e) {
+      console.error('Error saving to localStorage:', e);
+      showStatus('Fejl ved gemning: ' + e.message, 'error');
+      return;
+    }
+    
+    showStatus('✅ Rapport gemt! Optælling afsluttet. Rapport: ' + report.handling, 'success');
+    
+    // Reset everything after 2 seconds
+    setTimeout(() => {
+      // Clear all data
+      countedItems = [];
+      currentItem = null;
+      currentSession = null;
+      selectedLocation = '';
+      
+      // Reset UI
+      clearInput();
+      renderCountedItems();
+      saveCountedItems();
+      updateSessionInfo();
+      
+      // Show location selector for new counting
+      showLocationSelector();
+      
+      showStatus('Klar til ny optælling! Vælg lokation.', 'success');
+    }, 2000);
+  } catch(e) {
+    console.error('Error finishing session:', e);
+    showStatus('Fejl ved gemning: ' + e.message, 'error');
+  }
+}
+
+function saveCountedItems() {
+  try {
+    localStorage.setItem('manuelOptaelItems', JSON.stringify(countedItems));
+  } catch(e) {
+    console.error('Error saving items:', e);
+  }
+}
+
+function showStatus(message, type) {
+  const statusEl = document.getElementById('statusMessage');
+  statusEl.textContent = message;
+  statusEl.className = 'status-message status-' + type;
+  statusEl.style.display = 'block';
+  
+  setTimeout(() => {
+    statusEl.style.display = 'none';
+  }, 3000);
+}
+
+// Check session every 30 seconds (less frequent to avoid interrupting user)
+// Only check if user is not actively counting
+let sessionCheckInterval = setInterval(function() {
+  // Don't check if user has selected location and is counting
+  if(selectedLocation && selectedLocation !== '') {
+    return; // User is actively counting, don't interfere
+  }
+  checkSession();
+}, 30000); // Check every 30 seconds instead of 5
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "Manuel Optælling",
+  "short_name": "Optælling",
+  "description": "Manuel optælling af lager",
+  "start_url": "./manuel-optaelling.html",
+  "display": "standalone",
+  "background_color": "#0078D4",
+  "theme_color": "#0078D4",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%230078D4'/%3E%3Ctext x='32' y='45' font-size='40' text-anchor='middle' fill='white'%3E📦%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
+
+
+
+
+
