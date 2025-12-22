@@ -53,7 +53,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <body>
 <div class="header">
   <h1>📱 Stregkode Scanner</h1>
-  <p>Scan stregkoder med din telefon - V 3.4</p>
+  <p>Scan stregkoder med din telefon - V 3.5</p>
 </div>
 
 <div class="scanner-container">
@@ -856,67 +856,83 @@ function finishSession(){
       }
     }
     
-    let sessionCounter = (data.sessionCounter || 0) + 1;
+    // Get current sessionCounter and increment
+    let currentSessionCounter = data.sessionCounter || 0;
+    currentSessionCounter++;
+    const sessionCounter = currentSessionCounter;
     
-    // Create report for each location (grouped)
-    const reports = [];
-    Object.keys(itemsByLocation).sort().forEach(location => {
-      const locationItems = itemsByLocation[location];
-      const details = [];
-      let grandTotal = 0;
+    // Create ONE report with all items (not one per location)
+    const details = [];
+    let grandTotal = 0;
+    
+    // Process all items and group by location for scope
+    const allLocations = new Set();
+    
+    items.forEach(item => {
+      const v = item.vare;
+      const antal = Number(item.count) || 0;
+      if (antal <= 0) return; // Skip items with zero count
       
-      locationItems.forEach(item => {
-        const v = item.vare;
-        const antal = Number(item.count) || 0;
-        const pris = Number(v.pris) || 0;
-        const linjetotal = antal * pris;
-        grandTotal += linjetotal;
-        
-        const detailItem = {
-          vareId: v.id,
-          navn: v.navn || 'Ukendt',
-          maaleenhed: v.maaleenhed || 'stk',
-          pris: pris,
-          antal: antal,
-          linjetotal: linjetotal,
-          placering: location
-        };
-        
-        if (v.reolNr) detailItem.reolNr = v.reolNr;
-        if (v.hylleNr) detailItem.hylleNr = v.hylleNr;
-        
-        details.push(detailItem);
-      });
+      const pris = Number(v.pris) || 0;
+      const linjetotal = antal * pris;
+      grandTotal += linjetotal;
       
-      const report = {
-        ts: Date.now(),
-        handling: `Stregkode scanner - ${location}`,
-        type: 'session',
-        scope: location,
-        details: details,
-        total: grandTotal
+      const placering = v.placering || 'Ikke angivet';
+      allLocations.add(placering);
+      
+      const detailItem = {
+        vareId: v.id,
+        navn: v.navn || 'Ukendt',
+        maaleenhed: v.maaleenhed || 'stk',
+        pris: pris,
+        antal: antal,
+        linjetotal: linjetotal,
+        placering: placering
       };
       
-      reports.push(report);
+      // Add reol and hylle if they exist
+      if (v.reolNr) detailItem.reolNr = v.reolNr;
+      if (v.hylleNr) detailItem.hylleNr = v.hylleNr;
+      
+      details.push(detailItem);
     });
+    
+    // Generate unique report name: OPTA-000004 format
+    const reportName = `OPTA-${String(sessionCounter).padStart(6, '0')}`;
+    
+    // Determine scope (all locations or single location)
+    const scope = allLocations.size === 1 ? Array.from(allLocations)[0] : Array.from(allLocations).join(', ');
+    
+    // Create ONE report with all items
+    const report = {
+      ts: Date.now(),
+      handling: reportName,
+      type: 'session',
+      scope: scope,
+      details: details,
+      total: grandTotal
+    };
+    
+    const reports = [report]; // Only one report
     
     // Preserve ALL existing data
     if (!data.reports || !Array.isArray(data.reports)) {
       data.reports = [];
     }
     
-    // Add all reports to beginning of reports array
-    reports.forEach(report => {
-      const reportExists = data.reports.some(r => 
-        r.handling === report.handling && 
-        Math.abs(r.ts - report.ts) < 1000
-      );
-      
-      if (!reportExists) {
-        data.reports.unshift(report);
-        console.log('✅ New report added:', report.handling);
-      }
-    });
+    // Check if report already exists (by name and timestamp)
+    const reportExists = data.reports.some(r => 
+      r.handling === report.handling && 
+      Math.abs(r.ts - report.ts) < 1000
+    );
+    
+    if (!reportExists) {
+      // Add report to beginning of reports array
+      data.reports.unshift(report);
+      console.log('✅ New report added:', report.handling, 'with', details.length, 'items');
+    } else {
+      console.log('⚠️ Report already exists:', report.handling);
+    }
     
     // Update sessionCounter
     data.sessionCounter = sessionCounter;
@@ -934,11 +950,12 @@ function finishSession(){
     localStorage.removeItem('activeSession');
     
     const totalItems = items.reduce((sum, item) => sum + item.count, 0);
-    const locationsCount = Object.keys(itemsByLocation).length;
+    const uniqueItems = items.length;
+    const locationsCount = allLocations.size;
     
-    updateStatus(`✅ Rapport oprettet! ${totalItems} varer i ${locationsCount} lokation(er)`, 'success');
+    updateStatus(`✅ Rapport oprettet! ${reportName} - ${uniqueItems} unikke varer, ${totalItems} total antal i ${locationsCount} lokation(er)`, 'success');
     
-    console.log('✅ Reports saved successfully:', reports.length);
+    console.log('✅ Report saved successfully:', reportName, 'with', details.length, 'items, total:', grandTotal);
     
     // Clear scanned items
     scannedItems = {};
@@ -956,7 +973,7 @@ function finishSession(){
       exportInfo = `\n\n💡 Tip: For at få rapporterne ind i hovedprogrammet:\n\n1. Klik "📤 Eksport rapporter" knappen nedenfor\n2. I hovedprogrammet: "Opsætning" → "Import data" → "📷 Importer Scanner Data"\n3. Vælg den downloadede fil\n\nEller brug "🔄 Synkroniser Rapporter" i hovedprogrammet hvis begge kører på samme enhed.`;
     }
     
-    alert(`✅ Optælling afsluttet!\n\n📊 Total varer: ${totalItems}\n📍 Lokationer: ${locationsCount}\n\nRapporten er nu gemt.${exportInfo}`);
+    alert(`✅ Optælling afsluttet!\n\n📋 Rapport: ${reportName}\n📊 ${uniqueItems} unikke varer, ${totalItems} total antal\n📍 ${locationsCount} lokation(er)\n💰 Total værdi: ${grandTotal.toFixed(2)} kr.\n\nRapporten er nu gemt.${exportInfo}`);
     
   } catch(err){
     console.error('Fejl ved oprettelse af rapport:', err);
