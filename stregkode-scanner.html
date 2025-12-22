@@ -45,7 +45,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <body>
 <div class="header">
   <h1>📱 Stregkode Scanner</h1>
-  <p>Scan stregkoder med din telefon - V 2.5</p>
+  <p>Scan stregkoder med din telefon - V 2.6</p>
 </div>
 
 <div class="scanner-container">
@@ -145,7 +145,8 @@ async function startScanner(){
   }
   
   if(typeof Html5Qrcode === 'undefined'){
-    updateStatus('Scanner library ikke indlæst. Genindlæs siden og prøv igen.', 'error');
+    updateStatus('⚠️ Scanner bibliotek ikke indlæst.\n\nGenindlæs siden og tjek din internetforbindelse.', 'error');
+    console.error('Html5Qrcode library not available');
     return;
   }
   
@@ -485,11 +486,57 @@ function finishSession(){
   }
 }
 
-// Initialize on load
-if(loadItemsFromMainApp()){
-  updateStatus('Klar til scanning - Klik "Start Scanner"', 'waiting');
+// Wait for DOM and library to load
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('DOM loaded, initializing scanner...');
+  
+  // Check if Html5Qrcode library is loaded
+  if (typeof Html5Qrcode === 'undefined') {
+    console.warn('Html5Qrcode library not loaded yet, waiting...');
+    // Wait a bit for library to load
+    setTimeout(function() {
+      if (typeof Html5Qrcode === 'undefined') {
+        updateStatus('⚠️ Scanner bibliotek ikke indlæst. Genindlæs siden.', 'error');
+        console.error('Html5Qrcode library still not loaded after timeout');
+      } else {
+        console.log('Html5Qrcode library loaded successfully');
+        initializeApp();
+      }
+    }, 1000);
+  } else {
+    console.log('Html5Qrcode library already loaded');
+    initializeApp();
+  }
+});
+
+function initializeApp() {
+  console.log('Initializing app...');
+  
+  if(loadItemsFromMainApp()){
+    updateStatus('Klar til scanning - Klik "Start Scanner"', 'waiting');
+    console.log('App initialized successfully');
+  } else {
+    updateStatus('⚠️ Ingen varelager data fundet. Opret varer i hovedprogrammet først.', 'error');
+    console.warn('No varelager data found');
+  }
+}
+
+// Also try to initialize immediately (in case DOM is already loaded)
+if (document.readyState === 'loading') {
+  // DOM is still loading, wait for DOMContentLoaded
+  console.log('DOM still loading, waiting for DOMContentLoaded...');
 } else {
-  updateStatus('⚠️ Ingen varelager data fundet. Opret varer i hovedprogrammet først.', 'error');
+  // DOM is already loaded
+  console.log('DOM already loaded, initializing immediately...');
+  if (typeof Html5Qrcode === 'undefined') {
+    setTimeout(function() {
+      if (typeof Html5Qrcode !== 'undefined') {
+        initializeApp();
+      }
+    }, 500);
+  } else {
+    initializeApp();
+  }
 }
 </script>
 </body>
