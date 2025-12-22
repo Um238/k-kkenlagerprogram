@@ -925,6 +925,15 @@ a:hover{color:#45a049;text-decoration:none}
               <button onclick="syncReportsFromScanner()" style="background:#4CAF50; color:white;">🔄 Synkroniser Nu</button>
             </div>
           </div>
+          <div class="settings-option">
+            <div class="settings-option-label">
+              <h3>🔑 Scanner Installation ID</h3>
+              <p>Se og synkroniser installation ID med scanner-appen for at sikre de matcher.</p>
+            </div>
+            <div class="settings-option-action">
+              <button onclick="showScannerInstallationId()" style="background:#FF9800; color:white;">🔑 Vis/Synkroniser ID</button>
+            </div>
+          </div>
         </div>
         
         <!-- Mobile Section -->
@@ -2111,7 +2120,11 @@ const STORAGE_KEY = 'køkkenlager_data';
 
 function saveAllData(){
   try{
+    // Ensure installation ID is included
+    const installationId = getInstallationId();
+    
     const dataToSave = {
+      installationId: installationId, // Store main program installation ID
       masterVarelager,
       lagerData,
       lagerLokationer,
@@ -6637,9 +6650,11 @@ function downloadManuelOptaeling(){
 function generateVarelagerQR(){
   try {
     // Prepare data - only masterVarelager to keep QR code small
+    const installationId = getInstallationId();
     const dataToExport = {
       masterVarelager: masterVarelager || [],
       lagerLokationer: lagerLokationer || [],
+      mainInstallationId: installationId, // Include main program installation ID
       version: '1.0',
       exportedAt: Date.now()
     };
@@ -7147,6 +7162,107 @@ function syncReportsFromScanner(){
   } catch(e) {
     console.error('Error syncing reports:', e);
     alert('Fejl ved synkronisering: ' + e.message);
+  }
+}
+
+/* Show and sync scanner installation ID */
+function showScannerInstallationId(){
+  try {
+    const storageKey = 'køkkenlager_data';
+    const mainData = localStorage.getItem(storageKey);
+    const mainInstallationId = getInstallationId();
+    
+    let info = '🔑 Installation ID Information:\n\n';
+    info += '💻 Hovedprogram (PC):\n' + mainInstallationId + '\n\n';
+    
+    if (mainData) {
+      const data = JSON.parse(mainData);
+      
+      // Get scanner installation IDs from reports
+      const scannerIds = new Set();
+      if (data.reports && Array.isArray(data.reports)) {
+        data.reports.forEach(r => {
+          if (r.installationId && r.installationId.startsWith('SCANNER-')) {
+            scannerIds.add(r.installationId);
+          }
+        });
+      }
+      
+      // Get scanner ID from data if exists
+      if (data.scannerInstallationIds && Array.isArray(data.scannerInstallationIds)) {
+        data.scannerInstallationIds.forEach(id => scannerIds.add(id));
+      }
+      
+      if (scannerIds.size > 0) {
+        info += '📱 Scanner Installation ID(er):\n';
+        scannerIds.forEach(id => {
+          info += id + '\n';
+        });
+        info += '\n';
+        
+        // Check if they match
+        const scannerIdArray = Array.from(scannerIds);
+        if (scannerIdArray.length === 1) {
+          const scannerId = scannerIdArray[0];
+          // Extract numeric part for comparison
+          const mainIdNum = mainInstallationId.replace(/[^0-9]/g, '');
+          const scannerIdNum = scannerId.replace(/[^0-9]/g, '');
+          
+          if (mainIdNum === scannerIdNum || scannerId.includes(mainIdNum)) {
+            info += '✅ ID\'erne matcher!\n\n';
+          } else {
+            info += '⚠️ ID\'erne matcher ikke.\n\n';
+            info += '💡 Tip: For at synkronisere:\n';
+            info += '1. I scanner-appen: Klik "🔑 Vis ID"\n';
+            info += '2. Kopiér scanner ID\n';
+            info += '3. Indtast det her nedenfor\n\n';
+            
+            if (confirm(info + 'Vil du indtaste scanner ID manuelt?')) {
+              const manualId = prompt('Indtast scanner installation ID fra telefonen:', scannerId);
+              if (manualId && manualId.trim()) {
+                if (!data.scannerInstallationIds) data.scannerInstallationIds = [];
+                if (!data.scannerInstallationIds.includes(manualId.trim())) {
+                  data.scannerInstallationIds.push(manualId.trim());
+                }
+                data.scannerInstallationId = manualId.trim();
+                localStorage.setItem(storageKey, JSON.stringify(data));
+                alert('✅ Scanner ID gemt: ' + manualId.trim() + '\n\nID\'erne er nu synkroniseret!');
+                return;
+              }
+            }
+            return;
+          }
+        } else {
+          info += '⚠️ Flere scanner ID\'er fundet.\n\n';
+        }
+      } else {
+        info += '📱 Ingen scanner ID fundet endnu.\n\n';
+        info += '💡 Tip: Eksporter en rapport fra scanner-appen for at se ID.\n\n';
+        
+        if (confirm(info + 'Vil du indtaste scanner ID manuelt?')) {
+          const manualId = prompt('Indtast scanner installation ID fra telefonen:', '');
+          if (manualId && manualId.trim()) {
+            if (!data.scannerInstallationIds) data.scannerInstallationIds = [];
+            if (!data.scannerInstallationIds.includes(manualId.trim())) {
+              data.scannerInstallationIds.push(manualId.trim());
+            }
+            data.scannerInstallationId = manualId.trim();
+            localStorage.setItem(storageKey, JSON.stringify(data));
+            alert('✅ Scanner ID gemt: ' + manualId.trim());
+          }
+          return;
+        }
+      }
+    } else {
+      info += '📱 Ingen data fundet.\n\n';
+    }
+    
+    info += '💡 Tip: Brug samme installation ID på begge enheder for bedre synkronisering.';
+    alert(info);
+    
+  } catch(err) {
+    console.error('Error showing scanner installation ID:', err);
+    alert('❌ Fejl: ' + err.message);
   }
 }
 

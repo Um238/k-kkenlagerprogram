@@ -53,7 +53,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <body>
 <div class="header">
   <h1>📱 Stregkode Scanner</h1>
-  <p>Scan stregkoder med din telefon - V 3.6</p>
+  <p>Scan stregkoder med din telefon - V 3.7</p>
 </div>
 
 <div class="scanner-container">
@@ -146,6 +146,17 @@ function loadItemsFromMainApp(){
     console.log('masterVarelager length:', data.masterVarelager ? data.masterVarelager.length : 0);
     
     allItems = data.masterVarelager || [];
+    
+    // Sync installation ID from main program if available
+    if (data.mainInstallationId) {
+      // Main program installation ID found - use it as reference
+      if (!data.scannerInstallationId) {
+        // Create scanner ID based on main ID for matching
+        data.scannerInstallationId = 'SCANNER-' + data.mainInstallationId.replace('INST-', '');
+        data.installationId = data.scannerInstallationId;
+        localStorage.setItem(storageKey, JSON.stringify(data));
+      }
+    }
     
     if (allItems.length === 0) {
       updateStatus('⚠️ Varelageret er tomt.\n\nDu kan stadig scanne stregkoder.', 'error');
@@ -616,6 +627,16 @@ function handleVarelagerQR(qrData){
       existingData.lagerLokationer = importedData.lagerLokationer;
     }
     
+    // Sync installation ID from main program
+    if (importedData.mainInstallationId) {
+      existingData.mainInstallationId = importedData.mainInstallationId;
+      // Create scanner ID based on main ID for matching
+      if (!existingData.scannerInstallationId) {
+        existingData.scannerInstallationId = 'SCANNER-' + importedData.mainInstallationId.replace('INST-', '');
+        existingData.installationId = existingData.scannerInstallationId;
+      }
+    }
+    
     // Save merged data
     localStorage.setItem(storageKey, JSON.stringify(existingData));
     
@@ -767,6 +788,16 @@ function importVarelager(){
         existingData.masterVarelager = importedData.masterVarelager;
         if (importedData.lagerLokationer) {
           existingData.lagerLokationer = importedData.lagerLokationer;
+        }
+        
+        // Sync installation ID from main program
+        if (importedData.mainInstallationId) {
+          existingData.mainInstallationId = importedData.mainInstallationId;
+          // Create scanner ID based on main ID for matching
+          if (!existingData.scannerInstallationId) {
+            existingData.scannerInstallationId = 'SCANNER-' + importedData.mainInstallationId.replace('INST-', '');
+            existingData.installationId = existingData.scannerInstallationId;
+          }
         }
         
         // Save merged data
@@ -946,9 +977,17 @@ function finishSession(){
     data.savedAt = Date.now();
     
     // Add unique installation ID for tracking
+    // Try to get from main program first, otherwise generate new
     if (!data.installationId) {
-      // Generate unique ID if not exists
-      data.installationId = 'SCANNER-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+      // Check if main program has installation ID
+      const mainInstallationId = data.mainInstallationId || null;
+      if (mainInstallationId) {
+        // Use main program's ID as base, but add SCANNER prefix
+        data.installationId = 'SCANNER-' + mainInstallationId;
+      } else {
+        // Generate unique ID if not exists
+        data.installationId = 'SCANNER-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+      }
     }
     
     // Add report metadata
