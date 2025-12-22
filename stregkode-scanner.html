@@ -41,12 +41,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .stat{text-align:center;flex:1}
 .stat-value{font-size:24px;font-weight:700;color:#4CAF50}
 .stat-label{font-size:12px;color:#666;margin-top:5px}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:1000}
+.modal.hidden{display:none}
+.modal-content{background:white;padding:25px;border-radius:12px;max-width:400px;width:90%;box-shadow:0 4px 20px rgba(0,0,0,0.3)}
+.modal-content h3{margin:0 0 15px 0;font-size:20px;color:#333}
+.modal-content input[type="number"]{width:100%;padding:15px;font-size:24px;text-align:center;border:2px solid #4CAF50;border-radius:8px;margin:10px 0}
+.modal-buttons{display:flex;gap:10px;margin-top:20px}
+.modal-buttons button{flex:1;padding:12px;font-size:16px;border-radius:8px;border:none;cursor:pointer;font-weight:600}
 </style>
 </head>
 <body>
 <div class="header">
   <h1>📱 Stregkode Scanner</h1>
-  <p>Scan stregkoder med din telefon - V 3.0</p>
+  <p>Scan stregkoder med din telefon - V 3.1</p>
 </div>
 
 <div class="scanner-container">
@@ -81,6 +88,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
   </div>
 </div>
 
+<!-- Modal til antalsindtastning -->
+<div id="quantityModal" class="modal hidden">
+  <div class="modal-content">
+    <h3>Indtast antal</h3>
+    <p id="scannedCodeDisplay" style="font-size:16px;font-weight:600;margin:15px 0;color:#4CAF50;"></p>
+    <div style="margin:20px 0">
+      <label for="quantityInput" style="display:block;margin-bottom:8px;font-weight:600;">Antal:</label>
+      <input type="number" id="quantityInput" min="1" value="1" style="width:100%;padding:15px;font-size:24px;text-align:center;border:2px solid #4CAF50;border-radius:8px;" autofocus onkeypress="if(event.key==='Enter') confirmQuantityInput()">
+    </div>
+    <div class="modal-buttons">
+      <button onclick="cancelQuantityInput()" style="background:#6c757d;color:white;">Annuller</button>
+      <button onclick="confirmQuantityInput()" style="background:#4CAF50;color:white;">Gem</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 let scannerActive = false;
@@ -89,6 +112,7 @@ let scannedItems = {};
 let allItems = [];
 let lastScannedCode = null;
 let lastScanTime = 0;
+let pendingScannedCode = null; // For quantity dialog
 const SCAN_COOLDOWN = 1000;
 
 // Load items from main app
@@ -247,8 +271,22 @@ async function startScanner(){
         // Check if this is a varelager QR code
         if (qrScanMode && decodedText.startsWith('VARELAGER:')) {
           handleVarelagerQR(decodedText);
-        } else {
-          handleScannedBarcode(decodedText);
+        } else if (!qrScanMode) {
+          // Stop scanning temporarily to show quantity dialog
+          if (html5QrCode && html5QrCode.isScanning) {
+            (async () => {
+              try {
+                await html5QrCode.stop();
+                html5QrCode.clear();
+                showQuantityDialog(decodedText);
+              } catch (stopErr) {
+                console.warn('Kunne ikke stoppe scanning:', stopErr);
+                showQuantityDialog(decodedText);
+              }
+            })();
+          } else {
+            showQuantityDialog(decodedText);
+          }
         }
       },
       (errorMessage) => {
@@ -283,7 +321,78 @@ async function startScanner(){
   }
 }
 
-function handleScannedBarcode(barcode){
+// Show quantity dialog when barcode is scanned
+function showQuantityDialog(barcode){
+  pendingScannedCode = barcode;
+  const modal = document.getElementById('quantityModal');
+  const codeDisplay = document.getElementById('scannedCodeDisplay');
+  const quantityInput = document.getElementById('quantityInput');
+  
+  // Find item to show name
+  const item = allItems.find(v => v.id === barcode);
+  if (item) {
+    codeDisplay.textContent = item.navn + ' (' + barcode + ')';
+  } else {
+    codeDisplay.textContent = 'Stregkode: ' + barcode;
+  }
+  
+  quantityInput.value = '1';
+  quantityInput.focus();
+  quantityInput.select();
+  
+  modal.classList.remove('hidden');
+}
+
+// Confirm quantity and add item
+async function confirmQuantityInput(){
+  const modal = document.getElementById('quantityModal');
+  const quantityInput = document.getElementById('quantityInput');
+  const quantity = parseInt(quantityInput.value) || 1;
+  
+  if (quantity <= 0) {
+    alert('⚠️ Antal skal være større end 0');
+    quantityInput.focus();
+    return;
+  }
+  
+  if (pendingScannedCode) {
+    handleScannedBarcode(pendingScannedCode, quantity);
+    pendingScannedCode = null;
+  }
+  
+  modal.classList.add('hidden');
+  
+  // Resume scanning automatically
+  if (scannerActive && !qrScanMode) {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await startScanner();
+    } catch (restartErr) {
+      console.error('Kunne ikke genstarte scanning:', restartErr);
+      updateStatus('Fejl ved genstart af scanning', 'waiting');
+    }
+  }
+}
+
+// Cancel quantity input
+async function cancelQuantityInput(){
+  const modal = document.getElementById('quantityModal');
+  pendingScannedCode = null;
+  modal.classList.add('hidden');
+  
+  // Resume scanning automatically
+  if (scannerActive && !qrScanMode) {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await startScanner();
+    } catch (restartErr) {
+      console.error('Kunne ikke genstarte scanning:', restartErr);
+      updateStatus('Fejl ved genstart af scanning', 'waiting');
+    }
+  }
+}
+
+function handleScannedBarcode(barcode, quantity = 1){
   // Try to find item in varelager
   const item = allItems.find(v => v.id === barcode);
   
@@ -302,8 +411,8 @@ function handleScannedBarcode(barcode){
       };
     }
     
-    scannedItems[barcode].count++;
-    updateStatus('⚠️ Vare ikke fundet: ' + barcode + '\n(Tilføjet alligevel)', 'error');
+    scannedItems[barcode].count += quantity;
+    updateStatus('⚠️ Vare ikke fundet: ' + barcode + '\n(Tilføjet: ' + quantity + ')', 'error');
     
     updateStats();
     renderList();
@@ -312,11 +421,6 @@ function handleScannedBarcode(barcode){
       navigator.vibrate(50);
     }
     
-    setTimeout(() => {
-      if(scannerActive){
-        updateStatus('Peger på stregkoden...', 'scanning');
-      }
-    }, 2000);
     return;
   }
   
@@ -328,9 +432,9 @@ function handleScannedBarcode(barcode){
     };
   }
   
-  scannedItems[barcode].count++;
+  scannedItems[barcode].count += quantity;
   
-  updateStatus('✅ ' + item.navn + ' tilføjet', 'success');
+  updateStatus('✅ ' + item.navn + ' tilføjet: ' + quantity, 'success');
   
   updateStats();
   renderList();
@@ -338,12 +442,6 @@ function handleScannedBarcode(barcode){
   if (navigator.vibrate) {
     navigator.vibrate(50);
   }
-  
-  setTimeout(() => {
-    if(scannerActive){
-      updateStatus('Peger på stregkoden...', 'scanning');
-    }
-  }, 1000);
 }
 
 function updateStats(){
