@@ -85,6 +85,19 @@ body {
   background: #000;
   border-radius: 8px;
   display: none;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Stabiliser video for Android */
+#scannerVideo video,
+#scannerVideo canvas {
+  width: 100% !important;
+  height: auto !important;
+  display: block;
+  position: relative;
+  transform: none !important;
+  will-change: auto;
 }
 
 .scanner-controls {
@@ -271,7 +284,7 @@ body {
 <body>
   <div class="container">
     <div class="header">
-      <h1>📷 Stregkode Scanner <span style="color:#ff0000; font-weight:bold; font-size:28px;">V 2.2</span></h1>
+      <h1>📷 Stregkode Scanner <span style="color:#ff0000; font-weight:bold; font-size:28px;">V 2.3</span></h1>
       <div style="font-size:14px; opacity:0.9;">Scan stregkoder og optæl varer</div>
     </div>
 
@@ -420,13 +433,22 @@ body {
     // Start scanner - using Html5Qrcode (works better on Android)
     async function startScanner() {
       // Stop existing scanning first if active
-      if (html5QrCode && html5QrCode.isScanning) {
+      if (html5QrCode) {
         try {
-          await html5QrCode.stop();
+          if (html5QrCode.isScanning) {
+            await html5QrCode.stop();
+          }
           html5QrCode.clear();
         } catch (stopErr) {
           console.warn('Fejl ved stop af eksisterende scanning:', stopErr);
         }
+        html5QrCode = null;
+      }
+      
+      // Clear video container først
+      const video = $('scannerVideo');
+      if (video) {
+        video.innerHTML = '';
       }
       
       try {
@@ -440,20 +462,22 @@ body {
           return;
         }
         
-        const video = $('scannerVideo');
         if (!video) return;
         
         showStatus('Starter kamera...', 'info');
+        // Container er allerede ryddet ovenfor
         video.style.display = 'block';
-        scannerActive = true;
+        scannerActive = true; // Sæt til true FØR vi starter scanning
         
         html5QrCode = new Html5Qrcode("scannerVideo");
         
         // Simpel konfiguration - samme som den fungerende fil
+        // Vigtigt: Brug samme config som den fungerende fil
         const config = {
           fps: 10,
           qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0
+          aspectRatio: 1.0,
+          disableFlip: false
           // Html5Qrcode scanner automatisk både QR-koder og stregkoder (EAN, UPC, CODE_128, osv.)
         };
         
