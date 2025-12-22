@@ -46,7 +46,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <body>
 <div class="header">
   <h1>📱 Stregkode Scanner</h1>
-  <p>Scan stregkoder med din telefon - V 2.7</p>
+  <p>Scan stregkoder med din telefon - V 3.0</p>
 </div>
 
 <div class="scanner-container">
@@ -75,6 +75,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
   <div class="actions">
     <button class="button secondary" onclick="clearAll()">🗑 Ryd alt</button>
     <button class="button secondary" onclick="checkDataConnection()" style="font-size:14px; padding:10px;">🔍 Tjek data</button>
+    <button class="button secondary" onclick="scanVarelagerQR()" style="font-size:14px; padding:10px; background:#4CAF50;">📥 Scan QR-kode</button>
+    <button class="button secondary" onclick="importVarelager()" style="font-size:14px; padding:10px;">📥 Import fil</button>
     <button class="button" onclick="finishSession()">✅ Afslut optælling</button>
   </div>
 </div>
@@ -99,29 +101,18 @@ function loadItemsFromMainApp(){
     console.log('Data found:', !!dataStr);
     
     if (!dataStr) {
-      // Check if we're on a different domain
+      // No data found - allow scanning anyway but warn user
       const currentDomain = window.location.hostname;
       const isGitHub = currentDomain.includes('github.io');
-      const isLocal = currentDomain === 'localhost' || currentDomain === '127.0.0.1' || currentDomain === '';
-      
-      let errorMsg = '⚠️ Ingen varelager data fundet.\n\n';
       
       if (isGitHub) {
-        errorMsg += '💡 VIGTIGT: Scanner-appen er på GitHub Pages.\n\n';
-        errorMsg += 'Data skal synkroniseres fra hovedprogrammet:\n\n';
-        errorMsg += '1. Åbn hovedprogrammet på SAMME enhed\n';
-        errorMsg += '2. Data deles via localStorage\n';
-        errorMsg += '3. Hvis hovedprogrammet er på en anden enhed, kan data ikke deles\n\n';
-        errorMsg += 'Alternativ: Brug hovedprogrammet lokalt og scanner-appen lokalt.';
-      } else if (isLocal) {
-        errorMsg += 'Opret varer i hovedprogrammet først.\n\n';
-        errorMsg += 'Tip: Åbn hovedprogrammet på samme enhed for at dele data.';
+        updateStatus('⚠️ Ingen varelager data fundet.\n\nDu kan stadig scanne stregkoder, men varer vil ikke blive matchet.\n\n💡 Tip: Eksporter data fra hovedprogrammet og importer her.', 'error');
       } else {
-        errorMsg += 'Opret varer i hovedprogrammet først.';
+        updateStatus('⚠️ Ingen varelager data fundet.\n\nDu kan stadig scanne stregkoder.\n\n💡 Tip: Åbn hovedprogrammet på samme enhed først.', 'error');
       }
       
-      updateStatus(errorMsg, 'error');
-      return false;
+      allItems = [];
+      return false; // Return false but don't block the app
     }
     
     const data = JSON.parse(dataStr);
@@ -131,7 +122,7 @@ function loadItemsFromMainApp(){
     allItems = data.masterVarelager || [];
     
     if (allItems.length === 0) {
-      updateStatus('⚠️ Varelageret er tomt. Tilføj varer i hovedprogrammet først.', 'error');
+      updateStatus('⚠️ Varelageret er tomt.\n\nDu kan stadig scanne stregkoder.', 'error');
       return false;
     }
     
@@ -139,7 +130,8 @@ function loadItemsFromMainApp(){
     return true;
   } catch (err) {
     console.error('Fejl ved indlæsning af varer:', err);
-    updateStatus('Fejl ved indlæsning af varer: ' + err.message + '\n\nTjek browser console for detaljer.', 'error');
+    updateStatus('Fejl ved indlæsning af varer: ' + err.message + '\n\nDu kan stadig scanne stregkoder.', 'error');
+    allItems = [];
     return false;
   }
 }
@@ -156,8 +148,12 @@ async function startScanner(){
     return;
   }
   
-  if(!loadItemsFromMainApp()){
-    return;
+  // Try to load items, but don't block if not found
+  loadItemsFromMainApp();
+  
+  // Allow scanning even without varelager data
+  if (allItems.length === 0) {
+    console.warn('No varelager data - scanning will work but items won\'t be matched');
   }
   
   const status = document.getElementById('status');
@@ -248,7 +244,12 @@ async function startScanner(){
         lastScannedCode = decodedText;
         lastScanTime = now;
         
-        handleScannedBarcode(decodedText);
+        // Check if this is a varelager QR code
+        if (qrScanMode && decodedText.startsWith('VARELAGER:')) {
+          handleVarelagerQR(decodedText);
+        } else {
+          handleScannedBarcode(decodedText);
+        }
       },
       (errorMessage) => {
         // Ignorer scanning fejl - de er normale når der ikke er fundet noget
@@ -283,10 +284,34 @@ async function startScanner(){
 }
 
 function handleScannedBarcode(barcode){
+  // Try to find item in varelager
   const item = allItems.find(v => v.id === barcode);
   
   if (!item) {
-    updateStatus('⚠️ Vare ikke fundet: ' + barcode, 'error');
+    // Item not found - still add it but with limited info
+    if (!scannedItems[barcode]) {
+      scannedItems[barcode] = {
+        vare: {
+          id: barcode,
+          navn: 'Ukendt vare (' + barcode + ')',
+          placering: 'Ikke angivet',
+          maaleenhed: 'stk',
+          pris: 0
+        },
+        count: 0
+      };
+    }
+    
+    scannedItems[barcode].count++;
+    updateStatus('⚠️ Vare ikke fundet: ' + barcode + '\n(Tilføjet alligevel)', 'error');
+    
+    updateStats();
+    renderList();
+    
+    if (navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+    
     setTimeout(() => {
       if(scannerActive){
         updateStatus('Peger på stregkoden...', 'scanning');
@@ -295,6 +320,7 @@ function handleScannedBarcode(barcode){
     return;
   }
   
+  // Item found - add normally
   if (!scannedItems[barcode]) {
     scannedItems[barcode] = {
       vare: item,
@@ -461,6 +487,140 @@ function checkDataConnection(){
     hasData: !!dataStr,
     dataLength: dataStr ? dataStr.length : 0
   });
+}
+
+// Scan QR code to import varelager
+let qrScanMode = false;
+function scanVarelagerQR(){
+  if (scannerActive) {
+    alert('⚠️ Stop scanneren først for at scanne QR-kode.');
+    return;
+  }
+  
+  qrScanMode = true;
+  updateStatus('📱 Scan QR-koden fra hovedprogrammet...', 'waiting');
+  
+  // Start scanner in QR mode
+  startScanner();
+}
+
+// Handle varelager QR code scan
+function handleVarelagerQR(qrData){
+  try {
+    // Remove prefix
+    const base64Data = qrData.replace('VARELAGER:', '');
+    
+    // Decode base64
+    const jsonString = decodeURIComponent(escape(atob(base64Data)));
+    
+    // Parse JSON
+    const importedData = JSON.parse(jsonString);
+    
+    if (!importedData.masterVarelager || !Array.isArray(importedData.masterVarelager)) {
+      updateStatus('❌ QR-koden indeholder ikke varelager data.', 'error');
+      qrScanMode = false;
+      return;
+    }
+    
+    // Load existing data or create new
+    const storageKey = 'køkkenlager_data';
+    let existingData = {};
+    const existingStr = localStorage.getItem(storageKey);
+    if (existingStr) {
+      try {
+        existingData = JSON.parse(existingStr);
+      } catch(err) {
+        console.warn('Could not parse existing data:', err);
+      }
+    }
+    
+    // Merge imported varelager with existing data
+    existingData.masterVarelager = importedData.masterVarelager;
+    if (importedData.lagerLokationer) {
+      existingData.lagerLokationer = importedData.lagerLokationer;
+    }
+    
+    // Save merged data
+    localStorage.setItem(storageKey, JSON.stringify(existingData));
+    
+    // Reload items
+    allItems = importedData.masterVarelager;
+    
+    // Stop scanner
+    stopScanner();
+    qrScanMode = false;
+    
+    alert('✅ Varelager importeret!\n\n' + allItems.length + ' varer er nu tilgængelige.');
+    updateStatus('✅ Varelager importeret: ' + allItems.length + ' varer', 'success');
+    
+    console.log('Imported varelager from QR:', allItems.length, 'items');
+  } catch(err) {
+    console.error('Error importing from QR:', err);
+    updateStatus('❌ Fejl ved import: ' + err.message, 'error');
+    qrScanMode = false;
+    setTimeout(() => {
+      if(scannerActive){
+        updateStatus('Peger på stregkoden...', 'scanning');
+      }
+    }, 3000);
+  }
+}
+
+// Import varelager from JSON file
+function importVarelager(){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const importedData = JSON.parse(e.target.result);
+        
+        if (!importedData.masterVarelager || !Array.isArray(importedData.masterVarelager)) {
+          alert('❌ Filen indeholder ikke varelager data i korrekt format.');
+          return;
+        }
+        
+        // Load existing data or create new
+        const storageKey = 'køkkenlager_data';
+        let existingData = {};
+        const existingStr = localStorage.getItem(storageKey);
+        if (existingStr) {
+          try {
+            existingData = JSON.parse(existingStr);
+          } catch(err) {
+            console.warn('Could not parse existing data:', err);
+          }
+        }
+        
+        // Merge imported varelager with existing data
+        existingData.masterVarelager = importedData.masterVarelager;
+        if (importedData.lagerLokationer) {
+          existingData.lagerLokationer = importedData.lagerLokationer;
+        }
+        
+        // Save merged data
+        localStorage.setItem(storageKey, JSON.stringify(existingData));
+        
+        // Reload items
+        allItems = importedData.masterVarelager;
+        
+        alert('✅ Varelager importeret!\n\n' + allItems.length + ' varer er nu tilgængelige.');
+        updateStatus('✅ Varelager importeret: ' + allItems.length + ' varer', 'success');
+        
+        console.log('Imported varelager:', allItems.length, 'items');
+      } catch(err) {
+        alert('❌ Fejl ved import: ' + err.message);
+        console.error('Import error:', err);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
 }
 
 async function stopScanner(){
