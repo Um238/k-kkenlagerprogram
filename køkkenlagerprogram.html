@@ -916,6 +916,15 @@ a:hover{color:#45a049;text-decoration:none}
               <button onclick="importScannerData()" style="background:#2196F3; color:white;">Importer Scanner</button>
             </div>
           </div>
+          <div class="settings-option">
+            <div class="settings-option-label">
+              <h3>🔄 Synkroniser Rapporter</h3>
+              <p>Tjek automatisk for nye rapporter fra scanner-appen og opdater listen.</p>
+            </div>
+            <div class="settings-option-action">
+              <button onclick="syncReportsFromScanner()" style="background:#4CAF50; color:white;">🔄 Synkroniser Nu</button>
+            </div>
+          </div>
         </div>
         
         <!-- Mobile Section -->
@@ -7040,6 +7049,72 @@ function refreshReportsFromStorage(){
   } catch(e) {
     console.error('Error refreshing reports:', e);
     alert('Fejl ved opdatering: ' + e.message);
+  }
+}
+
+/* Sync reports from scanner app - checks both localStorage and prompts for file import */
+function syncReportsFromScanner(){
+  try {
+    const storageKey = 'køkkenlager_data';
+    const mainData = localStorage.getItem(storageKey);
+    let foundNew = false;
+    let newCount = 0;
+    
+    // First check localStorage (if same domain)
+    if(mainData) {
+      try {
+        const data = JSON.parse(mainData);
+        if(data.reports && Array.isArray(data.reports)) {
+          const oldCount = reports.length;
+          
+          // Check for new reports
+          data.reports.forEach(report => {
+            const exists = reports.some(r => 
+              r.handling === report.handling && 
+              Math.abs(r.ts - report.ts) < 1000
+            );
+            
+            if (!exists && report.handling && report.handling.startsWith('Stregkode scanner')) {
+              reports.unshift(report);
+              foundNew = true;
+              newCount++;
+            }
+          });
+          
+          if(foundNew) {
+            // Update sessionCounter
+            if(data.sessionCounter !== undefined && data.sessionCounter > sessionCounter) {
+              sessionCounter = data.sessionCounter;
+            }
+            
+            // Save updated reports
+            data.reports = reports;
+            localStorage.setItem(storageKey, JSON.stringify(data));
+            saveAllData();
+            
+            renderReports();
+            updateLogPreview();
+            
+            alert(`✅ ${newCount} ny(e) rapport(er) synkroniseret fra scanner-appen!\n\nRapporterne er nu tilgængelige under "Rapporter" fanen.`);
+            return;
+          }
+        }
+      } catch(e) {
+        console.error('Error checking localStorage:', e);
+      }
+    }
+    
+    // If no new reports in localStorage, offer to import from file
+    if(!foundNew) {
+      if(confirm('Ingen nye rapporter fundet i localStorage.\n\nHvis scanner-appen kører på en anden enhed/domæne, skal du:\n\n1. Eksportere rapporter fra scanner-appen (📤 Eksport rapporter)\n2. Importere filen her\n\nVil du importere fra fil nu?')) {
+        importScannerData();
+      } else {
+        alert('💡 Tip: Hvis scanner-appen kører på samme enhed, skal rapporterne synkroniseres automatisk.\n\nHvis den kører på en anden enhed, brug "📤 Eksport rapporter" i scanner-appen og "📷 Importer Scanner Data" her.');
+      }
+    }
+  } catch(e) {
+    console.error('Error syncing reports:', e);
+    alert('Fejl ved synkronisering: ' + e.message);
   }
 }
 
