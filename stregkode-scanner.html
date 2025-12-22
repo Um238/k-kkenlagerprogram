@@ -651,11 +651,80 @@ function handleVarelagerQR(qrData){
   }
 }
 
-// Import varelager from JSON file
+// Parse CSV to varelager format
+function parseCSVToVarelager(csvContent) {
+  try {
+    // Remove BOM if present
+    if (csvContent.charCodeAt(0) === 0xFEFF) {
+      csvContent = csvContent.substring(1);
+    }
+    
+    const lines = csvContent.split('\n').filter(line => line.trim());
+    if (lines.length < 2) {
+      throw new Error('CSV filen er tom eller mangler data');
+    }
+    
+    // Parse header
+    const header = lines[0].split(';').map(h => h.trim());
+    const navnIdx = header.findIndex(h => h.toLowerCase().includes('navn'));
+    const maaleenhedIdx = header.findIndex(h => h.toLowerCase().includes('måleenhed') || h.toLowerCase().includes('maaleenhed'));
+    const prisIdx = header.findIndex(h => h.toLowerCase().includes('pris'));
+    const placeringIdx = header.findIndex(h => h.toLowerCase().includes('placering'));
+    const reolIdx = header.findIndex(h => h.toLowerCase().includes('reol'));
+    const hylleIdx = header.findIndex(h => h.toLowerCase().includes('hylle'));
+    const raekkefoelgeIdx = header.findIndex(h => h.toLowerCase().includes('rækkefølge') || h.toLowerCase().includes('raekkefoelge'));
+    
+    if (navnIdx === -1) {
+      throw new Error('CSV filen mangler "Navn" kolonne');
+    }
+    
+    const masterVarelager = [];
+    const locations = new Set();
+    
+    // Parse data rows
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(';').map(v => v.trim());
+      if (values.length === 0 || !values[navnIdx]) continue;
+      
+      const navn = values[navnIdx];
+      const maaleenhed = maaleenhedIdx >= 0 ? values[maaleenhedIdx] : 'stk';
+      const pris = prisIdx >= 0 ? parseFloat(values[prisIdx].replace(',', '.')) || 0 : 0;
+      const placering = placeringIdx >= 0 ? values[placeringIdx] : '';
+      const reolNr = reolIdx >= 0 ? values[reolIdx] : '';
+      const hylleNr = hylleIdx >= 0 ? values[hylleIdx] : '';
+      const raekkefoelge = raekkefoelgeIdx >= 0 ? parseInt(values[raekkefoelgeIdx]) || 0 : 0;
+      
+      if (placering) locations.add(placering);
+      
+      // Generate ID from name (simple hash)
+      const id = navn.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + '_' + Date.now() + '_' + i;
+      
+      masterVarelager.push({
+        id: id,
+        navn: navn,
+        maaleenhed: maaleenhed,
+        pris: pris,
+        placering: placering,
+        reolNr: reolNr || undefined,
+        hylleNr: hylleNr || undefined,
+        raekkefoelge: raekkefoelge || undefined
+      });
+    }
+    
+    return {
+      masterVarelager: masterVarelager,
+      lagerLokationer: Array.from(locations).filter(l => l)
+    };
+  } catch(err) {
+    throw new Error('Fejl ved parsing af CSV: ' + err.message);
+  }
+}
+
+// Import varelager from JSON or CSV file
 function importVarelager(){
   const input = document.createElement('input');
   input.type = 'file';
-  input.accept = '.json';
+  input.accept = '.json,.csv';
   input.onchange = function(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -663,10 +732,21 @@ function importVarelager(){
     const reader = new FileReader();
     reader.onload = function(e) {
       try {
-        const importedData = JSON.parse(e.target.result);
+        const fileContent = e.target.result;
+        const fileName = file.name.toLowerCase();
         
-        if (!importedData.masterVarelager || !Array.isArray(importedData.masterVarelager)) {
-          alert('❌ Filen indeholder ikke varelager data i korrekt format.');
+        let importedData = null;
+        
+        // Check if CSV file
+        if (fileName.endsWith('.csv')) {
+          importedData = parseCSVToVarelager(fileContent);
+        } else {
+          // Try JSON
+          importedData = JSON.parse(fileContent);
+        }
+        
+        if (!importedData || !importedData.masterVarelager || !Array.isArray(importedData.masterVarelager)) {
+          alert('❌ Filen indeholder ikke varelager data i korrekt format.\n\nForventet format:\n• JSON: {masterVarelager: [...], lagerLokationer: [...]}\n• CSV: Navn;Måleenhed;Pris;Placering;Reol;Hylle;Rækkefølge');
           return;
         }
         

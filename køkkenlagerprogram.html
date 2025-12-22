@@ -6652,8 +6652,21 @@ function generateVarelagerQR(){
     
     // Check if data is too large for QR code
     if (qrData.length > 2500) {
-      // Data too large - split into chunks or compress
-      alert('⚠️ Varelager data er for stor til én QR-kode.\n\nBrug "Eksport CSV" eller "Download Backup" i stedet, og importer via "Import varelager" knappen i scanner-appen.');
+      // Data too large - offer to download file instead
+      if (confirm('⚠️ Varelager data er for stor til QR-kode.\n\nVil du downloade en fil i stedet?\n\n✅ Ja = Download fil til import\n❌ Nej = Annuller')) {
+        // Download as JSON file for import
+        const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `varelager-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        alert('✅ Fil downloadet!\n\n📱 Næste skridt:\n\n1. Send filen til din telefon (email, cloud, etc.)\n2. Åbn scanner-appen på telefonen\n3. Tryk "📥 Import fil" knappen\n4. Vælg den downloadede fil\n5. Varelageret importeres automatisk!');
+      }
       return;
     }
     
