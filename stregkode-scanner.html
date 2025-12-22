@@ -53,7 +53,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <body>
 <div class="header">
   <h1>📱 Stregkode Scanner</h1>
-  <p>Scan stregkoder med din telefon - V 3.1</p>
+  <p>Scan stregkoder med din telefon - V 3.2</p>
 </div>
 
 <div class="scanner-container">
@@ -84,6 +84,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
     <button class="button secondary" onclick="checkDataConnection()" style="font-size:14px; padding:10px;">🔍 Tjek data</button>
     <button class="button secondary" onclick="scanVarelagerQR()" style="font-size:14px; padding:10px; background:#4CAF50;">📥 Scan QR-kode</button>
     <button class="button secondary" onclick="importVarelager()" style="font-size:14px; padding:10px;">📥 Import fil</button>
+    <button class="button secondary" onclick="exportReports()" style="font-size:14px; padding:10px; background:#2196F3;">📤 Eksport rapporter</button>
     <button class="button" onclick="finishSession()">✅ Afslut optælling</button>
   </div>
 </div>
@@ -272,21 +273,9 @@ async function startScanner(){
         if (qrScanMode && decodedText.startsWith('VARELAGER:')) {
           handleVarelagerQR(decodedText);
         } else if (!qrScanMode) {
-          // Stop scanning temporarily to show quantity dialog
-          if (html5QrCode && html5QrCode.isScanning) {
-            (async () => {
-              try {
-                await html5QrCode.stop();
-                html5QrCode.clear();
-                showQuantityDialog(decodedText);
-              } catch (stopErr) {
-                console.warn('Kunne ikke stoppe scanning:', stopErr);
-                showQuantityDialog(decodedText);
-              }
-            })();
-          } else {
-            showQuantityDialog(decodedText);
-          }
+          // Show quantity dialog without stopping scanner
+          // Scanner continues in background
+          showQuantityDialog(decodedText);
         }
       },
       (errorMessage) => {
@@ -344,7 +333,7 @@ function showQuantityDialog(barcode){
 }
 
 // Confirm quantity and add item
-async function confirmQuantityInput(){
+function confirmQuantityInput(){
   const modal = document.getElementById('quantityModal');
   const quantityInput = document.getElementById('quantityInput');
   const quantity = parseInt(quantityInput.value) || 1;
@@ -362,33 +351,21 @@ async function confirmQuantityInput(){
   
   modal.classList.add('hidden');
   
-  // Resume scanning automatically
+  // Scanner continues automatically - no need to restart
   if (scannerActive && !qrScanMode) {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      await startScanner();
-    } catch (restartErr) {
-      console.error('Kunne ikke genstarte scanning:', restartErr);
-      updateStatus('Fejl ved genstart af scanning', 'waiting');
-    }
+    updateStatus('Peger på stregkoden...', 'scanning');
   }
 }
 
 // Cancel quantity input
-async function cancelQuantityInput(){
+function cancelQuantityInput(){
   const modal = document.getElementById('quantityModal');
   pendingScannedCode = null;
   modal.classList.add('hidden');
   
-  // Resume scanning automatically
+  // Scanner continues automatically - no need to restart
   if (scannerActive && !qrScanMode) {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      await startScanner();
-    } catch (restartErr) {
-      console.error('Kunne ikke genstarte scanning:', restartErr);
-      updateStatus('Fejl ved genstart af scanning', 'waiting');
-    }
+    updateStatus('Peger på stregkoden...', 'scanning');
   }
 }
 
@@ -644,14 +621,24 @@ function handleVarelagerQR(qrData){
     // Reload items
     allItems = importedData.masterVarelager;
     
+    // Store lagerLokationer for reference
+    if (importedData.lagerLokationer && Array.isArray(importedData.lagerLokationer)) {
+      console.log('Imported locations:', importedData.lagerLokationer);
+    }
+    
     // Stop scanner
     stopScanner();
     qrScanMode = false;
     
-    alert('✅ Varelager importeret!\n\n' + allItems.length + ' varer er nu tilgængelige.');
-    updateStatus('✅ Varelager importeret: ' + allItems.length + ' varer', 'success');
+    const locationInfo = importedData.lagerLokationer && importedData.lagerLokationer.length > 0 
+      ? '\n📍 Placeringer: ' + importedData.lagerLokationer.join(', ')
+      : '';
+    
+    alert('✅ Varelager importeret!\n\n' + allItems.length + ' varer er nu tilgængelige.' + locationInfo);
+    updateStatus('✅ Varelager importeret: ' + allItems.length + ' varer' + locationInfo, 'success');
     
     console.log('Imported varelager from QR:', allItems.length, 'items');
+    console.log('Imported locations:', importedData.lagerLokationer);
   } catch(err) {
     console.error('Error importing from QR:', err);
     updateStatus('❌ Fejl ved import: ' + err.message, 'error');
@@ -707,8 +694,16 @@ function importVarelager(){
         // Reload items
         allItems = importedData.masterVarelager;
         
-        alert('✅ Varelager importeret!\n\n' + allItems.length + ' varer er nu tilgængelige.');
-        updateStatus('✅ Varelager importeret: ' + allItems.length + ' varer', 'success');
+        const locationInfo = importedData.lagerLokationer && importedData.lagerLokationer.length > 0 
+          ? '\n📍 Placeringer: ' + importedData.lagerLokationer.join(', ')
+          : '';
+        
+        alert('✅ Varelager importeret!\n\n' + allItems.length + ' varer er nu tilgængelige.' + locationInfo);
+        updateStatus('✅ Varelager importeret: ' + allItems.length + ' varer' + locationInfo, 'success');
+        
+        if (importedData.lagerLokationer && Array.isArray(importedData.lagerLokationer)) {
+          console.log('Imported locations:', importedData.lagerLokationer);
+        }
         
         console.log('Imported varelager:', allItems.length, 'items');
       } catch(err) {
@@ -870,11 +865,69 @@ function finishSession(){
     updateStats();
     renderList();
     
-    alert(`✅ Optælling afsluttet!\n\n📊 Total varer: ${totalItems}\n📍 Lokationer: ${locationsCount}\n\nRapporten er nu tilgængelig i hovedprogrammet under "Rapporter".`);
+    const exportInfo = `\n\n💡 Tip: Hvis rapporterne ikke vises automatisk i hovedprogrammet, brug "📤 Eksport rapporter" knappen og importer i hovedprogrammet under "Opsætning" → "Import data" → "📷 Importer Scanner Data".`;
+    
+    alert(`✅ Optælling afsluttet!\n\n📊 Total varer: ${totalItems}\n📍 Lokationer: ${locationsCount}\n\nRapporten er nu gemt.${exportInfo}`);
     
   } catch(err){
     console.error('Fejl ved oprettelse af rapport:', err);
     updateStatus('Fejl ved oprettelse af rapport: ' + err.message, 'error');
+  }
+}
+
+// Export reports for transfer to main program
+function exportReports(){
+  try {
+    const storageKey = 'køkkenlager_data';
+    const dataStr = localStorage.getItem(storageKey);
+    
+    if (!dataStr) {
+      alert('⚠️ Ingen data fundet at eksportere.');
+      return;
+    }
+    
+    const data = JSON.parse(dataStr);
+    
+    if (!data.reports || !Array.isArray(data.reports) || data.reports.length === 0) {
+      alert('⚠️ Ingen rapporter at eksportere.\n\nAfslut en optælling først.');
+      return;
+    }
+    
+    // Filter only scanner reports (reports created by this app)
+    const scannerReports = data.reports.filter(r => 
+      r.handling && r.handling.startsWith('Stregkode scanner')
+    );
+    
+    if (scannerReports.length === 0) {
+      alert('⚠️ Ingen scanner rapporter at eksportere.\n\nAfslut en optælling først.');
+      return;
+    }
+    
+    // Create export data
+    const exportData = {
+      reports: scannerReports,
+      sessionCounter: data.sessionCounter || 0,
+      exportedAt: Date.now(),
+      version: '1.0',
+      source: 'stregkode-scanner'
+    };
+    
+    // Create download
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `scanner-rapporter-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    alert(`✅ ${scannerReports.length} rapport(er) eksporteret!\n\n📥 Filen er downloadet.\n\n💡 I hovedprogrammet: Gå til "Opsætning" → "Import data" → "📷 Importer Scanner Data" og vælg filen.`);
+    
+  } catch(err) {
+    console.error('Fejl ved eksport:', err);
+    alert('❌ Fejl ved eksport: ' + err.message);
   }
 }
 

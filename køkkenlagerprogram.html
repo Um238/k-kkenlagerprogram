@@ -6825,6 +6825,94 @@ function importManualCountingData(){
 /* Import scanner data from scanner app */
 function importScannerData(){
   try{
+    // First, try to import from file (exported reports)
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = function(e) {
+      const file = e.target.files[0];
+      if (!file) {
+        // User cancelled - try localStorage method
+        importScannerDataFromStorage();
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const importedData = JSON.parse(e.target.result);
+          
+          // Check if this is a scanner reports export
+          if (importedData.reports && Array.isArray(importedData.reports) && importedData.source === 'stregkode-scanner') {
+            // Import reports directly
+            const storageKey = 'køkkenlager_data';
+            let data = {};
+            const existingData = localStorage.getItem(storageKey);
+            if (existingData) {
+              try {
+                data = JSON.parse(existingData);
+              } catch(err) {
+                console.warn('Could not parse existing data:', err);
+              }
+            }
+            
+            if (!data.reports || !Array.isArray(data.reports)) {
+              data.reports = [];
+            }
+            
+            // Add imported reports (avoid duplicates)
+            let added = 0;
+            importedData.reports.forEach(report => {
+              const exists = data.reports.some(r => 
+                r.handling === report.handling && 
+                Math.abs(r.ts - report.ts) < 1000
+              );
+              
+              if (!exists) {
+                data.reports.unshift(report);
+                added++;
+              }
+            });
+            
+            // Update sessionCounter if needed
+            if (importedData.sessionCounter && importedData.sessionCounter > (data.sessionCounter || 0)) {
+              data.sessionCounter = importedData.sessionCounter;
+            }
+            
+            // Save data
+            localStorage.setItem(storageKey, JSON.stringify(data));
+            
+            // Reload reports
+            reports = data.reports;
+            if (data.sessionCounter) sessionCounter = data.sessionCounter;
+            
+            renderReports();
+            updateLogPreview();
+            saveAllData();
+            
+            alert(`✅ ${added} rapport(er) importeret!\n\nRapporterne er nu tilgængelige under "Rapporter" fanen.`);
+            return;
+          }
+        } catch(err) {
+          console.error('Error importing from file:', err);
+          alert('❌ Fejl ved import: ' + err.message + '\n\nPrøver localStorage metode...');
+        }
+        
+        // If file import failed, try localStorage
+        importScannerDataFromStorage();
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+    
+  } catch(err){
+    console.error('Fejl ved import af scanner data:', err);
+    alert('Fejl ved import: ' + err.message);
+  }
+}
+
+function importScannerDataFromStorage(){
+  try{
     // Find alle localStorage keys der starter med 'lager_scans_'
     const scannerKeys = [];
     for(let i = 0; i < localStorage.length; i++){
@@ -6835,7 +6923,7 @@ function importScannerData(){
     }
     
     if(scannerKeys.length === 0){
-      alert('Ingen scanner data fundet.\n\nBrug scanner app til at scanne stregkoder først.');
+      alert('Ingen scanner data fundet.\n\nBrug scanner app til at scanne stregkoder først, eller eksporter rapporter fra scanner-appen.');
       return;
     }
     
