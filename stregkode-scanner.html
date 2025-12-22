@@ -245,25 +245,6 @@ body {
   margin-top: 4px;
 }
 
-.location-section {
-  padding: 20px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.location-select {
-  width: 100%;
-  padding: 15px;
-  font-size: 16px;
-  border: 2px solid #ddd;
-  border-radius: 8px;
-  outline: none;
-  margin-bottom: 10px;
-}
-
-.location-select:focus {
-  border-color: #0078D4;
-}
-
 .manual-input-section {
   padding: 20px;
   border-top: 1px solid #e0e0e0;
@@ -288,31 +269,40 @@ body {
 <body>
   <div class="container">
     <div class="header">
-      <h1>📷 Stregkode Scanner</h1>
+      <h1>📷 Stregkode Scanner <span style="color:#ff0000; font-weight:bold; font-size:28px;">V 2.0</span></h1>
       <div style="font-size:14px; opacity:0.9;">Scan stregkoder og optæl varer</div>
     </div>
 
-    <div id="sessionInfo" class="session-info">
-      <div class="session-name" id="sessionName">Ingen aktiv optælling</div>
-      <div class="session-location" id="sessionLocation">Vælg lokation for at starte</div>
+    <div id="sessionInfo" class="session-info active">
+      <div class="session-name" id="sessionName">Stregkode Scanner</div>
+      <div class="session-location" id="sessionLocation">Scan stregkoder - lokation findes automatisk</div>
     </div>
 
-    <div id="locationSection" class="location-section">
-      <label style="display:block; margin-bottom:10px; font-weight:600;">📍 Vælg lokation:</label>
-      <select id="locationSelect" class="location-select">
-        <option value="">Vælg lokation...</option>
-      </select>
-      <button class="btn btn-primary" onclick="startSession()" style="width:100%;">▶️ Start optælling</button>
+    <div id="installPrompt" style="display:none; padding:15px 20px; background:#E3F2FD; border-bottom:2px solid #0078D4; text-align:center;">
+      <div style="font-size:14px; margin-bottom:10px; color:#0078D4; font-weight:600;">📱 Tilføj til hjem-skærmen for nem adgang</div>
+      <button id="installBtn" class="btn btn-primary" style="width:100%; max-width:300px; margin:0 auto;">➕ Tilføj til hjem-skærm</button>
+      <div id="installInstructions" style="display:none; margin-top:15px; padding:10px; background:white; border-radius:8px; font-size:12px; color:#666; text-align:left;">
+        <strong>Android (Chrome):</strong><br>
+        1. Tryk på ⋮ menu (øverst til højre)<br>
+        2. Vælg "Tilføj til hjem-skærm" eller "Installér app"<br>
+        3. Bekræft installation<br><br>
+        <strong>iPhone (Safari):</strong><br>
+        1. Tryk på del-knappen (nederst i midten)<br>
+        2. Scroll ned og vælg "Tilføj til hjem-skærm"<br>
+        3. Bekræft
+      </div>
     </div>
 
     <div id="statusMessage" class="status-message"></div>
 
-    <div id="scannerSection" class="scanner-section" style="display:none;">
-      <video id="scannerVideo" autoplay playsinline></video>
+    <div id="scannerSection" class="scanner-section">
+      <div id="scannerVideo" style="width: 100%; max-height: 400px; background: #000; border-radius: 8px;"></div>
       <div class="scanner-controls">
         <button id="startScannerBtn" class="btn btn-primary" onclick="startScanner()">📷 Start scanner</button>
         <button id="stopScannerBtn" class="btn btn-secondary" onclick="stopScanner()" style="display:none;">⏹️ Stop scanner</button>
         <button id="manualInputBtn" class="btn btn-secondary" onclick="toggleManualInput()">✏️ Indtast manuelt</button>
+        <button class="btn btn-secondary" onclick="testLibraries()" style="margin-top:10px; background:#6c757d;">🧪 Test Biblioteker</button>
+        <div id="testResult" style="margin-top:10px; font-size:12px; color:#666; padding:10px; background:#f9f9f9; border-radius:6px; display:none;"></div>
       </div>
       
       <div id="manualInputSection" class="manual-input-section" style="display:none;">
@@ -327,7 +317,7 @@ body {
       </div>
     </div>
 
-    <div id="stats" class="stats" style="display:none;">
+    <div id="stats" class="stats">
       <div class="stat-item">
         <div class="stat-value" id="totalScanned">0</div>
         <div class="stat-label">Total scannet</div>
@@ -338,27 +328,28 @@ body {
       </div>
     </div>
 
-    <div id="scannedItems" class="scanned-items" style="display:none;">
+    <div id="scannedItems" class="scanned-items">
       <div id="scannedItemsList"></div>
     </div>
 
-    <div id="footerActions" class="footer-actions" style="display:none;">
+    <div id="footerActions" class="footer-actions">
       <button class="btn btn-success" onclick="finishSession()" style="flex:2;">✅ Afslut optælling</button>
       <button class="btn btn-danger" onclick="clearAll()">🗑️ Ryd alt</button>
     </div>
   </div>
 
-  <!-- ZXing for barcode scanning -->
-  <script src="https://unpkg.com/@zxing/library@0.19.1"></script>
+  <!-- Html5Qrcode - virker bedre på Android mobile -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <script>
     // State
-    let selectedLocation = '';
     let scannedItems = {}; // { barcode: { vare, count } }
     let scannerActive = false;
-    let codeReader = null;
-    let scannerStream = null;
+    let html5QrCode = null;
     let allItems = []; // masterVarelager
+    let lastScannedCode = null;
+    let lastScanTime = 0;
+    const SCAN_COOLDOWN = 1500; // 1.5 sekunder mellem scans
 
     // Helper functions
     function $(id) {
@@ -405,51 +396,16 @@ body {
       }
     }
 
-    // Load locations from main app
-    function loadLocations() {
-      try {
-        const storageKey = 'køkkenlager_data';
-        const dataStr = localStorage.getItem(storageKey);
-        if (!dataStr) return;
-        
-        const data = JSON.parse(dataStr);
-        const locations = data.lagerLokationer || ['Køl', 'Frost', 'Tørevare', 'Grønt'];
-        
-        const select = $('locationSelect');
-        if (!select) return;
-        
-        select.innerHTML = '<option value="">Vælg lokation...</option>';
-        locations.forEach(loc => {
-          const option = document.createElement('option');
-          option.value = loc;
-          option.textContent = loc;
-          select.appendChild(option);
-        });
-      } catch (err) {
-        console.error('Fejl ved indlæsning af lokationer:', err);
-      }
-    }
-
-    // Start session
-    function startSession() {
-      const location = $('locationSelect').value;
-      if (!location) {
-        showStatus('Vælg en lokation først', 'error');
-        return;
-      }
-      
+    // Initialize scanner - start immediately
+    function initScanner() {
       if (!loadItemsFromMainApp()) {
         return;
       }
       
-      selectedLocation = location;
-      
       // Update UI
-      $('sessionInfo').classList.add('active');
-      $('sessionName').textContent = 'Optælling i gang';
-      $('sessionLocation').textContent = 'Lokation: ' + location;
+      $('sessionName').textContent = 'Stregkode Scanner';
+      $('sessionLocation').textContent = 'Klar til scanning - lokation findes automatisk';
       
-      $('locationSection').style.display = 'none';
       $('scannerSection').style.display = 'block';
       $('stats').style.display = 'flex';
       $('scannedItems').style.display = 'block';
@@ -459,119 +415,112 @@ body {
       renderScannedItems();
     }
 
-    // Start scanner
+    // Start scanner - using Html5Qrcode (works better on Android)
     async function startScanner() {
-      if (scannerActive) {
-        stopScanner();
-        return;
+      // Stop existing scanning first if active
+      if (html5QrCode && html5QrCode.isScanning) {
+        try {
+          await html5QrCode.stop();
+          html5QrCode.clear();
+        } catch (stopErr) {
+          console.warn('Fejl ved stop af eksisterende scanning:', stopErr);
+        }
       }
-      
-      if (typeof ZXing === 'undefined' || !ZXing.BrowserMultiFormatReader) {
-        showStatus('Barcode scanner library ikke indlæst. Genindlæs siden og prøv igen.', 'error');
-        return;
-      }
-      
-      const video = $('scannerVideo');
-      if (!video) return;
       
       try {
-        // Check for camera access
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
           showStatus('Kamera API ikke tilgængelig. Brug HTTPS eller localhost.', 'error');
           return;
         }
         
-        // Get camera access
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: 'environment', // Back camera on mobile
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          }
-        });
+        if (typeof Html5Qrcode === 'undefined') {
+          showStatus('Html5Qrcode bibliotek ikke indlæst. Genindlæs siden og prøv igen.', 'error');
+          return;
+        }
         
-        scannerStream = stream;
-        video.srcObject = stream;
+        const video = $('scannerVideo');
+        if (!video) return;
+        
+        showStatus('Starter kamera...', 'info');
         video.style.display = 'block';
         scannerActive = true;
         
-        // Wait for video to start
-        await new Promise((resolve) => {
-          const timeout = setTimeout(resolve, 2000);
-          video.onloadedmetadata = () => {
-            clearTimeout(timeout);
-            video.play().then(resolve).catch(resolve);
-          };
-        });
+        html5QrCode = new Html5Qrcode("scannerVideo");
         
-        // Initialize ZXing
-        const { BrowserMultiFormatReader } = ZXing;
-        codeReader = new BrowserMultiFormatReader();
+        const config = {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0
+          // Html5Qrcode scanner automatisk både QR-koder og stregkoder (EAN, UPC, CODE_128, osv.)
+        };
         
-        // Update buttons
-        $('startScannerBtn').style.display = 'none';
-        $('stopScannerBtn').style.display = 'inline-block';
-        
-        // Start scanning
-        codeReader.decodeFromVideoDevice(null, video, (result, err) => {
-          if (result) {
-            let code = null;
-            if (typeof result === 'string') {
-              code = result;
-            } else if (result.text) {
-              code = result.text;
-            } else if (result.getText) {
-              code = result.getText();
-            } else {
-              code = String(result);
+        try {
+          await html5QrCode.start(
+            { facingMode: "environment" }, // Brug bagkamera
+            config,
+            (decodedText, decodedResult) => {
+              console.log('✅ Scannet stregkode/QR-kode:', decodedText);
+              const now = Date.now();
+              
+              // Undgå duplikater
+              if (now - lastScanTime < SCAN_COOLDOWN && decodedText === lastScannedCode) {
+                return;
+              }
+              
+              lastScannedCode = decodedText;
+              lastScanTime = now;
+              
+              // Handle scanned barcode
+              handleScannedBarcode(decodedText);
+            },
+            (errorMessage) => {
+              // Ignorer scanning fejl - de er normale når der ikke er fundet noget
             }
-            
-            if (code) {
-              handleScannedBarcode(code);
-            }
-          }
-          if (err) {
-            // Ignore NotFoundException - it's normal
-            const isNormalError = err.name === 'NotFoundException' || 
-                                 err.name === 'NotFoundError' || 
-                                 (err.message && err.message.includes('not found'));
-            if (!isNormalError) {
-              console.error('Scan fejl:', err);
-            }
-          }
-        });
+          );
+          
+          showStatus('Scanner aktiv - Peg på stregkoden', 'info');
+          $('startScannerBtn').style.display = 'none';
+          $('stopScannerBtn').style.display = 'inline-block';
+          console.log('✅ Scanning startet med Html5Qrcode');
+          
+        } catch (scanErr) {
+          console.error('Fejl ved start af scanning:', scanErr);
+          showStatus('Fejl ved start af scanning: ' + (scanErr.message || scanErr), 'error');
+          scannerActive = false;
+          video.style.display = 'none';
+          $('startScannerBtn').style.display = 'inline-block';
+          $('stopScannerBtn').style.display = 'none';
+        }
         
-        showStatus('Scanner aktiv - Peg på stregkoden', 'info');
-      } catch (err) {
-        console.error('Fejl ved start af scanner:', err);
-        showStatus('Fejl ved start af scanner: ' + err.message, 'error');
+      } catch (error) {
+        console.error('Kamera fejl:', error);
+        showStatus('Fejl: ' + error.message, 'error');
         scannerActive = false;
+        $('scannerVideo').style.display = 'none';
+        $('startScannerBtn').style.display = 'inline-block';
+        $('stopScannerBtn').style.display = 'none';
       }
     }
 
     // Stop scanner
-    function stopScanner() {
-      if (codeReader) {
-        try {
-          codeReader.reset();
-        } catch (e) {
-          console.warn('Fejl ved reset af scanner:', e);
-        }
-        codeReader = null;
-      }
+    async function stopScanner() {
+      scannerActive = false;
       
-      if (scannerStream) {
-        scannerStream.getTracks().forEach(track => track.stop());
-        scannerStream = null;
+      if (html5QrCode && html5QrCode.isScanning) {
+        try {
+          await html5QrCode.stop();
+          html5QrCode.clear();
+        } catch (e) {
+          console.warn('Fejl ved stop af scanner:', e);
+        }
+        html5QrCode = null;
       }
       
       const video = $('scannerVideo');
       if (video) {
-        video.srcObject = null;
         video.style.display = 'none';
       }
       
-      scannerActive = false;
       $('startScannerBtn').style.display = 'inline-block';
       $('stopScannerBtn').style.display = 'none';
       showStatus('Scanner stoppet', 'info');
@@ -639,9 +588,21 @@ body {
       
       $('totalScanned').textContent = total;
       $('uniqueItems').textContent = unique;
+      
+      // Update session location info
+      const items = Object.values(scannedItems);
+      if (items.length > 0) {
+        const locations = [...new Set(items.map(item => item.vare.placering || 'Ikke angivet'))];
+        const locationText = locations.length === 1 
+          ? `Lokation: ${locations[0]}` 
+          : `${locations.length} lokationer: ${locations.join(', ')}`;
+        $('sessionLocation').textContent = locationText;
+      } else {
+        $('sessionLocation').textContent = 'Scan stregkoder - lokation findes automatisk';
+      }
     }
 
-    // Render scanned items
+    // Render scanned items - grouped by location
     function renderScannedItems() {
       const container = $('scannedItemsList');
       if (!container) return;
@@ -653,22 +614,43 @@ body {
         return;
       }
       
-      container.innerHTML = items.map(item => {
-        const v = item.vare;
-        return `
-          <div class="scanned-item">
-            <div class="scanned-item-info">
-              <div class="scanned-item-name">${v.navn}</div>
-              <div class="scanned-item-details">
-                ${v.maaleenhed || 'stk'} • ${v.placering || 'Ingen placering'}
-                ${v.reolNr ? ' • Reol ' + v.reolNr : ''}
-                ${v.hylleNr ? ' • Hylle ' + v.hylleNr : ''}
+      // Group items by location
+      const itemsByLocation = {};
+      items.forEach(item => {
+        const location = item.vare.placering || 'Ingen placering';
+        if (!itemsByLocation[location]) {
+          itemsByLocation[location] = [];
+        }
+        itemsByLocation[location].push(item);
+      });
+      
+      // Render grouped
+      let html = '';
+      Object.keys(itemsByLocation).sort().forEach(location => {
+        html += `<div style="margin-bottom:20px; padding:10px; background:#f0f0f0; border-radius:8px;">`;
+        html += `<div style="font-weight:700; font-size:16px; color:#0078D4; margin-bottom:10px; padding-bottom:8px; border-bottom:2px solid #0078D4;">📍 ${location}</div>`;
+        
+        itemsByLocation[location].forEach(item => {
+          const v = item.vare;
+          html += `
+            <div class="scanned-item" style="margin-bottom:8px;">
+              <div class="scanned-item-info">
+                <div class="scanned-item-name">${v.navn}</div>
+                <div class="scanned-item-details">
+                  ${v.maaleenhed || 'stk'}
+                  ${v.reolNr ? ' • Reol ' + v.reolNr : ''}
+                  ${v.hylleNr ? ' • Hylle ' + v.hylleNr : ''}
+                </div>
               </div>
+              <div class="scanned-item-count">${item.count}</div>
             </div>
-            <div class="scanned-item-count">${item.count}</div>
-          </div>
-        `;
-      }).join('');
+          `;
+        });
+        
+        html += `</div>`;
+      });
+      
+      container.innerHTML = html;
     }
 
     // Clear all
@@ -683,13 +665,8 @@ body {
       showStatus('Alle varer ryddet', 'success');
     }
 
-    // Finish session
+    // Finish session - create report directly
     function finishSession() {
-      if (!selectedLocation) {
-        showStatus('Vælg en lokation først', 'error');
-        return;
-      }
-      
       const items = Object.values(scannedItems);
       if (items.length === 0) {
         showStatus('⚠️ Ingen varer scannet. Tilføj varer før du afslutter.', 'error');
@@ -702,26 +679,124 @@ body {
       }
       
       try {
-        // Prepare data in same format as manuel-optaelling
-        const manualData = {
-          location: selectedLocation,
-          items: items.map(item => ({
-            id: item.vare.id,
-            navn: item.vare.navn,
-            maaleenhed: item.vare.maaleenhed || 'stk',
-            quantity: item.count
-          }))
-        };
+        // Group items by location
+        const itemsByLocation = {};
+        items.forEach(item => {
+          const location = item.vare.placering || 'Ikke angivet';
+          if (!itemsByLocation[location]) {
+            itemsByLocation[location] = [];
+          }
+          itemsByLocation[location].push(item);
+        });
         
-        // Save to localStorage (same key as manuel-optaelling uses)
-        localStorage.setItem('manuelOptaelData', JSON.stringify(manualData));
+        // Get session counter from main app
+        const storageKey = 'køkkenlager_data';
+        let data = {};
+        const existingData = localStorage.getItem(storageKey);
+        if (existingData) {
+          try {
+            data = JSON.parse(existingData);
+          } catch (e) {
+            console.error('Error parsing existing data:', e);
+            data = {};
+          }
+        }
         
-        showStatus('✅ Optælling gemt! Du kan nu importere den i hovedprogrammet.', 'success');
+        let sessionCounter = (data.sessionCounter || 0) + 1;
+        
+        // Create report for each location (grouped)
+        const reports = [];
+        Object.keys(itemsByLocation).sort().forEach(location => {
+          const locationItems = itemsByLocation[location];
+          const details = [];
+          let grandTotal = 0;
+          
+          locationItems.forEach(item => {
+            const v = item.vare;
+            const antal = Number(item.count) || 0;
+            const pris = Number(v.pris) || 0;
+            const linjetotal = antal * pris;
+            grandTotal += linjetotal;
+            
+            const detailItem = {
+              vareId: v.id,
+              navn: v.navn || 'Ukendt',
+              maaleenhed: v.maaleenhed || 'stk',
+              pris: pris,
+              antal: antal,
+              linjetotal: linjetotal,
+              placering: location
+            };
+            
+            // Add reol and hylle if available
+            if (v.reolNr) detailItem.reolNr = v.reolNr;
+            if (v.hylleNr) detailItem.hylleNr = v.hylleNr;
+            
+            details.push(detailItem);
+          });
+          
+          // Create report (same format as main app)
+          const report = {
+            ts: Date.now(),
+            handling: `Stregkode scanner - ${location}`,
+            type: 'session',
+            scope: location,
+            details: details,
+            total: grandTotal
+          };
+          
+          reports.push(report);
+        });
+        
+        // Preserve ALL existing data
+        if (!data.reports || !Array.isArray(data.reports)) {
+          data.reports = [];
+        }
+        
+        // Add all reports to beginning of reports array
+        reports.forEach(report => {
+          // Check if report already exists
+          const reportExists = data.reports.some(r => 
+            r.handling === report.handling && 
+            Math.abs(r.ts - report.ts) < 1000
+          );
+          
+          if (!reportExists) {
+            data.reports.unshift(report);
+            console.log('✅ New report added:', report.handling);
+          }
+        });
+        
+        // Update sessionCounter
+        data.sessionCounter = sessionCounter;
+        
+        // Clear active session
+        data.activeSession = null;
+        
+        // Add/update metadata
+        data.version = data.version || '1.0';
+        data.savedAt = Date.now();
+        
+        // Save all data to localStorage
+        const savedData = JSON.stringify(data);
+        localStorage.setItem(storageKey, savedData);
+        localStorage.removeItem('activeSession');
+        
+        const totalItems = items.reduce((sum, item) => sum + item.count, 0);
+        const locationsCount = Object.keys(itemsByLocation).length;
+        
+        showStatus(`✅ Rapport oprettet! ${totalItems} varer i ${locationsCount} lokation(er)`, 'success');
+        
+        console.log('✅ Reports saved successfully:', reports.length);
+        console.log('Total reports in array:', data.reports.length);
         
         // Reset after 3 seconds
         setTimeout(() => {
-          if (confirm('Optælling gemt! Vil du starte en ny optælling?')) {
-            location.reload();
+          if (confirm(`Rapport oprettet!\n\n${totalItems} varer i ${locationsCount} lokation(er)\n\nVil du starte en ny optælling?`)) {
+            scannedItems = {};
+            updateStats();
+            renderScannedItems();
+            showStatus('Klar til ny optælling', 'info');
           }
         }, 3000);
         
@@ -731,10 +806,116 @@ body {
       }
     }
 
+    // Test libraries function
+    function testLibraries() {
+      const testResult = $('testResult');
+      if (!testResult) return;
+      
+      let results = [];
+      
+      // Test Html5Qrcode
+      if (typeof Html5Qrcode !== 'undefined') {
+        results.push('✅ Html5Qrcode bibliotek: OK');
+      } else {
+        results.push('❌ Html5Qrcode bibliotek: IKKE INDLÆST');
+      }
+      
+      // Test kamera API
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        results.push('✅ Kamera API: Tilgængelig');
+      } else {
+        results.push('❌ Kamera API: Ikke tilgængelig (kræver HTTPS)');
+      }
+      
+      // Test HTTPS
+      const isSecure = window.location.protocol === 'https:' || 
+                     window.location.hostname === 'localhost' || 
+                     window.location.hostname === '127.0.0.1';
+      if (isSecure) {
+        results.push(`✅ Sikkerhed: ${window.location.protocol}//${window.location.hostname}`);
+      } else {
+        results.push(`⚠️ Sikkerhed: ${window.location.protocol} (HTTPS anbefalet)`);
+      }
+      
+      testResult.innerHTML = results.join('<br>');
+      testResult.style.display = 'block';
+    }
+
+    // PWA Install prompt
+    let deferredPrompt;
+    const installPromptEl = $('installPrompt');
+    const installBtn = $('installBtn');
+    const installInstructions = $('installInstructions');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later
+      deferredPrompt = e;
+      // Show install button
+      if (installPromptEl) {
+        installPromptEl.style.display = 'block';
+      }
+    });
+
+    if (installBtn) {
+      installBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) {
+          // Show manual instructions
+          if (installInstructions) {
+            installInstructions.style.display = 'block';
+          }
+          return;
+        }
+        
+        // Show the install prompt
+        deferredPrompt.prompt();
+        
+        // Wait for the user to respond to the prompt
+        const { outcome } = await deferredPrompt.userChoice;
+        
+        console.log(`User response to install prompt: ${outcome}`);
+        
+        // Clear the deferredPrompt
+        deferredPrompt = null;
+        
+        // Hide install button
+        if (installPromptEl) {
+          installPromptEl.style.display = 'none';
+        }
+      });
+    }
+
+    // Check if already installed
+    window.addEventListener('appinstalled', () => {
+      console.log('PWA was installed');
+      if (installPromptEl) {
+        installPromptEl.style.display = 'none';
+      }
+      showStatus('✅ App installeret! Du kan nu åbne den fra hjem-skærmen.', 'success');
+    });
+
+    // Show install instructions on iOS (Safari doesn't support beforeinstallprompt)
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                        window.navigator.standalone || 
+                        document.referrer.includes('android-app://');
+    
+    if (isIOS && !isStandalone && installPromptEl) {
+      installPromptEl.style.display = 'block';
+      if (installInstructions) {
+        installInstructions.style.display = 'block';
+      }
+    }
+
     // Initialize
     function init() {
-      loadLocations();
-      loadItemsFromMainApp();
+      initScanner();
+      
+      // Test libraries automatically after 2 seconds
+      setTimeout(() => {
+        testLibraries();
+      }, 2000);
     }
 
     // Start when page loads
@@ -742,4 +923,3 @@ body {
   </script>
 </body>
 </html>
-
