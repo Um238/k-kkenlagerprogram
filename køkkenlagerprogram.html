@@ -19,8 +19,8 @@
 body{font-family:var(--mono); margin:0; background:var(--bg); color:#222;-webkit-font-smoothing:antialiased}
 header{background:var(--green); color:#fff; padding:12px 20px; display:flex; gap:16px; align-items:center; flex-wrap:wrap; border-bottom:4px solid rgba(0,0,0,0.03)}
 /* [CSS 2] Logo */
-header .logo-wrap{display:flex;align-items:center;gap:12px}
-.logo-svg{height:70px; width:70px; border-radius:50%; background:transparent; padding:4px; box-shadow:0 4px 12px rgba(0,0,0,0.15); filter:drop-shadow(0 2px 8px rgba(0,120,212,0.3))}
+header .logo-wrap{display:flex;align-items:center;gap:16px}
+.logo-svg{height:120px; width:120px; border-radius:8px; background:#fff; padding:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); filter:drop-shadow(0 2px 8px rgba(0,120,212,0.3))}
 header h1{margin:0;font-size:20px;font-weight:800}
 header p{margin:4px 0 0 0;font-size:13px;font-weight:600;opacity:0.95}
 .header-controls{min-width:220px;display:flex;gap:8px;align-items:center}
@@ -127,14 +127,28 @@ a:hover{color:#45a049;text-decoration:none}
 
 /* [CSS 13] Opsætning Sidebar (Word-style) */
 .settings-page{display:flex;gap:0;max-width:1400px;margin:0 auto;background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
-.settings-sidebar{width:280px;background:#f8f9fa;border-right:1px solid #e0e0e0;padding:0;min-height:600px;border-radius:8px 0 0 8px}
-.settings-sidebar .settings-category{padding:16px 20px;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid #e0e0e0;background:#f0f0f0}
+.settings-sidebar{width:280px;background:#f8f9fa;border-right:1px solid #e0e0e0;padding:0;min-height:600px;border-radius:8px 0 0 8px;transition:width 0.3s ease, opacity 0.3s ease;position:relative;overflow:hidden}
+.settings-sidebar.collapsed{width:0;opacity:0}
+.settings-sidebar-toggle{width:30px;height:30px;background:var(--green);color:white;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;z-index:1000;box-shadow:0 2px 4px rgba(0,0,0,0.2);transition:all 0.3s ease;pointer-events:auto;position:absolute;top:10px;left:10px;visibility:visible !important;opacity:1 !important}
+.settings-sidebar-toggle:hover{transform:scale(1.1)}
+.settings-sidebar-toggle::after{font-size:16px;line-height:1;content:'◀'}
+.settings-sidebar-toggle[data-state="closed"]::after{content:'▶'}
+.settings-sidebar-toggle[data-state="open"]::after{content:'◀'}
+#reportsSidebar.collapsed ~ .settings-content .settings-sidebar-toggle::after{content:'▶'}
+#masterSidebar.collapsed ~ .settings-content .settings-sidebar-toggle::after{content:'▶'}
+#settingsSidebar.collapsed ~ .settings-content .settings-sidebar-toggle::after{content:'▶'}
+#reportsSidebar:not(.collapsed) ~ .settings-content .settings-sidebar-toggle::after{content:'◀'}
+#masterSidebar:not(.collapsed) ~ .settings-content .settings-sidebar-toggle::after{content:'◀'}
+#settingsSidebar:not(.collapsed) ~ .settings-content .settings-sidebar-toggle::after{content:'◀'}
+.settings-sidebar .settings-category{padding:16px 20px;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid #e0e0e0;background:#f0f0f0;display:flex;align-items:center;justify-content:space-between}
 .settings-sidebar .settings-item{display:flex;align-items:center;gap:12px;padding:12px 20px;cursor:pointer;border-bottom:1px solid #f0f0f0;color:#333;font-size:14px;transition:all 0.15s;border-left:3px solid transparent}
 .settings-sidebar .settings-item:hover{background:#f0f0f0}
 .settings-sidebar .settings-item.active{background:#E3F2FD;border-left:3px solid var(--green);font-weight:600;color:#005A9E}
 .settings-sidebar .settings-item-icon{font-size:20px;width:28px;text-align:center;flex-shrink:0}
-.settings-content{flex:1;padding:32px 40px;background:#fff;border-radius:0 8px 8px 0}
-.settings-content h2{margin-top:0;margin-bottom:8px;font-size:28px;color:#333;font-weight:600}
+.settings-content{flex:1;padding:32px 40px;background:#fff;border-radius:0 8px 8px 0;transition:margin-left 0.3s ease;position:relative}
+.settings-content.sidebar-collapsed{margin-left:0}
+.settings-content h2{margin-top:20px;margin-bottom:8px;font-size:28px;color:#333;font-weight:600}
+.settings-content .settings-sidebar-toggle{position:absolute;top:10px;left:10px}
 .settings-content .settings-description{margin-bottom:32px;color:#666;font-size:14px;line-height:1.6}
 .settings-section{display:none;animation:fadeIn 0.25s ease-in}
 .settings-section.active{display:block}
@@ -155,6 +169,173 @@ a:hover{color:#45a049;text-decoration:none}
   .settings-option-action button{width:100%}
 }
 </style>
+
+<!-- ================================
+     KODEBESKYTTELSE - Forhindrer visning af kildekode
+     PLACERET I HEAD FOR AT VIRKE MED DET SAMME
+     ================================ -->
+<script>
+(function(){
+  'use strict';
+  
+  // Bloker højreklik - MEGET AGGRESSIV
+  document.addEventListener('contextmenu', function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    return false;
+  }, true);
+  
+  // Bloker alle keyboard shortcuts til kildekode
+  document.addEventListener('keydown', function(e){
+    // F12 (Developer Tools)
+    if(e.keyCode === 123 || e.key === 'F12' || e.keyCode === 116){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return false;
+    }
+    // Ctrl+Shift+I (Chrome DevTools)
+    if((e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.key === 'I' || e.key === 'i'))){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return false;
+    }
+    // Ctrl+Shift+J (Chrome Console)
+    if((e.ctrlKey && e.shiftKey && (e.keyCode === 74 || e.key === 'J' || e.key === 'j'))){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return false;
+    }
+    // Ctrl+U (View Source)
+    if((e.ctrlKey && (e.keyCode === 85 || e.key === 'u' || e.key === 'U'))){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return false;
+    }
+    // Ctrl+S (Save Page)
+    if((e.ctrlKey && (e.keyCode === 83 || e.key === 's' || e.key === 'S')) && !e.shiftKey){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return false;
+    }
+    // Ctrl+Shift+C (Element Inspector)
+    if((e.ctrlKey && e.shiftKey && (e.keyCode === 67 || e.key === 'C' || e.key === 'c'))){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return false;
+    }
+    // Ctrl+Shift+K (Firefox Console)
+    if((e.ctrlKey && e.shiftKey && (e.keyCode === 75 || e.key === 'K' || e.key === 'k'))){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return false;
+    }
+  }, true);
+  
+  // Bloker drag and drop
+  document.addEventListener('dragstart', function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  }, true);
+  
+  // Bloker tekst markering (valgfrit)
+  document.addEventListener('selectstart', function(e){
+    // Tillad markering i input felter
+    if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)){
+      return true;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  }, true);
+  
+  // Bloker copy (valgfrit)
+  document.addEventListener('copy', function(e){
+    // Tillad copy i input felter
+    if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)){
+      return true;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  }, true);
+  
+  // Skjul console
+  if(typeof console !== 'undefined'){
+    console.log = function(){};
+    console.warn = function(){};
+    console.error = function(){};
+    console.info = function(){};
+    console.debug = function(){};
+    console.table = function(){};
+    console.dir = function(){};
+    console.dirxml = function(){};
+  }
+  
+  // Forhindre at Developer Tools åbnes
+  let devToolsOpen = false;
+  setInterval(function(){
+    const threshold = 160;
+    if(window.outerHeight - window.innerHeight > threshold || window.outerWidth - window.innerWidth > threshold){
+      if(!devToolsOpen){
+        devToolsOpen = true;
+        alert('⚠️ Developer Tools er ikke tilladt!\n\nLuk Developer Tools og opdater siden.');
+      }
+    } else {
+      devToolsOpen = false;
+    }
+  }, 1000);
+  
+  // Bloker inspect element (højreklik → Inspect)
+  document.addEventListener('mousedown', function(e){
+    if(e.button === 2){ // Højre museknap
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  }, true);
+  
+  // Bloker højreklik på body når den er klar
+  function blockBodyContextMenu(){
+    if(document.body){
+      document.body.addEventListener('contextmenu', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        return false;
+      }, true);
+    }
+  }
+  
+  // Prøv med det samme
+  blockBodyContextMenu();
+  
+  // Vent også til body er klar (hvis den ikke er det endnu)
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', blockBodyContextMenu);
+  } else {
+    // Dokumentet er allerede indlæst
+    blockBodyContextMenu();
+  }
+  
+  // Bloker også på window
+  window.addEventListener('contextmenu', function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    return false;
+  }, true);
+  
+})();
+</script>
 
 </head>
 <body>
@@ -177,15 +358,26 @@ a:hover{color:#45a049;text-decoration:none}
       </div>
     </div>
     <div id="createPasswordForm" style="display:none">
-      <p style="margin-bottom:12px; color:#666; font-size:13px;">Recovery email bruges til at nulstille password hvis du glemmer det. Kun denne email kan bruges til nulstilling.</p>
-      <label for="recoveryEmail">Recovery email <span style="color:#e74c3c;">*</span></label>
+      <div style="background:#fff3cd; border:2px solid #ffc107; border-radius:8px; padding:16px; margin-bottom:16px;">
+        <h3 style="margin:0 0 8px 0; color:#856404;">⚠️ PRØVEVERSION</h3>
+        <p style="margin:0; color:#856404; font-size:13px; line-height:1.5;">
+          <strong>Du bruger nu en 30-dages prøveversion!</strong><br>
+          Efter 30 dage skal du aktivere en fuld licens for at fortsætte.<br>
+          Prøveversionen har begrænsninger: Max 50 varer, max 10 rapporter.
+        </p>
+      </div>
+      <p style="margin-bottom:12px; color:#666; font-size:13px;">Opret din konto for at starte. Alle felter er påkrævet.</p>
+      <label for="userName">Dit navn <span style="color:#e74c3c;">*</span></label>
+      <input type="text" id="userName" placeholder="Indtast dit navn" autocomplete="name" required />
+      <label for="recoveryEmail">Email <span style="color:#e74c3c;">*</span></label>
       <input type="email" id="recoveryEmail" placeholder="din@email.dk" autocomplete="email" required />
-      <label for="newPassword">Opret nyt password</label>
-      <input type="password" id="newPassword" placeholder="Indtast nyt password" autocomplete="new-password" />
-      <label for="confirmPassword">Bekræft password</label>
-      <input type="password" id="confirmPassword" placeholder="Bekræft password" autocomplete="new-password" />
+      <p style="margin:4px 0 12px 0; color:#666; font-size:12px;">Email bruges til at nulstille password hvis du glemmer det.</p>
+      <label for="newPassword">Opret password <span style="color:#e74c3c;">*</span></label>
+      <input type="password" id="newPassword" placeholder="Indtast nyt password (min. 4 tegn)" autocomplete="new-password" required />
+      <label for="confirmPassword">Bekræft password <span style="color:#e74c3c;">*</span></label>
+      <input type="password" id="confirmPassword" placeholder="Bekræft password" autocomplete="new-password" required />
       <div class="actions">
-        <button onclick="createPassword()">➕ Opret password</button>
+        <button onclick="createPassword()">✅ Opret konto og start prøveversion</button>
       </div>
     </div>
     <div id="forgotPasswordForm" style="display:none">
@@ -224,22 +416,47 @@ a:hover{color:#45a049;text-decoration:none}
      ========================= -->
 <header>
   <div class="logo-wrap">
-    <!-- inline SVG originalt logo - rundt med transparent hvid -->
+    <!-- Køkken Lager Optælling Logo -->
     <div class="logo-svg" aria-hidden="true">
-      <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="height:100%;width:100%;">
-        <!-- Rund blå baggrund (oprindeligt var det teal grøn) -->
-        <circle cx="32" cy="32" r="32" fill="#0078D4"></circle>
-        <!-- Original hand truck design - hvid del er transparent (kan se igennem) -->
-        <path d="M18 18 L52 18 L46 38 H26 L24 32 H20 L18 18 Z" fill="rgba(255,255,255,0.3)" opacity="0.9"></path>
-        <!-- Hand truck håndtag (kurvet) -->
-        <path d="M18 18 L16 16 L14 14 L12 12 L12 10 L14 8 L16 10 L18 12 L18 18 Z" fill="rgba(255,255,255,0.3)" opacity="0.9"></path>
-        <!-- Kasse 1 (øverste - lys orange/beige som originalen) -->
-        <rect x="20" y="18" width="24" height="14" fill="#FFCC80" rx="1.5"></rect>
-        <!-- Kasse 2 (nederste - mørkere orange som originalen) -->
-        <rect x="22" y="24" width="20" height="10" fill="#FF9800" rx="1"></rect>
-        <!-- Hjul (mørkeblå som originalen) -->
-        <circle cx="26" cy="48" r="4" fill="#333"></circle>
-        <circle cx="46" cy="48" r="4" fill="#333"></circle>
+      <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" style="height:100%;width:100%;">
+        <!-- Hvid baggrund -->
+        <rect width="400" height="300" fill="#fff" rx="4"></rect>
+        
+        <!-- Sæk med mel/hvede -->
+        <g transform="translate(200, 80)">
+          <!-- Sæk -->
+          <path d="M -60 40 L -50 80 L 50 80 L 60 40 L 55 35 L -55 35 Z" fill="#D4A574" stroke="#8B6F47" stroke-width="2"></path>
+          <!-- Sæk foldet top -->
+          <path d="M -55 35 L -50 30 L 50 30 L 55 35 L 60 40 L -60 40 Z" fill="#E8C9A0" stroke="#8B6F47" stroke-width="2"></path>
+          <!-- Indhold i sækken (granulært) -->
+          <circle cx="-30" cy="50" r="3" fill="#F5E6D3" opacity="0.6"></circle>
+          <circle cx="0" cy="55" r="2.5" fill="#F5E6D3" opacity="0.6"></circle>
+          <circle cx="25" cy="50" r="2" fill="#F5E6D3" opacity="0.6"></circle>
+          <circle cx="-15" cy="65" r="2.5" fill="#F5E6D3" opacity="0.6"></circle>
+          <circle cx="15" cy="68" r="2" fill="#F5E6D3" opacity="0.6"></circle>
+          
+          <!-- Ske -->
+          <g transform="translate(0, 50)">
+            <rect x="-2" y="-15" width="4" height="20" fill="#8B6F47" rx="1"></rect>
+            <ellipse cx="0" y="-18" rx="6" ry="3" fill="#8B6F47"></ellipse>
+            <circle cx="0" y="-5" r="4" fill="#F5E6D3" opacity="0.8"></circle>
+          </g>
+        </g>
+        
+        <!-- "KØKKEN" tekst over sækken -->
+        <text x="200" y="50" font-family="serif" font-size="32" font-weight="bold" fill="#8B6F47" text-anchor="middle">KØKKEN</text>
+        
+        <!-- Banner med "Lager Optælling" -->
+        <g transform="translate(200, 200)">
+          <!-- Banner baggrund -->
+          <rect x="-100" y="-25" width="200" height="50" fill="#fff" stroke="#8B6F47" stroke-width="3" rx="8"></rect>
+          <!-- Dekorativ linje -->
+          <line x1="-80" y1="0" x2="80" y2="0" stroke="#8B6F47" stroke-width="1.5" opacity="0.5"></line>
+          <!-- "Lager" tekst -->
+          <text x="0" y="-8" font-family="serif" font-size="24" font-weight="bold" fill="#8B6F47" text-anchor="middle">Lager</text>
+          <!-- "Optælling" tekst -->
+          <text x="0" y="15" font-family="serif" font-size="24" font-weight="bold" fill="#8B6F47" text-anchor="middle">Optælling</text>
+        </g>
       </svg>
     </div>
   </div>
@@ -250,6 +467,7 @@ a:hover{color:#45a049;text-decoration:none}
   </div>
 
   <div class="header-controls">
+    <button class="secondary" onclick="showPage('licens'); updateLicenseStatusDisplay();" style="background:rgba(255,255,255,0.2); color:#fff; border-color:rgba(255,255,255,0.3);">🔑 Licens</button>
     <button class="secondary" onclick="logout()">🚪 Log ud</button>
   </div>
 </header>
@@ -297,6 +515,7 @@ a:hover{color:#45a049;text-decoration:none}
         <div style="margin-top:10px;">
           <button onclick="openStartModal()">▶️ Start ny optælling</button>
           <button class="secondary" id="finishSessionBtn" onclick="openFinishModal()" disabled>✅ Afslut optælling</button>
+          <button class="secondary" id="cancelSessionBtn" onclick="cancelSession()" disabled style="background:#dc3545; color:white;">❌ Annuller optælling</button>
           <span id="sessionInfo" class="session-indicator hidden"></span>
         </div>
 
@@ -309,7 +528,6 @@ a:hover{color:#45a049;text-decoration:none}
 
       <div style="width:360px;">
         <div class="card" style="background:#E3F2FD;border:2px solid #0078D4;">
-          <h3 style="margin-top:0;color:#005A9E;">✅ DEN NEME MÅDE - VIRKER ALTID!</h3>
           <label><strong>Søg lokation:</strong></label>
           <div class="autocomplete-wrapper">
             <input type="text" id="lagerLokationSearch" placeholder="Skriv 'a' for alle lokationer, eller bogstaver for at søge..." autocomplete="off" style="font-size:16px;padding:12px;" />
@@ -356,81 +574,116 @@ a:hover{color:#45a049;text-decoration:none}
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
       <input id="nyLagerNavn" placeholder="Nyt lagernavn" />
       <button onclick="tilfoejLager()">➕ Tilføj lager</button>
-      <button class="secondary" onclick="resetLocations()">🔄 Reset demo-lokationer</button>
     </div>
     <p class="small" style="margin-top:10px;">Træk og slip for at ændre rækkefølge — rækkefølgen opdateres i hele systemet.</p>
     <ul id="lagerOpsaetning" style="margin-top:12px; list-style:none; padding:0;"></ul>
-    
-    <div style="margin-top:32px; padding:20px; background:#f0f7ff; border:2px solid #2196F3; border-radius:8px;">
-      <h3 style="margin-top:0; color:#1976D2;">📋 Generer HTML til Optælling</h3>
-      <p class="small">Generer en HTML-fil til optælling baseret på hylle rækkefølge. Filen kan åbnes på telefon eller tablet.</p>
-      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:12px;">
-        <label class="small">Vælg lager:</label>
-        <select id="optalLagerSelect"></select>
-        <button onclick="genererOptalHTML()" style="background:#2196F3; color:white;">📄 Generer HTML til Optælling</button>
-      </div>
-      <div id="optalHTMLOutput" style="margin-top:16px; display:none;">
-        <textarea id="optalHTMLCode" readonly style="width:100%; min-height:200px; font-family:monospace; font-size:12px; padding:12px; border:1px solid #ccc; border-radius:4px;"></textarea>
-        <div style="margin-top:8px;">
-          <button onclick="kopierOptalHTML()" style="background:#0078D4; color:white;">📋 Kopier HTML</button>
-          <button onclick="downloadOptalHTML()" style="background:#FF9800; color:white; margin-left:8px;">💾 Download HTML Fil</button>
-        </div>
-      </div>
-    </div>
   </section>
 
   <!-- [HTML 3.3] RAPPORTER -->
   <section id="rapporter" class="page hidden">
-    <h2>Rapporter</h2>
-    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
-      <label class="small">Vælg periode:</label>
-      <select id="reportsPeriod" onchange="updateReportsDateInputs(); renderReports()" style="min-width:150px;">
-        <option value="all">Alle Rapporter</option>
-        <option value="1month">1 Måned</option>
-        <option value="14days">14 Dage</option>
-        <option value="1week">1 uge</option>
-        <option value="custom">Fra Dato til Dato</option>
-      </select>
-      <div id="customDateInputs" style="display:none; gap:8px; align-items:center;">
-        <label class="small">Fra:</label>
-        <input type="date" id="reportsDateFrom" onchange="renderReports()" style="width:150px;" />
-        <label class="small">Til:</label>
-        <input type="date" id="reportsDateTo" onchange="renderReports()" style="width:150px;" />
+    <div class="settings-page">
+      <div class="settings-sidebar" id="reportsSidebar">
+        <div class="settings-category">Rapporter</div>
+        <div class="settings-item active" onclick="showReportsSection('active')">
+          <span class="settings-item-icon">📊</span>
+          <span>Rapporter</span>
+        </div>
+        <div class="settings-item" onclick="showReportsSection('archived')">
+          <span class="settings-item-icon">📦</span>
+          <span>Arkiverede Rapporter</span>
+        </div>
       </div>
-      <label class="small">Vælg lokation</label>
-      <select id="reportsLocation" onchange="renderReports()"><option value="">Alle</option></select>
-      <button onclick="refreshReportsFromStorage()" class="secondary" style="background:#0078D4; color:white;">🔄 Opdater rapporter</button>
-    </div>
-    
-    <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-radius:6px; border:1px solid #ddd;">
-      <h3 style="margin-top:0; margin-bottom:8px;">Arkiv indstillinger</h3>
-      <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-        <label class="small">Automatisk arkivering:</label>
-        <select id="archivePeriod" onchange="saveArchiveSettings()" style="min-width:150px;">
-          <option value="0">Ingen automatisk arkivering</option>
-          <option value="3">Efter 3 måneder</option>
-          <option value="6">Efter 6 måneder</option>
-          <option value="12">Efter 12 måneder</option>
-        </select>
-        <button onclick="checkAndArchiveReports()" class="secondary">📦 Arkiver nu (baseret på indstilling)</button>
-        <span id="archiveStatus" class="small" style="color:#666;"></span>
-      </div>
-    </div>
+      <div class="settings-content" id="reportsContent">
+        <button class="settings-sidebar-toggle" id="reportsToggleBtn" onclick="toggleSidebar('reportsSidebar')" title="Skjul/Vis sidebar"></button>
+        <h2>Rapporter</h2>
+        <div class="settings-description">Se og administrer rapporter og arkiverede rapporter.</div>
+        
+        <!-- Active Reports Section -->
+        <div id="reports-section-active" class="settings-section active">
+          <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
+            <label class="small">Vælg periode:</label>
+            <select id="reportsPeriod" onchange="updateReportsDateInputs(); renderReports()" style="min-width:150px;">
+              <option value="all">Alle Rapporter</option>
+              <option value="1month">1 Måned</option>
+              <option value="14days">14 Dage</option>
+              <option value="1week">1 uge</option>
+              <option value="custom">Fra Dato til Dato</option>
+            </select>
+            <div id="customDateInputs" style="display:none; gap:8px; align-items:center;">
+              <label class="small">Fra:</label>
+              <input type="date" id="reportsDateFrom" onchange="renderReports()" style="width:150px;" />
+              <label class="small">Til:</label>
+              <input type="date" id="reportsDateTo" onchange="renderReports()" style="width:150px;" />
+            </div>
+            <label class="small">Vælg lokation</label>
+            <select id="reportsLocation" onchange="renderReports()"><option value="">Alle</option></select>
+          </div>
+          
+          <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-radius:6px; border:1px solid #ddd;">
+            <h3 style="margin-top:0; margin-bottom:8px;">Arkiv indstillinger</h3>
+            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+              <label class="small">Automatisk arkivering:</label>
+              <select id="archivePeriod" onchange="saveArchiveSettings()" style="min-width:150px;">
+                <option value="0">Ingen automatisk arkivering</option>
+                <option value="3">Efter 3 måneder</option>
+                <option value="6">Efter 6 måneder</option>
+                <option value="12">Efter 12 måneder</option>
+              </select>
+              <button onclick="checkAndArchiveReports()" class="secondary">📦 Arkiver nu (baseret på indstilling)</button>
+              <span id="archiveStatus" class="small" style="color:#666;"></span>
+            </div>
+          </div>
 
-    <div style="overflow-x:auto; max-height:450px; overflow-y:auto; position:relative; border:1px solid #ddd; border-radius:4px; margin-top:12px;">
-      <table style="width:100%; border-collapse:collapse;">
-        <thead style="position:sticky; top:0; z-index:10; background:#fff;">
-          <tr>
-            <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Dato / Tid</th>
-            <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Handling (Optællingsnavn)</th>
-            <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Vare / Note</th>
-            <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Antal optalt varer</th>
-            <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Lokation</th>
-            <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Handlinger</th>
-          </tr>
-        </thead>
-      <tbody id="reportsTable"></tbody>
-    </table>
+          <div style="overflow-x:auto; max-height:600px; overflow-y:auto; position:relative; border:1px solid #ddd; border-radius:4px; margin-top:12px;">
+            <table style="width:100%; border-collapse:collapse;">
+              <thead style="position:sticky; top:0; z-index:10; background:#fff;">
+                <tr>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Dato / Tid</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Handling (Optællingsnavn)</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Vare / Note</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Antal optalt varer</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Lokation</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Handlinger</th>
+                </tr>
+              </thead>
+              <tbody id="reportsTable"></tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Archived Reports Section -->
+        <div id="reports-section-archived" class="settings-section">
+          <div style="margin-bottom:16px; padding:12px; background:#f5f5f5; border-radius:6px; border:1px solid #ddd;">
+            <h3 style="margin-top:0; margin-bottom:12px;">Søg i arkiverede rapporter</h3>
+            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+              <label class="small">Søg efter måned & år:</label>
+              <input type="month" id="archivedReportsMonth" onchange="renderArchivedReports()" style="padding:6px; border:1px solid #ddd; border-radius:4px;" />
+              <button onclick="document.getElementById('archivedReportsMonth').value=''; renderArchivedReports();" class="secondary small">Ryd</button>
+            </div>
+            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+              <label class="small">Eller søg efter specifik dato:</label>
+              <input type="date" id="archivedReportsDate" onchange="renderArchivedReports()" style="padding:6px; border:1px solid #ddd; border-radius:4px;" />
+              <button onclick="document.getElementById('archivedReportsDate').value=''; renderArchivedReports();" class="secondary small">Ryd</button>
+            </div>
+            <p class="small" style="margin-top:8px; color:#666; margin-bottom:0;">Rapporter sorteres efter dato (nyeste først).</p>
+          </div>
+          <div style="overflow-x:auto; max-height:600px; overflow-y:auto; position:relative; border:1px solid #ddd; border-radius:4px; background:#fff;">
+            <table style="width:100%; border-collapse:collapse;">
+              <thead style="position:sticky; top:0; z-index:10; background:#fff;">
+                <tr>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Dato / Tid</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Handling (Optællingsnavn)</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Vare / Note</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Antal optalt varer</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Lokation</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Handlinger</th>
+                </tr>
+              </thead>
+              <tbody id="archivedReportsTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -439,7 +692,11 @@ a:hover{color:#45a049;text-decoration:none}
     <h2>Print Labels</h2>
     <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
       <label class="small">Vælg lokation / gruppe</label>
-      <select id="labelSelect"></select>
+      <select id="labelSelect" onchange="updateLabelReolSelect()"></select>
+      <label class="small" id="labelReolLabel" style="display:none;">Vælg reol</label>
+      <select id="labelReolSelect" style="display:none; width:auto; min-width:120px;" onchange="updateLabelSingleSelect()">
+        <option value="">Alle reoler</option>
+      </select>
       <label class="small">Eller vælg enkelt vare</label>
       <select id="labelSingle"><option value="">--- Ingen ---</option></select>
       <label class="small">Antal labels pr. vare</label>
@@ -474,79 +731,110 @@ a:hover{color:#45a049;text-decoration:none}
 
   <!-- [HTML 3.6] MASTER VARELAGER -->
   <section id="master" class="page hidden">
-    <div style="display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap;">
-      <div style="min-width:220px; flex:1;">
-        <h3 style="margin:0">Tilføj ny vare</h3>
-        <input id="masterVarenavn" placeholder="Varenavn" />
-        <input id="masterMaaleenhed" placeholder="Måleenhed (stk/L/kg)" />
-        <input id="masterPris" type="number" step="0.01" placeholder="Pris pr. enhed" />
-        <label class="small">Placering (Lager)</label>
-        <select id="masterPlaceringFilter"></select>
-        <label class="small" style="margin-top:8px;">Reol nummer (valgfrit)</label>
-        <input id="masterReolNr" type="text" placeholder="fx 1, 2, 3 eller A, B, C" />
-        <label class="small" style="margin-top:8px;">Hylle nummer (valgfrit)</label>
-        <input id="masterHylleNr" type="text" placeholder="fx 1, 2, 3 eller A, B, C" />
-        <label class="small" style="margin-top:8px;">Rækkefølge (0 = automatisk)</label>
-        <input id="masterRaekkefoelge" type="number" step="1" placeholder="0 = automatisk" value="0" />
-        <div style="margin-top:8px;"><button onclick="tilfoejMasterVare()">➕ Tilføj vare</button></div>
+    <div class="settings-page">
+      <div class="settings-sidebar" id="masterSidebar">
+        <div class="settings-category">Varelager</div>
+        <div class="settings-item active" onclick="showMasterSection('add')">
+          <span class="settings-item-icon">➕</span>
+          <span>Tilføj ny varelager</span>
+        </div>
+        <div class="settings-item" onclick="showMasterSection('shelf')">
+          <span class="settings-item-icon">📋</span>
+          <span>Opsætning af Hylder - reoler & Rækkefølge (Drag & Drop)</span>
+        </div>
+        <div class="settings-item" onclick="showMasterSection('view')">
+          <span class="settings-item-icon">🔍</span>
+          <span>Søg & Se hele Varelager</span>
+        </div>
+      </div>
+      <div class="settings-content">
+        <button class="settings-sidebar-toggle" id="masterToggleBtn" onclick="toggleSidebar('masterSidebar')" title="Skjul/Vis sidebar"></button>
+        <h2>Varelager administration</h2>
+        <div class="settings-description">Administrer varelager, tilføj nye varer, og opsæt hylle rækkefølge.</div>
         
-        <!-- Hylle Rækkefølge (Drag & Drop) -->
-        <div style="margin-top:24px; padding:16px; background:#f5f5f5; border-radius:8px;">
-          <h3 style="margin-top:0;">📋 Hylle Rækkefølge (Drag & Drop)</h3>
-          <label class="small">Vælg lager for at se og redigere hylle rækkefølge:</label>
-          <select id="hylleLagerSelect" onchange="syncFilterPlacement(); updateHylleReolSelect(); renderHylleRaekkefoelge()" style="margin-top:8px; margin-bottom:8px; width:100%;"></select>
-          <label class="small" style="margin-top:8px;">Vælg reol:</label>
-          <select id="hylleReolSelect" onchange="updateHylleHylleSelect(); renderHylleRaekkefoelge()" style="margin-top:4px; margin-bottom:8px; width:100%;">
-            <option value="">Alle reoler</option>
-          </select>
-          <label class="small" style="margin-top:8px;">Vælg hylle:</label>
-          <select id="hylleHylleSelect" onchange="renderHylleRaekkefoelge()" style="margin-top:4px; margin-bottom:12px; width:100%;">
-            <option value="">Alle hylder</option>
-          </select>
-          <p class="small" style="margin-top:8px;">Træk og slip varer for at ændre rækkefølge — rækkefølgen opdateres automatisk!</p>
-          <ul id="hylleRaekkefoelgeList" style="margin-top:12px; list-style:none; padding:0;"></ul>
+        <!-- Add New Item Section -->
+        <div id="master-section-add" class="settings-section active">
+          <h3 style="margin-top:0; margin-bottom:16px;">Tilføj ny varelager</h3>
+          <div style="display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+            <div style="min-width:220px; flex:1;">
+              <input id="masterVarenavn" placeholder="Varenavn" />
+              <input id="masterMaaleenhed" placeholder="Måleenhed (stk/L/kg)" />
+              <input id="masterPris" type="number" step="0.01" placeholder="Pris pr. enhed" />
+              <label class="small">Placering (Lager)</label>
+              <select id="masterPlaceringFilter"></select>
+              <label class="small" style="margin-top:8px;">Reol nummer (valgfrit)</label>
+              <input id="masterReolNr" type="text" placeholder="fx 1, 2, 3 eller A, B, C" />
+              <label class="small" style="margin-top:8px;">Hylle nummer (valgfrit)</label>
+              <input id="masterHylleNr" type="text" placeholder="fx 1, 2, 3 eller A, B, C" />
+              <label class="small" style="margin-top:8px;">Rækkefølge (0 = automatisk)</label>
+              <input id="masterRaekkefoelge" type="number" step="1" placeholder="0 = automatisk" value="0" />
+              <div style="margin-top:8px;"><button onclick="tilfoejMasterVare()">➕ Tilføj vare</button></div>
+            </div>
+            <div style="width:320px;">
+              <h3 style="margin:0">Import/Export Excel/CSV</h3>
+              <div style="margin-bottom:8px;">
+                <button onclick="downloadExcelTemplate()" style="width:100%; margin-bottom:8px; background:#2196F3; color:white; border-color:#1976D2;">Hent Excel skabelon</button>
+              </div>
+              <input type="file" id="csvImport" accept=".csv,.xlsx,.xls" />
+              <div style="display:flex; gap:8px; margin-top:8px;">
+                <button onclick="importCSV()">📥 Importer Excel/CSV</button>
+                <button onclick="exportCSV()">📤 Eksport CSV</button>
+              </div>
+              <div class="small" style="margin-top:8px; color:#666;">
+                <strong>Tip:</strong> Download skabelonen, udfyld den i Excel, og importer den igen.
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+        
+        <!-- Shelf Order Section -->
+        <div id="master-section-shelf" class="settings-section">
+          <h3 style="margin-top:0; margin-bottom:16px;">Opsætning af Hylder - reoler & Rækkefølge (Drag & Drop)</h3>
+          <div style="padding:16px; background:#f5f5f5; border-radius:8px;">
+            <label style="display:block; margin-bottom:8px; font-weight:700; color:#222; font-size:14px;">Vælg lager for at se og redigere hylle rækkefølge:</label>
+            <select id="hylleLagerSelect" onchange="syncFilterPlacement(); updateHylleReolSelect(); renderHylleRaekkefoelge()" style="margin-top:8px; margin-bottom:8px; width:100%;"></select>
+            <label style="display:block; margin-top:12px; margin-bottom:8px; font-weight:700; color:#222; font-size:14px;">Vælg reol:</label>
+            <select id="hylleReolSelect" onchange="updateHylleHylleSelect(); renderHylleRaekkefoelge()" style="margin-top:4px; margin-bottom:8px; width:100%;">
+              <option value="">Alle reoler</option>
+            </select>
+            <label style="display:block; margin-top:12px; margin-bottom:8px; font-weight:700; color:#222; font-size:14px;">Vælg hylle:</label>
+            <select id="hylleHylleSelect" onchange="renderHylleRaekkefoelge()" style="margin-top:4px; margin-bottom:12px; width:100%;">
+              <option value="">Alle hylder</option>
+            </select>
+            <p style="margin-top:12px; margin-bottom:0; font-weight:700; color:#222; font-size:14px;">Træk og slip varer for at ændre rækkefølge — rækkefølgen opdateres automatisk!</p>
+            <ul id="hylleRaekkefoelgeList" style="margin-top:12px; list-style:none; padding:0;"></ul>
+          </div>
+        </div>
+        
+        <!-- View All Items Section -->
+        <div id="master-section-view" class="settings-section">
+          <h3 style="margin-top:0; margin-bottom:16px;">Søg & Se hele Varelager</h3>
+          <div style="display:flex; gap:12px; align-items:center; justify-content:flex-end; flex-wrap:wrap; margin-bottom:12px;">
+            <label class="small">Søg vare:</label>
+            <input type="text" id="masterSearchInput" placeholder="Søg efter varenavn..." style="width:200px; padding:6px; border:1px solid #ddd; border-radius:4px;" oninput="renderMasterTable()" />
+            <label class="small">Filtrer placering:</label>
+            <select id="filterPlacement" style="width:auto; min-width:120px; max-width:250px;" onchange="renderMasterTable()"><option value="">Alle</option></select>
+            <span class="small" id="masterTableInfo" style="color:#666;"></span>
+          </div>
 
-      <div style="width:320px;">
-        <h3 style="margin:0">Import/Export Excel/CSV</h3>
-        <div style="margin-bottom:8px;">
-          <button onclick="downloadExcelTemplate()" style="width:100%; margin-bottom:8px; background:#2196F3; color:white; border-color:#1976D2;">Hent Excel skabelon</button>
+          <div style="overflow-x:auto; max-height:600px; overflow-y:auto; position:relative; border:1px solid #ddd; border-radius:4px;">
+            <table style="width:100%; border-collapse:collapse;">
+              <thead style="position:sticky; top:0; z-index:10; background:#fff;">
+                <tr>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Vare</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Måleenhed</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Pris</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Lager</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Reol</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Hylle</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Rækkefølge</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Handling</th>
+                </tr>
+              </thead>
+              <tbody id="masterTable"></tbody>
+            </table>
+          </div>
         </div>
-        <input type="file" id="csvImport" accept=".csv,.xlsx,.xls" />
-        <div style="display:flex; gap:8px; margin-top:8px;">
-          <button onclick="importCSV()">📥 Importer Excel/CSV</button>
-          <button onclick="exportCSV()">📤 Eksport CSV</button>
-        </div>
-        <div class="small" style="margin-top:8px; color:#666;">
-          <strong>Tip:</strong> Download skabelonen, udfyld den i Excel, og importer den igen.
-        </div>
-      </div>
-    </div>
-
-    <div style="margin-top:18px;">
-      <h2>Varelager</h2>
-      <div style="display:flex; gap:12px; align-items:center; justify-content:flex-end;">
-        <label class="small">Filtrer placering</label>
-        <select id="filterPlacement"><option value="">Alle</option></select>
-      </div>
-
-      <div style="overflow-x:auto; max-height:600px; overflow-y:auto; position:relative; border:1px solid #ddd; border-radius:4px;">
-        <table style="width:100%; border-collapse:collapse;">
-          <thead style="position:sticky; top:0; z-index:10; background:#fff;">
-            <tr>
-              <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Vare</th>
-              <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Måleenhed</th>
-              <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Pris</th>
-              <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Lager</th>
-              <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Reol</th>
-              <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Hylle</th>
-              <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Rækkefølge</th>
-              <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Handling</th>
-            </tr>
-          </thead>
-        <tbody id="masterTable"></tbody>
-      </table>
       </div>
     </div>
   </section>
@@ -554,7 +842,7 @@ a:hover{color:#45a049;text-decoration:none}
   <!-- [HTML 3.7] SYSTEM OPSÆTNING -->
   <section id="systemOpsaetning" class="page hidden">
     <div class="settings-page">
-      <div class="settings-sidebar">
+      <div class="settings-sidebar" id="settingsSidebar">
         <div class="settings-category">Indstillinger</div>
         <div class="settings-item active" onclick="showSettingsSection('password')">
           <span class="settings-item-icon">🔑</span>
@@ -578,6 +866,7 @@ a:hover{color:#45a049;text-decoration:none}
         </div>
       </div>
       <div class="settings-content">
+        <button class="settings-sidebar-toggle" id="settingsToggleBtn" onclick="toggleSidebar('settingsSidebar')" title="Skjul/Vis sidebar"></button>
         <h2>Opsætning</h2>
         <div class="settings-description">Administrer systemindstillinger, sikkerhed, backup og branding.</div>
         
@@ -627,6 +916,24 @@ a:hover{color:#45a049;text-decoration:none}
               <button onclick="importScannerData()" style="background:#2196F3; color:white;">Importer Scanner</button>
             </div>
           </div>
+          <div class="settings-option">
+            <div class="settings-option-label">
+              <h3>🔄 Synkroniser Rapporter</h3>
+              <p>Tjek automatisk for nye rapporter fra scanner-appen og opdater listen.</p>
+            </div>
+            <div class="settings-option-action">
+              <button onclick="syncReportsFromScanner()" style="background:#4CAF50; color:white;">🔄 Synkroniser Nu</button>
+            </div>
+          </div>
+          <div class="settings-option">
+            <div class="settings-option-label">
+              <h3>🔑 Scanner Installation ID</h3>
+              <p>Se og synkroniser installation ID med scanner-appen for at sikre de matcher.</p>
+            </div>
+            <div class="settings-option-action">
+              <button onclick="showScannerInstallationId()" style="background:#FF9800; color:white;">🔑 Vis/Synkroniser ID</button>
+            </div>
+          </div>
         </div>
         
         <!-- Mobile Section -->
@@ -649,6 +956,38 @@ a:hover{color:#45a049;text-decoration:none}
               <button onclick="downloadManuelOptaeling()" style="background:#0078D4; color:white;">Download fil</button>
             </div>
           </div>
+          <div class="settings-option">
+            <div class="settings-option-label">
+              <h3>📷 Download Stregkode Scanner til telefon</h3>
+              <p>Download Stregkode Scanner HTML filen til din telefon eller tablet.</p>
+            </div>
+            <div class="settings-option-action">
+              <button onclick="downloadStregkodeScanner()" style="background:#0078D4; color:white;">Download fil</button>
+            </div>
+          </div>
+          <div class="settings-option">
+            <div class="settings-option-label">
+              <h3>📱 Synkroniser Varelager til Scanner</h3>
+              <p>Generer QR-kode med varelager data. Scan QR-koden med scanner-appen på telefonen for automatisk import.</p>
+            </div>
+            <div class="settings-option-action">
+              <button onclick="generateVarelagerQR()" style="background:#4CAF50; color:white;">📱 Generer QR-kode</button>
+            </div>
+            <div id="varelagerQRContainer" style="margin-top:15px; display:none; text-align:center; padding:15px; background:#f9f9f9; border-radius:8px;">
+              <p style="margin-bottom:10px; font-weight:600;">Scan denne QR-kode med scanner-appen:</p>
+              <div id="varelagerQRCode" style="display:inline-block; padding:10px; background:white; border-radius:8px;"></div>
+              <p style="margin-top:10px; font-size:12px; color:#666;">QR-koden indeholder varelager data. Scan med scanner-appen for at importere.</p>
+            </div>
+          </div>
+          <div class="settings-option">
+            <div class="settings-option-label">
+              <h3>🔑 Scanner Installation ID</h3>
+              <p>Se og synkroniser installation ID med scanner-appen for at sikre de matcher. Vigtigt for korrekt rapport-synkronisering.</p>
+            </div>
+            <div class="settings-option-action">
+              <button onclick="showScannerInstallationId()" style="background:#FF9800; color:white;">🔑 Vis/Synkroniser ID</button>
+            </div>
+          </div>
         </div>
         
         <!-- Branding Section -->
@@ -664,6 +1003,48 @@ a:hover{color:#45a049;text-decoration:none}
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Licens Section -->
+  <section id="licens" class="page hidden">
+    <div class="card">
+      <h2>🔑 Licens Information</h2>
+      <div id="licenseStatusDisplay" style="padding:20px; background:#f5f5f5; border-radius:8px; margin-top:16px;"></div>
+      <div style="margin-top:20px; padding:15px; background:#e3f2fd; border-radius:8px; border-left:4px solid #0078D4;">
+        <h3 style="margin-top:0;">📋 Installations-ID</h3>
+        <p class="small" style="margin-bottom:8px;">Dette er dit unikke installations-ID. Du skal bruge dette ID når du bestiller en licens.</p>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="text" id="installationIdDisplay" readonly style="flex:1; padding:10px; font-family:monospace; font-size:14px; background:#fff; border:1px solid #ddd; border-radius:4px;" />
+          <button onclick="copyInstallationId()" style="background:#0078D4;">📋 Kopier ID</button>
+        </div>
+        <p class="small" style="margin-top:8px; color:#666;">
+          <strong>Vigtigt:</strong> Licenser er bundet til dette installations-ID og kan ikke bruges på andre installationer.
+        </p>
+      </div>
+      
+      <div style="margin-top:20px; padding:15px; background:#fff3cd; border-radius:8px; border-left:4px solid #ffc107;">
+        <h3 style="margin-top:0;">📁 Installationsmappe</h3>
+        <p class="small" style="margin-bottom:8px;">Programmet er installeret i følgende mappe:</p>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="text" id="installationPathDisplay" readonly style="flex:1; padding:10px; font-family:monospace; font-size:13px; background:#fff; border:1px solid #ddd; border-radius:4px;" />
+          <button onclick="openInstallationFolder()" style="background:#ffc107; color:#000;">📂 Åbn mappe</button>
+        </div>
+        <p class="small" style="margin-top:8px; color:#666;">
+          <strong>Tip:</strong> Her finder du også skabelon filen til import af varer.
+        </p>
+      </div>
+      <div style="margin-top:20px;">
+        <h3>Aktiver Licens</h3>
+        <p class="small">Indtast en gyldig licensnøgle for at aktivere fuld licens.</p>
+        <div style="display:flex; gap:8px; margin-top:12px;">
+          <input type="text" id="licenseKeyInputPage" placeholder="Indtast licensnøgle" style="flex:1; padding:10px; font-size:16px; letter-spacing:2px;" />
+          <button onclick="activateLicenseFromPage()" style="background:#28a745;">Aktiver Licens</button>
+        </div>
+        <p class="small" style="margin-top:8px; color:#666;">
+          Har du ikke en licensnøgle? Kontakt support med dit installations-ID for at få en.
+        </p>
       </div>
     </div>
   </section>
@@ -695,6 +1076,7 @@ a:hover{color:#45a049;text-decoration:none}
     <div id="finishSummary" style="max-height:56vh; overflow:auto; font-size:14px;"></div>
     <div class="actions">
       <button class="secondary" onclick="closeFinishModal()">Tilbage</button>
+      <button class="secondary" onclick="cancelSessionFromModal()" style="background:#dc3545; color:white;">❌ Annuller optælling</button>
       <button onclick="confirmFinishSession()">Gem optælling</button>
     </div>
   </div>
@@ -859,6 +1241,9 @@ a:hover{color:#45a049;text-decoration:none}
      [EXTERNAL LIBRARIES]
      ========================= -->
 <!-- jsPDF (for PDF generation) -->
+<!-- Pre-genereret installations-ID (hvis tilgængelig) -->
+<script src="installation_id.js" onerror="console.log('installation_id.js ikke fundet - genererer ID ved første opstart')"></script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <!-- JsBarcode (for labels) -->
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
@@ -871,6 +1256,19 @@ a:hover{color:#45a049;text-decoration:none}
      [JS ALL-IN-ONE — nummereret (JS 1.. JS 4.x) ]
      ========================= -->
 <script>
+/* ======================================================
+   [JS 0.1] HELPER FUNCTIONS (flyttet tidligere for bedre tilgængelighed)
+   ====================================================== */
+const $ = id => {
+  const element = document.getElementById(id);
+  if(!element) {
+    console.warn(`Element med id "${id}" ikke fundet`);
+  }
+  return element;
+};
+function genId(){ return 'id_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*10000); }
+function formatTime(ts){ return new Date(ts).toLocaleString(); }
+
 /* ======================================================
    [JS 0] LOGIN SYSTEM
    ====================================================== */
@@ -896,32 +1294,55 @@ function checkPasswordExists(){
 }
 
 function attemptLogin(){
-  const password = $('loginPassword')?.value;
-  if(!password){
-    showLoginError('Indtast password');
-    return;
-  }
-  const storedHash = localStorage.getItem(PASSWORD_KEY);
-  const inputHash = hashPassword(password);
-  if(storedHash === inputHash){
-    isLoggedIn = true;
-    hideLoginModal();
-  } else {
-    showLoginError('Forkert password');
-    $('loginPassword').value = '';
+  try {
+    const passwordInput = $('loginPassword');
+    if(!passwordInput) {
+      console.error('Login password input ikke fundet');
+      return;
+    }
+    const password = passwordInput.value;
+    if(!password){
+      showLoginError('Indtast password');
+      return;
+    }
+    const storedHash = localStorage.getItem(PASSWORD_KEY);
+    if(!storedHash) {
+      showLoginError('Ingen password sat. Opret password først.');
+      return;
+    }
+    const inputHash = hashPassword(password);
+    if(storedHash === inputHash){
+      isLoggedIn = true;
+      hideLoginModal();
+    } else {
+      showLoginError('Forkert password');
+      passwordInput.value = '';
+    }
+  } catch(error) {
+    console.error('Fejl ved login:', error);
+    showLoginError('Der opstod en fejl. Prøv igen.');
   }
 }
 
 function createPassword(){
+  const userName = $('userName')?.value?.trim();
   const newPass = $('newPassword')?.value;
   const confirmPass = $('confirmPassword')?.value;
   const recoveryEmail = $('recoveryEmail')?.value?.trim();
   
-  if(!recoveryEmail || !recoveryEmail.includes('@')){
-    showLoginError('Recovery email er påkrævet og skal være en gyldig email');
+  // Valider navn
+  if(!userName || userName.length < 2){
+    showLoginError('Navn er påkrævet og skal være mindst 2 tegn');
     return;
   }
   
+  // Valider email
+  if(!recoveryEmail || !recoveryEmail.includes('@')){
+    showLoginError('Email er påkrævet og skal være en gyldig email');
+    return;
+  }
+  
+  // Valider password
   if(!newPass || newPass.length < 4){
     showLoginError('Password skal være mindst 4 tegn');
     return;
@@ -931,13 +1352,32 @@ function createPassword(){
     return;
   }
   
-  // Gem email hashet for ekstra sikkerhed
+  // Gem bruger data
   const emailHash = hashPassword(recoveryEmail.toLowerCase());
   const hash = hashPassword(newPass);
   localStorage.setItem(PASSWORD_KEY, hash);
-  localStorage.setItem(RECOVERY_EMAIL_KEY, recoveryEmail.toLowerCase()); // Gem også original for at kunne vise den
-  localStorage.setItem(RECOVERY_EMAIL_HASH_KEY, emailHash); // Gem hash for validering
+  localStorage.setItem(RECOVERY_EMAIL_KEY, recoveryEmail.toLowerCase());
+  localStorage.setItem(RECOVERY_EMAIL_HASH_KEY, emailHash);
+  localStorage.setItem('user_name', userName); // Gem bruger navn
+  
+  // Start prøveversion automatisk
+  const installId = getInstallationId();
+  const trialStartDate = Date.now();
+  const trialEndDate = trialStartDate + (TRIAL_DAYS * 24 * 60 * 60 * 1000);
+  const trialLicense = {
+    installationId: installId,
+    type: 'trial',
+    startDate: trialStartDate,
+    endDate: trialEndDate,
+    valid: true
+  };
+  localStorage.setItem(LICENSE_KEY, JSON.stringify(trialLicense));
+  
   isLoggedIn = true;
+  
+  // Vis velkomst besked
+  alert(`✅ Velkommen ${userName}!\n\n═══════════════════════════════════\n⚠️ PRØVEVERSION AKTIVERET\n═══════════════════════════════════\n\nDu har nu adgang til en 30-dages prøveversion.\n\nBEGRÆNSNINGER:\n• Max 50 varer i lageret\n• Max 10 rapporter\n\nEfter 30 dage skal du aktivere en fuld licens for at fortsætte.\n\nGå til "Licens" menuen for at aktivere din licens.`);
+  
   hideLoginModal();
 }
 
@@ -973,44 +1413,102 @@ function logout(){
 }
 
 function showLoginModal(){
-  const modal = $('loginModal');
-  if(!modal) return;
-  document.body.classList.add('login-active');
-  modal.classList.remove('hidden');
-  const hasPassword = checkPasswordExists();
-  if(hasPassword){
-    $('loginTitle').textContent = 'Login';
-    $('loginForm').style.display = 'block';
-    $('createPasswordForm').style.display = 'none';
-    $('forgotPasswordForm').style.display = 'none';
-    $('changePasswordForm').style.display = 'none';
-    $('loginPassword').focus();
-  } else {
-    $('loginTitle').textContent = 'Opret password';
-    $('loginForm').style.display = 'none';
-    $('createPasswordForm').style.display = 'block';
-    $('forgotPasswordForm').style.display = 'none';
-    $('changePasswordForm').style.display = 'none';
-    $('newPassword').focus();
+  try {
+    const modal = $('loginModal');
+    if(!modal) {
+      console.error('Login modal ikke fundet');
+      return;
+    }
+    document.body.classList.add('login-active');
+    modal.classList.remove('hidden');
+    
+    // Tjek om dette er en ny installation (har installations-ID fil men ikke password)
+    const isNewInstallation = typeof PRE_GENERATED_INSTALLATION_ID !== 'undefined' && 
+                               PRE_GENERATED_INSTALLATION_ID && 
+                               !checkPasswordExists();
+    
+    const hasPassword = checkPasswordExists();
+    
+    // Hvis der ikke er password, vis ALTID registreringsformularen
+    if(!hasPassword){
+      const title = $('loginTitle');
+      const loginForm = $('loginForm');
+      const createForm = $('createPasswordForm');
+      const forgotForm = $('forgotPasswordForm');
+      const changeForm = $('changePasswordForm');
+      const userNameInput = $('userName');
+      
+      if(title) {
+        title.textContent = 'Opret konto - Prøveversion';
+      }
+      if(loginForm) loginForm.style.display = 'none';
+      if(createForm) createForm.style.display = 'block';
+      if(forgotForm) forgotForm.style.display = 'none';
+      if(changeForm) changeForm.style.display = 'none';
+      if(userNameInput) {
+        setTimeout(() => userNameInput.focus(), 100);
+      }
+    } else {
+      // Der er password - vis login form
+      const title = $('loginTitle');
+      const loginForm = $('loginForm');
+      const createForm = $('createPasswordForm');
+      const forgotForm = $('forgotPasswordForm');
+      const changeForm = $('changePasswordForm');
+      const passwordInput = $('loginPassword');
+      
+      if(title) title.textContent = 'Login';
+      if(loginForm) loginForm.style.display = 'block';
+      if(createForm) createForm.style.display = 'none';
+      if(forgotForm) forgotForm.style.display = 'none';
+      if(changeForm) changeForm.style.display = 'none';
+      if(passwordInput) {
+        setTimeout(() => passwordInput.focus(), 100);
+      }
+    }
+  } catch(error) {
+    console.error('Fejl ved visning af login modal:', error);
   }
 }
 
 function showForgotPassword(){
-  $('loginTitle').textContent = 'Glemt password';
-  $('loginForm').style.display = 'none';
-  $('createPasswordForm').style.display = 'none';
-  $('forgotPasswordForm').style.display = 'block';
-  $('changePasswordForm').style.display = 'none';
-  $('forgotEmail').focus();
+  try {
+    const title = $('loginTitle');
+    const loginForm = $('loginForm');
+    const createForm = $('createPasswordForm');
+    const forgotForm = $('forgotPasswordForm');
+    const changeForm = $('changePasswordForm');
+    const forgotEmailInput = $('forgotEmail');
+    
+    if(title) title.textContent = 'Glemt password';
+    if(loginForm) loginForm.style.display = 'none';
+    if(createForm) createForm.style.display = 'none';
+    if(forgotForm) forgotForm.style.display = 'block';
+    if(changeForm) changeForm.style.display = 'none';
+    if(forgotEmailInput) forgotEmailInput.focus();
+  } catch(error) {
+    console.error('Fejl ved visning af glemt password form:', error);
+  }
 }
 
 function showLoginForm(){
-  $('loginTitle').textContent = 'Login';
-  $('loginForm').style.display = 'block';
-  $('createPasswordForm').style.display = 'none';
-  $('forgotPasswordForm').style.display = 'none';
-  $('changePasswordForm').style.display = 'none';
-  $('loginPassword').focus();
+  try {
+    const title = $('loginTitle');
+    const loginForm = $('loginForm');
+    const createForm = $('createPasswordForm');
+    const forgotForm = $('forgotPasswordForm');
+    const changeForm = $('changePasswordForm');
+    const passwordInput = $('loginPassword');
+    
+    if(title) title.textContent = 'Login';
+    if(loginForm) loginForm.style.display = 'block';
+    if(createForm) createForm.style.display = 'none';
+    if(forgotForm) forgotForm.style.display = 'none';
+    if(changeForm) changeForm.style.display = 'none';
+    if(passwordInput) passwordInput.focus();
+  } catch(error) {
+    console.error('Fejl ved visning af login form:', error);
+  }
 }
 
 function resetPasswordViaEmail(){
@@ -1205,6 +1703,403 @@ function changePassword(){
   closeChangePasswordModal();
 }
 
+// ================================
+// LICENS SYSTEM
+// ================================
+const LICENSE_KEY = 'license.key';
+const TRIAL_DAYS = 30;
+const INSTALLATION_ID_KEY = 'app_installation_id';
+
+// Prøveversion begrænsninger
+const TRIAL_MAX_VARER = 50;  // Max antal varer i prøveversion
+const TRIAL_MAX_REPORTS = 10; // Max antal rapporter i prøveversion
+
+// Tjek om bruger har prøveversion
+function isTrialVersion(){
+  const licenseStatus = checkLicense();
+  return licenseStatus.type === 'trial' && licenseStatus.valid;
+}
+
+// Tjek prøveversion begrænsninger
+function checkTrialLimits(action){
+  if(!isTrialVersion()) return true; // Ingen begrænsninger hvis ikke prøveversion
+  
+  if(action === 'add_vare'){
+    const currentCount = masterVarelager ? masterVarelager.length : 0;
+    if(currentCount >= TRIAL_MAX_VARER){
+      alert(`⚠️ PRØVEVERSION BEGRÆNSNING\n\nDu har nået grænsen på ${TRIAL_MAX_VARER} varer i prøveversionen.\n\nFor at tilføje flere varer, skal du aktivere en fuld licens.\n\nGå til "Licens" menuen for at aktivere din licens.`);
+      return false;
+    }
+    if(currentCount >= TRIAL_MAX_VARER - 5){
+      alert(`⚠️ PRØVEVERSION ADVARSEL\n\nDu har ${TRIAL_MAX_VARER - currentCount} varer tilbage i prøveversionen.\n\nMax ${TRIAL_MAX_VARER} varer er tilladt i prøveversionen.`);
+    }
+  }
+  
+  if(action === 'add_report'){
+    const currentCount = reports ? reports.length : 0;
+    if(currentCount >= TRIAL_MAX_REPORTS){
+      alert(`⚠️ PRØVEVERSION BEGRÆNSNING\n\nDu har nået grænsen på ${TRIAL_MAX_REPORTS} rapporter i prøveversionen.\n\nFor at oprette flere rapporter, skal du aktivere en fuld licens.\n\nGå til "Licens" menuen for at aktivere din licens.`);
+      return false;
+    }
+    if(currentCount >= TRIAL_MAX_REPORTS - 2){
+      alert(`⚠️ PRØVEVERSION ADVARSEL\n\nDu har ${TRIAL_MAX_REPORTS - currentCount} rapporter tilbage i prøveversionen.\n\nMax ${TRIAL_MAX_REPORTS} rapporter er tilladt i prøveversionen.`);
+    }
+  }
+  
+  return true;
+}
+
+// Generer eller hent unikt installations-ID
+function getInstallationId(){
+  // Tjek først om der er et pre-genereret installations-ID (fra installation)
+  // Dette sikrer at hver installation får sit eget unikke ID
+  if(typeof PRE_GENERATED_INSTALLATION_ID !== 'undefined' && PRE_GENERATED_INSTALLATION_ID){
+    // Brug pre-genereret ID fra installation
+    const preId = PRE_GENERATED_INSTALLATION_ID;
+    // Gem det i localStorage så det bliver brugt fremover
+    localStorage.setItem(INSTALLATION_ID_KEY, preId);
+    return preId;
+  }
+  
+  // Hvis ikke, tjek localStorage (bagudkompatibilitet)
+  let installId = localStorage.getItem(INSTALLATION_ID_KEY);
+  if(!installId){
+    // Generer unikt ID baseret på browser fingerprint og timestamp
+    const fingerprint = [
+      navigator.userAgent,
+      navigator.language,
+      screen.width + 'x' + screen.height,
+      new Date().getTimezoneOffset(),
+      Date.now()
+    ].join('|');
+    
+    // Generer hash af fingerprint
+    let hash = 0;
+    for(let i = 0; i < fingerprint.length; i++){
+      const char = fingerprint.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    
+    // Kombiner med timestamp og random
+    installId = 'INST-' + Math.abs(hash).toString(36).toUpperCase() + '-' + Date.now().toString(36).toUpperCase() + '-' + Math.floor(Math.random() * 10000).toString(36).toUpperCase();
+    localStorage.setItem(INSTALLATION_ID_KEY, installId);
+  }
+  return installId;
+}
+
+function checkLicense(){
+  try {
+    // Tjek om licensfil eksisterer
+    const licenseData = localStorage.getItem('app_license');
+    if(!licenseData){
+      // Ingen licens - start prøveperiode
+      const trialStart = Date.now();
+      localStorage.setItem('app_license', JSON.stringify({
+        type: 'trial',
+        startDate: trialStart,
+        endDate: trialStart + (TRIAL_DAYS * 24 * 60 * 60 * 1000),
+        licenseKey: null
+      }));
+      return { valid: true, type: 'trial', daysLeft: TRIAL_DAYS };
+    }
+    
+    const license = JSON.parse(licenseData);
+    const now = Date.now();
+    
+    // Tjek om det er en gyldig licensnøgle
+    if(license.type === 'full' && license.licenseKey){
+      const currentInstallationId = getInstallationId();
+      
+      // Tjek om installations-ID matcher
+      if(license.installationId && license.installationId !== currentInstallationId){
+        return { valid: false, message: 'Licensen er ikke gyldig for denne installation. Licensen er bundet til en anden installation.' };
+      }
+      
+      // Valider licensnøgle (hash check med installations-ID)
+      const keyToHash = license.licenseKeyOnly || license.licenseKey;
+      const expectedHash = generateLicenseHash(keyToHash, currentInstallationId);
+      if(license.hash === expectedHash && license.endDate && license.endDate > now){
+        return { valid: true, type: 'full', daysLeft: Math.ceil((license.endDate - now) / (24 * 60 * 60 * 1000)) };
+      }
+    }
+    
+    // Tjek prøveperiode
+    if(license.type === 'trial' && license.endDate){
+      if(now < license.endDate){
+        const daysLeft = Math.ceil((license.endDate - now) / (24 * 60 * 60 * 1000));
+        return { valid: true, type: 'trial', daysLeft: daysLeft };
+      } else {
+        return { valid: false, type: 'trial', daysLeft: 0, message: 'Prøveperioden er udløbet. Indtast en gyldig licensnøgle for at fortsætte.' };
+      }
+    }
+    
+    return { valid: false, message: 'Ugyldig licens. Kontakt support.' };
+  } catch(e){
+    console.error('Licens fejl:', e);
+    return { valid: false, message: 'Fejl ved licensvalidering: ' + e.message };
+  }
+}
+
+function generateLicenseHash(key, installationId = null){
+  // Hash funktion der inkluderer installations-ID hvis angivet
+  const dataToHash = installationId ? `${key}|${installationId}` : key;
+  let hash = 0;
+  for(let i = 0; i < dataToHash.length; i++){
+    const char = dataToHash.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash).toString(16);
+}
+
+function activateLicense(licenseKey){
+  try {
+    if(!licenseKey || licenseKey.trim() === ''){
+      return { success: false, message: 'Licensnøgle må ikke være tom' };
+    }
+    
+    const key = licenseKey.trim();
+    const installationId = getInstallationId();
+    
+    // Valider licensnøgle format (kan tilpasses)
+    if(key.length < 10){
+      return { success: false, message: 'Ugyldig licensnøgle format' };
+    }
+    
+    // Tjek om licensnøglen indeholder installations-ID
+    // Format: LIC-INSTALLATIONID-XXXXX-XXXXX eller LIC-XXXXX-XXXXX-XXXXX
+    // Installations-ID kan indeholde bindestreger, så vi skal finde det korrekt
+    let licenseInstallationId = null;
+    let licenseKeyOnly = key;
+    
+    // Hvis licensnøglen starter med LIC-INST, så indeholder den installations-ID
+    if(key.startsWith('LIC-INST-')){
+      // Fjern "LIC-" fra starten
+      const withoutLic = key.substring(4); // "INST-XXXXX-XXXXX-XXXXX-UNIQUE-DAYS"
+      const parts = withoutLic.split('-');
+      
+      // Licensnøgle format fra generator: LIC-INSTALLATIONID-UNIQUE-DAYS
+      // Eksempel: LIC-INST-M3UO1-MIEDCISU-627-ABC123-365
+      // Vi ved at sidste del er dage (tal), og næstsidste del er den unikke del (base36)
+      // Installations-ID er alt før den unikke del
+      
+      // Find sidste del (dage) - skal være et tal
+      const lastPart = parts[parts.length - 1];
+      if(/^\d+$/.test(lastPart) && parts.length >= 3){
+        // Sidste del er dage - installations-ID er alt undtagen de sidste 2 dele (unik del + dage)
+        // Eksempel: parts = ["INST", "M3UO1", "MIEDCISU", "627", "ABC123", "365"]
+        // Installations-ID = "INST-M3UO1-MIEDCISU-627" (første 4 dele)
+        // Unik del = "ABC123-365" (sidste 2 dele)
+        licenseInstallationId = parts.slice(0, parts.length - 2).join('-');
+        const uniquePart = parts.slice(parts.length - 2).join('-');
+        licenseKeyOnly = 'LIC-' + uniquePart;
+      }
+    }
+    
+    // Valider at installations-ID matcher
+    if(licenseInstallationId && licenseInstallationId !== installationId){
+      return { success: false, message: 'Licensnøglen er ikke gyldig for denne installation. Licensen er bundet til en anden installation. Forventet: ' + installationId + ', Fandt: ' + licenseInstallationId };
+    }
+    
+    // Generer hash med installations-ID
+    const hash = generateLicenseHash(licenseKeyOnly, installationId);
+    
+    // Beregn udløbsdato (1 år fra nu, eller tilpass efter behov)
+    const endDate = Date.now() + (365 * 24 * 60 * 60 * 1000);
+    
+    localStorage.setItem('app_license', JSON.stringify({
+      type: 'full',
+      licenseKey: key,
+      licenseKeyOnly: licenseKeyOnly,
+      installationId: installationId,
+      hash: hash,
+      startDate: Date.now(),
+      endDate: endDate
+    }));
+    
+    return { success: true, message: 'Licens aktiveret succesfuldt!' };
+  } catch(e){
+    return { success: false, message: 'Fejl ved aktivering: ' + e.message };
+  }
+}
+
+function showLicenseModal(){
+  const licenseStatus = checkLicense();
+  const modal = document.createElement('div');
+  modal.className = 'modal-backdrop';
+  modal.id = 'licenseModal';
+  modal.style.display = 'flex';
+  modal.innerHTML = `
+    <div class="modal" style="max-width:500px;">
+      <h3>${licenseStatus.valid ? 'Licens Status' : 'Licens Påkrævet'}</h3>
+      <div style="padding:16px;">
+        ${licenseStatus.valid ? 
+          `<p style="color:#28a745; font-weight:bold;">✅ ${licenseStatus.type === 'trial' ? 'Prøveperiode aktiv' : 'Licens aktiv'}</p>
+           <p>${licenseStatus.type === 'trial' ? `Dage tilbage: ${licenseStatus.daysLeft}` : `Licens gyldig til: ${new Date(licenseStatus.endDate || Date.now() + 365*24*60*60*1000).toLocaleDateString('da-DK')}`}</p>
+           ${licenseStatus.type === 'trial' ? '<p style="color:#856404; font-size:14px;">Indtast en gyldig licensnøgle for at aktivere fuld licens.</p>' : ''}` :
+          `<p style="color:#dc3545; font-weight:bold;">❌ ${licenseStatus.message || 'Licens påkrævet'}</p>`
+        }
+        <div style="margin-top:20px;">
+          <label><strong>Licensnøgle:</strong></label>
+          <input type="text" id="licenseKeyInput" placeholder="Indtast licensnøgle" style="width:100%; margin-top:8px; padding:10px; font-size:16px; letter-spacing:2px;" />
+        </div>
+      </div>
+      <div class="actions">
+        <button class="secondary" onclick="closeLicenseModal()">Luk</button>
+        <button onclick="activateLicenseFromModal()" style="background:#28a745;">Aktiver Licens</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+function closeLicenseModal(){
+  const modal = document.getElementById('licenseModal');
+  if(modal) modal.remove();
+}
+
+function activateLicenseFromModal(){
+  const input = document.getElementById('licenseKeyInput');
+  if(!input) return;
+  const result = activateLicense(input.value);
+  if(result.success){
+    alert(result.message);
+    closeLicenseModal();
+    location.reload();
+  } else {
+    alert('Fejl: ' + result.message);
+  }
+}
+
+function activateLicenseFromPage(){
+  const input = document.getElementById('licenseKeyInputPage');
+  if(!input) return;
+  const result = activateLicense(input.value);
+  if(result.success){
+    alert(result.message);
+    updateLicenseStatusDisplay();
+    if(input) input.value = '';
+    location.reload();
+  } else {
+    alert('Fejl: ' + result.message);
+  }
+}
+
+function updateLicenseStatusDisplay(){
+  const display = document.getElementById('licenseStatusDisplay');
+  if(!display) return;
+  
+  // Opdater installations-ID display
+  const installIdDisplay = document.getElementById('installationIdDisplay');
+  if(installIdDisplay){
+    installIdDisplay.value = getInstallationId();
+  }
+  
+  // Opdater installationsmappe display
+  const installPathDisplay = document.getElementById('installationPathDisplay');
+  if(installPathDisplay){
+    installPathDisplay.value = getInstallationPath();
+  }
+  
+  const licenseStatus = checkLicense();
+  if(licenseStatus.valid){
+    const statusHtml = `
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="font-size:32px;">✅</span>
+        <div>
+          <h3 style="margin:0; color:#28a745;">${licenseStatus.type === 'trial' ? 'Prøveperiode Aktiv' : 'Licens Aktiv'}</h3>
+          <p style="margin:4px 0 0 0; color:#666;">
+            ${licenseStatus.type === 'trial' 
+              ? `Dage tilbage: <strong>${licenseStatus.daysLeft}</strong> dage` 
+              : `Licens gyldig til: <strong>${new Date(licenseStatus.endDate || Date.now() + 365*24*60*60*1000).toLocaleDateString('da-DK')}</strong>`
+            }
+          </p>
+          ${licenseStatus.type === 'trial' ? '<p style="margin:8px 0 0 0; color:#856404; font-size:14px;">Indtast en gyldig licensnøgle for at aktivere fuld licens.</p>' : ''}
+        </div>
+      </div>
+    `;
+    display.innerHTML = statusHtml;
+  } else {
+    const statusHtml = `
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="font-size:32px;">❌</span>
+        <div>
+          <h3 style="margin:0; color:#dc3545;">Licens Påkrævet</h3>
+          <p style="margin:4px 0 0 0; color:#666;">${licenseStatus.message || 'Indtast en gyldig licensnøgle for at fortsætte.'}</p>
+        </div>
+      </div>
+    `;
+    display.innerHTML = statusHtml;
+  }
+}
+
+function getInstallationPath(){
+  // Prøv at finde installationsmappen baseret på HTML filens placering
+  try {
+    // Hvis vi kører fra fil system, kan vi bruge window.location
+    const currentPath = window.location.pathname || window.location.href;
+    
+    // Fjern filnavn fra stien
+    let folderPath = currentPath;
+    if(folderPath.includes('/')){
+      folderPath = folderPath.substring(0, folderPath.lastIndexOf('/'));
+    } else if(folderPath.includes('\\')){
+      folderPath = folderPath.substring(0, folderPath.lastIndexOf('\\'));
+    }
+    
+    // Hvis det er file:// protocol, konverter til Windows sti
+    if(folderPath.startsWith('/')){
+      // file:///C:/Users/... -> C:/Users/...
+      folderPath = folderPath.substring(1).replace(/\//g, '\\');
+    }
+    
+    // Standard placering hvis vi ikke kan finde det
+    if(!folderPath || folderPath === '' || folderPath === '/'){
+      return '%USERPROFILE%\\Documents\\køkkenlager optælling';
+    }
+    
+    return folderPath;
+  } catch(e){
+    console.warn('Kunne ikke finde installationsmappe:', e);
+    return '%USERPROFILE%\\Documents\\køkkenlager optælling';
+  }
+}
+
+function openInstallationFolder(){
+  const path = getInstallationPath();
+  // Prøv at åbne mappen (virker kun hvis programmet kører fra fil system)
+  try {
+    // For Windows: prøv at åbne via file:// URL
+    const folderUrl = 'file:///' + path.replace(/\\/g, '/');
+    window.open(folderUrl, '_blank');
+  } catch(e){
+    alert('Kunne ikke åbne mappen automatisk.\n\nInstallationsmappe:\n' + path + '\n\nÅbn denne mappe manuelt i File Explorer.');
+  }
+}
+
+function copyInstallationId(){
+  const installIdDisplay = document.getElementById('installationIdDisplay');
+  if(!installIdDisplay) return;
+  
+  installIdDisplay.select();
+  installIdDisplay.setSelectionRange(0, 99999); // For mobile devices
+  
+  try {
+    navigator.clipboard.writeText(installIdDisplay.value).then(() => {
+      alert('✅ Installations-ID kopieret til udklipsholder!');
+    }).catch(() => {
+      // Fallback
+      document.execCommand('copy');
+      alert('✅ Installations-ID kopieret til udklipsholder!');
+    });
+  } catch(e) {
+    // Fallback
+    document.execCommand('copy');
+    alert('✅ Installations-ID kopieret til udklipsholder!');
+  }
+}
+
 // Allow Enter key to submit - håndteres i DOMContentLoaded nedenfor
 
 /* ======================================================
@@ -1224,9 +2119,7 @@ let postnummerCache = {};
 let postnrLookupTimeout = null;
 let editingLeverandorIndex = null;
 
-const $ = id => document.getElementById(id);
-function genId(){ return 'id_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*10000); }
-function formatTime(ts){ return new Date(ts).toLocaleString(); }
+// $, genId og formatTime er allerede defineret tidligere i koden
 function downloadFile(content, filename, type='text/plain'){ const b = new Blob([content], {type}); const url = URL.createObjectURL(b); const a = document.createElement('a'); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url); }
 
 /* ================================
@@ -1236,7 +2129,11 @@ const STORAGE_KEY = 'køkkenlager_data';
 
 function saveAllData(){
   try{
+    // Ensure installation ID is included
+    const installationId = getInstallationId();
+    
     const dataToSave = {
+      installationId: installationId, // Store main program installation ID
       masterVarelager,
       lagerData,
       lagerLokationer,
@@ -1276,39 +2173,111 @@ function loadAllData(){
   }
 }
 
-/* Ensure modals hidden at load */
+/* Ensure modals hidden at load og setup event listeners */
 document.addEventListener('DOMContentLoaded', ()=>{
-  // Vis login først
-  showLoginModal();
-  
-  // Allow Enter key to submit
-  const loginPass = $('loginPassword');
-  const newPass = $('newPassword');
-  const confirmPass = $('confirmPassword');
-  if(loginPass) loginPass.addEventListener('keypress', (e)=>{ if(e.key==='Enter') attemptLogin(); });
-  if(newPass) newPass.addEventListener('keypress', (e)=>{ if(e.key==='Enter') createPassword(); });
-  if(confirmPass) confirmPass.addEventListener('keypress', (e)=>{ if(e.key==='Enter') createPassword(); });
-  
-  ['startModal','finishModal','importModal','scannerModal','phoneLinkModal'].forEach(id=>{
-    const el = $(id);
-    if(!el) return;
-    el.classList.add('hidden');
-    el.style.display = 'none';
-  });
-  
-  // App initialiseres kun efter succesfuldt login (se hideLoginModal)
+  try {
+    // Vis login først
+    showLoginModal();
+    
+    // Allow Enter key to submit i login forms
+    const loginPass = $('loginPassword');
+    const newPass = $('newPassword');
+    const confirmPass = $('confirmPassword');
+    if(loginPass) {
+      loginPass.addEventListener('keypress', (e)=>{ 
+        if(e.key==='Enter') attemptLogin(); 
+      });
+    }
+    const userName = $('userName');
+    if(userName) {
+      userName.addEventListener('keypress', (e)=>{ 
+        if(e.key==='Enter') {
+          const email = $('recoveryEmail');
+          if(email) email.focus();
+        }
+      });
+    }
+    if(newPass) {
+      newPass.addEventListener('keypress', (e)=>{ 
+        if(e.key==='Enter') {
+          const confirm = $('confirmPassword');
+          if(confirm) confirm.focus();
+        }
+      });
+    }
+    if(confirmPass) {
+      confirmPass.addEventListener('keypress', (e)=>{ 
+        if(e.key==='Enter') createPassword(); 
+      });
+    }
+    
+    // Tillad Enter key i stregkode input (konsolideret fra anden listener)
+    const barcodeInput = $('manualBarcodeInput');
+    if(barcodeInput){
+      barcodeInput.addEventListener('keypress', (e) => {
+        if(e.key === 'Enter'){
+          tilfoejFraStregkode();
+        }
+      });
+    }
+    
+    // Skjul alle modals ved opstart
+    ['startModal','finishModal','importModal','scannerModal','phoneLinkModal'].forEach(id=>{
+      const el = $(id);
+      if(!el) {
+        console.warn(`Modal med id "${id}" ikke fundet`);
+        return;
+      }
+      el.classList.add('hidden');
+      el.style.display = 'none';
+    });
+    
+    // App initialiseres kun efter succesfuldt login (se hideLoginModal)
+  } catch(error) {
+    console.error('Fejl ved DOMContentLoaded initialisering:', error);
+  }
 });
 
 function initializeApp(){
+  // Tjek licens igen ved initialisering
+  const licenseStatus = checkLicense();
+  if(!licenseStatus.valid){
+    showLicenseModal();
+    return;
+  }
+  
   // Sikr at login-active er fjernet
   document.body.classList.remove('login-active');
   
   // Brug en lille delay for at sikre CSS ændringen er anvendt
   setTimeout(() => {
-    // Prøv at indlæse gemte data, ellers brug demo data
+    // Prøv at indlæse gemte data
     const hasData = loadAllData();
+    
+    // Ved ny installation: Start ALTID med tomt lager (ingen demo data)
+    const isNewInstallation = typeof PRE_GENERATED_INSTALLATION_ID !== 'undefined' && 
+                               PRE_GENERATED_INSTALLATION_ID;
+    
     if(!hasData){
-      seedDemo();
+      if(isNewInstallation){
+        // Ny installation: Start med tomt lager (ingen demo data)
+        masterVarelager = [];
+        lagerData = {};
+        // Opret tomme lokationer hvis de ikke findes
+        if(!lagerLokationer || lagerLokationer.length === 0){
+          lagerLokationer = ['Køl', 'Frost', 'Tørevare', 'Grønt'];
+        }
+        lagerLokationer.forEach(l => {
+          if(!lagerData[l]) lagerData[l] = {};
+        });
+        reports = [];
+        archivedReports = [];
+        leverandorer = [];
+        saveAllData(); // Gem tomt lager
+      } else {
+        // Gammel installation uden data: Seed demo (bagudkompatibilitet)
+        seedDemo();
+      }
     }
     
     updateAllSelects();
@@ -1331,6 +2300,7 @@ function initializeApp(){
     }
     
     renderReports();
+    renderArchivedReports();
     updateLogPreview();
     setupPostnummerLookup();
     // Initialiser hylle reol/hylle dropdowns
@@ -1340,42 +2310,63 @@ function initializeApp(){
     // Tjek for manuel optælling data ved opstart
     checkForManualCountingData();
     
-    // Gem data automatisk hver 30 sekunder
-    setInterval(saveAllData, 30000);
+    // Optimerede interval checks - én samlet funktion i stedet for tre separate
+    let lastSaveTime = Date.now();
+    let lastManualCheckTime = Date.now();
+    let lastReportsCheckTime = Date.now();
     
-    // Tjek for manuel optælling data hver 10 sekunder
-    setInterval(checkForManualCountingData, 10000);
-    
-    // Tjek for nye rapporter automatisk hver 5 sekunder
+    // Samlet interval funktion der håndterer alle periodiske opgaver
     setInterval(function() {
-      const storageKey = 'køkkenlager_data';
-      const mainData = localStorage.getItem(storageKey);
-      if(mainData) {
-        try {
-          const data = JSON.parse(mainData);
-          if(data.reports && Array.isArray(data.reports)) {
-            // Check if reports count changed
-            if(data.reports.length !== reports.length) {
-              // Reload reports from localStorage
-              reports = data.reports;
-              // Update sessionCounter
-              if(data.sessionCounter !== undefined) {
-                sessionCounter = data.sessionCounter;
+      try {
+        const now = Date.now();
+        
+        // Auto-save hver 30 sekunder
+        if(now - lastSaveTime >= 30000) {
+          saveAllData();
+          lastSaveTime = now;
+        }
+        
+        // Tjek for manuel optælling data hver 10 sekunder
+        if(now - lastManualCheckTime >= 10000) {
+          checkForManualCountingData();
+          lastManualCheckTime = now;
+        }
+        
+        // Tjek for nye rapporter automatisk hver 5 sekunder
+        if(now - lastReportsCheckTime >= 5000) {
+          const storageKey = 'køkkenlager_data';
+          const mainData = localStorage.getItem(storageKey);
+          if(mainData) {
+            try {
+              const data = JSON.parse(mainData);
+              if(data.reports && Array.isArray(data.reports)) {
+                // Check if reports count changed
+                if(data.reports.length !== reports.length) {
+                  // Reload reports from localStorage
+                  reports = data.reports;
+                  // Update sessionCounter
+                  if(data.sessionCounter !== undefined) {
+                    sessionCounter = data.sessionCounter;
+                  }
+                  // Refresh display if on reports page
+                  const reportsSection = document.getElementById('rapporter');
+                  if(reportsSection && !reportsSection.classList.contains('hidden')) {
+                    renderReports();
+                    updateLogPreview();
+                  }
+                  console.log('Reports automatically refreshed. Count:', reports.length);
+                }
               }
-              // Refresh display if on reports page
-              const reportsSection = document.getElementById('rapporter');
-              if(reportsSection && !reportsSection.classList.contains('hidden')) {
-                renderReports();
-                updateLogPreview();
-              }
-              console.log('Reports automatically refreshed. Count:', reports.length);
+            } catch(e) {
+              console.error('Error checking reports:', e);
             }
           }
-        } catch(e) {
-          console.error('Error checking reports:', e);
+          lastReportsCheckTime = now;
         }
+      } catch(error) {
+        console.error('Fejl i interval check:', error);
       }
-    }, 5000);
+    }, 5000); // Kør hver 5 sekunder, men udfør opgaver baseret på deres individuelle intervaller
     
     // Gem data når siden lukkes
     window.addEventListener('beforeunload', ()=>{
@@ -1395,13 +2386,35 @@ function initializeApp(){
         }
         const reader = new FileReader();
         reader.onload = function(e){
+          const logoDataURL = e.target.result;
+          // Gem logo i localStorage
+          try {
+            localStorage.setItem('custom_logo', logoDataURL);
+          } catch(err) {
+            console.warn('Kunne ikke gemme logo:', err);
+          }
+          // Opdater logo i UI
           const logoWrap = document.querySelector('.logo-svg');
           if(logoWrap){
-            logoWrap.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:contain;" alt="Logo" />`;
+            logoWrap.innerHTML = `<img src="${logoDataURL}" style="width:100%;height:100%;object-fit:contain;" alt="Logo" />`;
           }
+          saveAllData(); // Gem også i hoveddata
         };
         reader.readAsDataURL(file);
       });
+    }
+    
+    // Indlæs gemt logo ved opstart
+    try {
+      const savedLogo = localStorage.getItem('custom_logo');
+      if(savedLogo){
+        const logoWrap = document.querySelector('.logo-svg');
+        if(logoWrap){
+          logoWrap.innerHTML = `<img src="${savedLogo}" style="width:100%;height:100%;object-fit:contain;" alt="Logo" />`;
+        }
+      }
+    } catch(err) {
+      console.warn('Kunne ikke indlæse gemt logo:', err);
     }
   }, 50);
 }
@@ -1422,8 +2435,50 @@ function updateAllSelects(){
     if(id==='startScope') s.add(new Option('Alle lokationer',''));
     if(id==='hylleLagerSelect' || id==='optalLagerSelect') s.add(new Option('Vælg lager...',''));
     lagerLokationer.forEach(l => s.add(new Option(l,l)));
+    
+    // Auto-size dropdown for filterPlacement
+    if(id === 'filterPlacement'){
+      setTimeout(() => autoSizeSelect(s), 100); // Delay for at sikre DOM er klar
+    }
   });
   lagerLokationer.forEach(l => { if(!lagerData[l]) lagerData[l] = {}; });
+}
+
+// Auto-size select dropdown baseret på indhold
+function autoSizeSelect(selectElement){
+  if(!selectElement) return;
+  
+  // Opret en midlertidig element for at måle tekst bredde
+  const tempSelect = document.createElement('select');
+  tempSelect.style.position = 'absolute';
+  tempSelect.style.visibility = 'hidden';
+  tempSelect.style.height = 'auto';
+  tempSelect.style.width = 'auto';
+  tempSelect.style.fontSize = window.getComputedStyle(selectElement).fontSize;
+  tempSelect.style.fontFamily = window.getComputedStyle(selectElement).fontFamily;
+  document.body.appendChild(tempSelect);
+  
+  let maxWidth = 120; // Minimum bredde
+  
+  // Mål hver option
+  for(let i = 0; i < selectElement.options.length; i++){
+    const option = selectElement.options[i];
+    tempSelect.innerHTML = '';
+    const tempOption = document.createElement('option');
+    tempOption.textContent = option.textContent;
+    tempSelect.appendChild(tempOption);
+    
+    const width = tempSelect.scrollWidth;
+    if(width > maxWidth){
+      maxWidth = width;
+    }
+  }
+  
+  document.body.removeChild(tempSelect);
+  
+  // Sæt bredde med padding (max 250px, min 120px)
+  const finalWidth = Math.max(120, Math.min(maxWidth + 40, 250));
+  selectElement.style.width = finalWidth + 'px';
 }
 
 // Opdater søgefelt når lager ændres
@@ -1494,13 +2549,27 @@ function renderMasterTable(){
     t.innerHTML = "";
 
     const filter = $('filterPlacement')?.value || "";
+    const searchText = ($('masterSearchInput')?.value || "").toLowerCase().trim();
+
+    // Filtrer og sorter
+    let filtered = [...masterVarelager];
+    
+    // Søg efter tekst
+    if (searchText) {
+        filtered = filtered.filter(v => 
+            (v.navn || '').toLowerCase().includes(searchText) ||
+            (v.placering || '').toLowerCase().includes(searchText) ||
+            (v.maaleenhed || '').toLowerCase().includes(searchText)
+        );
+    }
+    
+    // Filtrer efter placering
+    if (filter) {
+        filtered = filtered.filter(v => v.placering === filter);
+    }
 
     // Sorter efter placering, derefter reolNr, derefter hylleNr, derefter rækkefølge
-    const sorted = [...masterVarelager].sort((a, b) => {
-        if (filter) {
-            if (a.placering !== filter && b.placering === filter) return 1;
-            if (a.placering === filter && b.placering !== filter) return -1;
-        }
+    const sorted = filtered.sort((a, b) => {
         if (a.placering !== b.placering) return (a.placering || '').localeCompare(b.placering || '');
         if ((a.reolNr || '') !== (b.reolNr || '')) return (a.reolNr || '').localeCompare(b.reolNr || '');
         if ((a.hylleNr || '') !== (b.hylleNr || '')) return (a.hylleNr || '').localeCompare(b.hylleNr || '');
@@ -1508,9 +2577,24 @@ function renderMasterTable(){
         return 0;
     });
 
-    sorted.forEach(v => {
-        if (filter && v.placering !== filter) return;
+    // Opdater info tekst
+    const infoEl = $('masterTableInfo');
+    if (infoEl) {
+        if (searchText || filter) {
+            infoEl.textContent = `Viser ${sorted.length} af ${masterVarelager.length} varer`;
+        } else {
+            infoEl.textContent = `Total: ${masterVarelager.length} varer`;
+        }
+    }
 
+    // Pagination - vis kun første 30 varer ad gangen for bedre performance
+    const itemsPerPage = 30;
+    const currentPage = window.masterTablePage || 1;
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedItems = sorted.slice(startIndex, endIndex);
+
+    paginatedItems.forEach(v => {
         const tr = document.createElement("tr");
 
         tr.innerHTML = `
@@ -1526,12 +2610,25 @@ function renderMasterTable(){
         t.appendChild(tr);
     });
 
-    // update dropdowns (single & labels)
-    const labelSingle = $('labelSingle');
-    if (labelSingle) {
-        labelSingle.innerHTML = '<option value="">--- Ingen ---</option>';
-        masterVarelager.forEach(v => labelSingle.add(new Option(v.navn, v.id)));
+    // Tilføj pagination controls hvis der er flere sider
+    if (sorted.length > itemsPerPage) {
+        const totalPages = Math.ceil(sorted.length / itemsPerPage);
+        const paginationRow = document.createElement('tr');
+        paginationRow.style.background = '#f9f9f9';
+        paginationRow.innerHTML = `
+            <td colspan="8" style="text-align:center; padding:12px;">
+                <button class="secondary small" onclick="window.masterTablePage = Math.max(1, (window.masterTablePage || 1) - 1); renderMasterTable();" ${currentPage === 1 ? 'disabled' : ''}>◀ Forrige</button>
+                <span style="margin:0 12px; color:#666;">Side ${currentPage} af ${totalPages} (${sorted.length} varer)</span>
+                <button class="secondary small" onclick="window.masterTablePage = Math.min(${totalPages}, (window.masterTablePage || 1) + 1); renderMasterTable();" ${currentPage === totalPages ? 'disabled' : ''}>Næste ▶</button>
+            </td>
+        `;
+        t.appendChild(paginationRow);
+    } else {
+        window.masterTablePage = 1; // Reset hvis der er færre end itemsPerPage
     }
+
+    // update dropdowns (single & labels)
+    updateLabelSingleSelect();
 
     const masterSelect = $('masterSelect');
     if (masterSelect) {
@@ -1647,6 +2744,11 @@ function editMasterRaekkefoelge(id){
    [JS 3.2] TILFØJ MASTER VARE
    ====================================================== */
 function tilfoejMasterVare(){
+    // Tjek prøveversion begrænsning
+    if(!checkTrialLimits('add_vare')){
+      return; // Stop hvis begrænsning nået
+    }
+    
     const navn = $('masterVarenavn')?.value.trim();
     const maaleenhed = $('masterMaaleenhed')?.value.trim() || 'stk';
     const pris = parseFloat($('masterPris')?.value) || 0;
@@ -2493,17 +3595,7 @@ function tilfoejFraStregkode(){
   }
 }
 
-// Tillad Enter key i stregkode input
-document.addEventListener('DOMContentLoaded', () => {
-  const barcodeInput = $('manualBarcodeInput');
-  if(barcodeInput){
-    barcodeInput.addEventListener('keypress', (e) => {
-      if(e.key === 'Enter'){
-        tilfoejFraStregkode();
-      }
-    });
-  }
-});
+// Stregkode input Enter key handler er nu flyttet til hoved DOMContentLoaded listener (linje ~1280)
 
 /* ================================
    [JS 5] SESSION (Start / Finish / Preview)
@@ -2539,10 +3631,54 @@ function confirmStartSession(){
   } 
   const finishBtn = $('finishSessionBtn'); 
   if(finishBtn) finishBtn.disabled = false; 
+  const cancelBtn = $('cancelSessionBtn'); 
+  if(cancelBtn) cancelBtn.disabled = false; 
   closeStartModal(); 
   renderLagerTable(); 
   updateLogPreview(); 
   saveAllData(); 
+}
+
+function cancelSession(){
+  if(!activeSession) {
+    alert('Ingen aktiv optælling at annullere.');
+    return;
+  }
+  
+  if(!confirm('Er du sikker på at du vil annullere denne optælling?\n\nAlle indtastede data vil blive slettet og der bliver ikke lavet en rapport.\n\nDette kan ikke fortrydes.')){
+    return;
+  }
+  
+  // Nulstil activeSession
+  activeSession = null;
+  
+  // Opdater UI
+  const info = $('sessionInfo');
+  if(info){
+    info.classList.add('hidden');
+    info.textContent = '';
+  }
+  
+  const finishBtn = $('finishSessionBtn');
+  if(finishBtn) finishBtn.disabled = true;
+  
+  const cancelBtn = $('cancelSessionBtn');
+  if(cancelBtn) cancelBtn.disabled = true;
+  
+  // Luk finishModal hvis den er åben
+  closeFinishModal();
+  
+  // Opdater tabeller
+  renderLagerTable();
+  updateLogPreview();
+  saveAllData();
+  
+  alert('Optælling annulleret. Du kan nu starte en ny optælling.');
+}
+
+function cancelSessionFromModal(){
+  closeFinishModal();
+  cancelSession();
 }
 
 function editSessionName(){
@@ -2563,11 +3699,108 @@ function editSessionName(){
   saveAllData();
 }
 
-function openFinishModal(){ if(!activeSession) return alert('Ingen aktiv optælling'); const counts = activeSession.counts || {}; const container = $('finishSummary'); if(!container) return alert('Finish modal ikke fundet'); let html = `<p><strong>${activeSession.name}</strong> — ${activeSession.scope || 'Alle lokationer'} — Start: ${formatTime(activeSession.tsStart)}</p>`; let grandTotal = 0; const locs = Object.keys(counts).filter(l => Object.keys(counts[l]||{}).some(id => Number(counts[l][id])>0)); if(locs.length === 0){ html += `<p>Ingen registreringer endnu.</p>`; } else { locs.forEach(loc=>{ html += `<h4 style="margin-bottom:6px">${loc}</h4>`; html += `<table style="width:100%;border-collapse:collapse;margin-bottom:8px"><thead><tr><th style="border:1px solid #ddd;padding:6px">Vare</th><th style="border:1px solid #ddd;padding:6px">Enhed</th><th style="border:1px solid #ddd;padding:6px">Antal</th><th style="border:1px solid #ddd;padding:6px">Pris</th><th style="border:1px solid #ddd;padding:6px">Linjetotal</th></tr></thead><tbody>`; let subtotal=0; Object.keys(counts[loc]||{}).forEach(vid=>{ const antal = Number(counts[loc][vid])||0; if(antal<=0) return; const v = masterVarelager.find(m=>m.id===vid); const navn = v ? v.navn : `Ukendt (${vid})`; const maale = v ? (v.maaleenhed||'-') : '-'; const pris = v ? (Number(v.pris)||0) : 0; const linje = antal * pris; subtotal += linje; html += `<tr><td style="border:1px solid #ddd;padding:6px">${navn}</td><td style="border:1px solid #ddd;padding:6px">${maale}</td><td style="border:1px solid #ddd;padding:6px">${antal}</td><td style="border:1px solid #ddd;padding:6px">${pris.toFixed(2)} kr.</td><td style="border:1px solid #ddd;padding:6px">${linje.toFixed(2)} kr.</td></tr>`; }); html += `</tbody><tfoot><tr><td colspan="4" style="border:1px solid #ddd;padding:6px;text-align:right"><strong>Subtotal:</strong></td><td style="border:1px solid #ddd;padding:6px"><strong>${subtotal.toFixed(2)} kr.</strong></td></tr></tfoot></table>`; grandTotal += subtotal; }); html += `<p style="font-weight:800">Samlet total: ${grandTotal.toFixed(2)} kr.</p>`; } container.innerHTML = html; const modal = $('finishModal'); modal.classList.remove('hidden'); modal.style.display='flex'; modal.setAttribute('aria-hidden','false'); }
+function openFinishModal(){ 
+  if(!activeSession) return alert('Ingen aktiv optælling'); 
+  const counts = activeSession.counts || {}; 
+  const container = $('finishSummary'); 
+  if(!container) return alert('Finish modal ikke fundet'); 
+  let html = `<p><strong>${activeSession.name}</strong> — ${activeSession.scope || 'Alle lokationer'} — Start: ${formatTime(activeSession.tsStart)}</p>`; 
+  let grandTotal = 0; 
+  const locs = Object.keys(counts).filter(l => Object.keys(counts[l]||{}).some(id => Number(counts[l][id])>0)); 
+  const confirmBtn = document.querySelector('#finishModal .actions button:last-child');
+  
+  if(locs.length === 0){ 
+    html += `<div style="padding:20px; background:#fff3cd; border:2px solid #ffc107; border-radius:8px; margin-top:16px;">
+      <p style="margin:0; font-weight:700; color:#856404; font-size:16px;">⚠️ Optælling er tom</p>
+      <p style="margin:8px 0 0 0; color:#856404; font-size:14px;">Der er ikke indtastet nogen varer i denne optælling. Der bliver ikke lavet en rapport.</p>
+      <p style="margin:8px 0 0 0; color:#856404; font-size:14px;">Tilføj varer til optællingen før du afslutter den.</p>
+    </div>`;
+    if(confirmBtn) confirmBtn.disabled = true;
+    if(confirmBtn) confirmBtn.style.opacity = '0.5';
+    if(confirmBtn) confirmBtn.style.cursor = 'not-allowed';
+  } else { 
+    locs.forEach(loc=>{ 
+      html += `<h4 style="margin-bottom:6px">${loc}</h4>`; 
+      html += `<table style="width:100%;border-collapse:collapse;margin-bottom:8px"><thead><tr><th style="border:1px solid #ddd;padding:6px">Vare</th><th style="border:1px solid #ddd;padding:6px">Enhed</th><th style="border:1px solid #ddd;padding:6px">Antal</th><th style="border:1px solid #ddd;padding:6px">Pris</th><th style="border:1px solid #ddd;padding:6px">Linjetotal</th></tr></thead><tbody>`; 
+      let subtotal=0; 
+      Object.keys(counts[loc]||{}).forEach(vid=>{ 
+        const antal = Number(counts[loc][vid])||0; 
+        if(antal<=0) return; 
+        const v = masterVarelager.find(m=>m.id===vid); 
+        const navn = v ? v.navn : `Ukendt (${vid})`; 
+        const maale = v ? (v.maaleenhed||'-') : '-'; 
+        const pris = v ? (Number(v.pris)||0) : 0; 
+        const linje = antal * pris; 
+        subtotal += linje; 
+        html += `<tr><td style="border:1px solid #ddd;padding:6px">${navn}</td><td style="border:1px solid #ddd;padding:6px">${maale}</td><td style="border:1px solid #ddd;padding:6px">${antal}</td><td style="border:1px solid #ddd;padding:6px">${pris.toFixed(2)} kr.</td><td style="border:1px solid #ddd;padding:6px">${linje.toFixed(2)} kr.</td></tr>`; 
+      }); 
+      html += `</tbody><tfoot><tr><td colspan="4" style="border:1px solid #ddd;padding:6px;text-align:right"><strong>Subtotal:</strong></td><td style="border:1px solid #ddd;padding:6px"><strong>${subtotal.toFixed(2)} kr.</strong></td></tr></tfoot></table>`; 
+      grandTotal += subtotal; 
+    }); 
+    html += `<p style="font-weight:800">Samlet total: ${grandTotal.toFixed(2)} kr.</p>`; 
+    if(confirmBtn) confirmBtn.disabled = false;
+    if(confirmBtn) confirmBtn.style.opacity = '1';
+    if(confirmBtn) confirmBtn.style.cursor = 'pointer';
+  } 
+  container.innerHTML = html; 
+  const modal = $('finishModal'); 
+  modal.classList.remove('hidden'); 
+  modal.style.display='flex'; 
+  modal.setAttribute('aria-hidden','false'); 
+}
 
 function closeFinishModal(){ const modal = $('finishModal'); modal.classList.add('hidden'); modal.style.display='none'; modal.setAttribute('aria-hidden','true'); }
 
-function confirmFinishSession(){ if(!activeSession) return alert('Ingen aktiv optælling'); const details = []; let grandTotal=0; Object.keys(activeSession.counts||{}).forEach(loc=>{ Object.keys(activeSession.counts[loc]||{}).forEach(vid=>{ const antal = Number(activeSession.counts[loc][vid])||0; if(antal<=0) return; const v = masterVarelager.find(m=>m.id===vid); const navn = v ? v.navn : ('id:'+vid); const maaleenhed = v ? v.maaleenhed || '-' : '-'; const pris = v ? (Number(v.pris)||0) : 0; const linjetotal = antal * pris; grandTotal += linjetotal; const detailItem = { vareId: vid, navn, maaleenhed, pris, antal, linjetotal, placering: loc }; if(v && v.reolNr) detailItem.reolNr = v.reolNr; if(v && v.hylleNr) detailItem.hylleNr = v.hylleNr; details.push(detailItem); }); }); const report = { ts: Date.now(), handling: activeSession.name, type:'session', scope: activeSession.scope || '', details, total: grandTotal }; reports.unshift(report); activeSession = null; const info = $('sessionInfo'); if(info){ info.classList.add('hidden'); info.textContent=''; } const finishBtn = $('finishSessionBtn'); if(finishBtn) finishBtn.disabled = true; const finishBtnNumberPad = $('finishSessionBtnNumberPad'); if(finishBtnNumberPad) finishBtnNumberPad.disabled = true; closeFinishModal(); renderReports(); renderLagerTable(); updateLogPreview(); saveAllData(); alert('Optælling gemt som rapport.'); }
+function confirmFinishSession(){ 
+  if(!activeSession) return alert('Ingen aktiv optælling'); 
+  const details = []; 
+  let grandTotal=0; 
+  Object.keys(activeSession.counts||{}).forEach(loc=>{ 
+    Object.keys(activeSession.counts[loc]||{}).forEach(vid=>{ 
+      const antal = Number(activeSession.counts[loc][vid])||0; 
+      if(antal<=0) return; 
+      const v = masterVarelager.find(m=>m.id===vid); 
+      const navn = v ? v.navn : ('id:'+vid); 
+      const maaleenhed = v ? v.maaleenhed || '-' : '-'; 
+      const pris = v ? (Number(v.pris)||0) : 0; 
+      const linjetotal = antal * pris; 
+      grandTotal += linjetotal; 
+      const detailItem = { vareId: vid, navn, maaleenhed, pris, antal, linjetotal, placering: loc }; 
+      if(v && v.reolNr) detailItem.reolNr = v.reolNr; 
+      if(v && v.hylleNr) detailItem.hylleNr = v.hylleNr; 
+      details.push(detailItem); 
+    }); 
+  }); 
+  
+  // Tjek om optælling er tom
+  if(details.length === 0 || grandTotal === 0){
+    alert('⚠️ Optælling er tom\n\nDer er ikke indtastet nogen varer i denne optælling. Der bliver ikke lavet en rapport.\n\nTilføj varer til optællingen før du afslutter den.');
+    return;
+  }
+  
+  // Tjek prøveversion begrænsning før oprettelse af rapport
+  if(!checkTrialLimits('add_report')){
+    return; // Stop hvis begrænsning nået
+  }
+  
+  const report = { ts: Date.now(), handling: activeSession.name, type:'session', scope: activeSession.scope || '', details, total: grandTotal }; 
+  reports.unshift(report); 
+  activeSession = null; 
+  const info = $('sessionInfo'); 
+  if(info){ info.classList.add('hidden'); info.textContent=''; } 
+  const finishBtn = $('finishSessionBtn'); 
+  if(finishBtn) finishBtn.disabled = true; 
+  const finishBtnNumberPad = $('finishSessionBtnNumberPad'); 
+  if(finishBtnNumberPad) finishBtnNumberPad.disabled = true; 
+  const cancelBtn = $('cancelSessionBtn');
+  if(cancelBtn) cancelBtn.disabled = true;
+  closeFinishModal(); 
+  renderReports(); 
+  renderLagerTable(); 
+  updateLogPreview(); 
+  saveAllData(); 
+  alert('Optælling gemt som rapport.'); 
+}
 
 /* ================================
    [JS 6] ADD TO SESSION or PERMANENT
@@ -2649,6 +3882,7 @@ function renderLagerTable(){
     }
     const info = $('sessionInfo'); if(info){ info.classList.remove('hidden'); const nameDisplay = activeSession.editable ? `<span id="sessionNameDisplay" style="cursor:pointer;text-decoration:underline;color:#2196F3;" onclick="editSessionName()" title="Klik for at redigere navn">${activeSession.name}</span>` : activeSession.name; info.innerHTML = `${nameDisplay} — ${activeSession.scope || 'Alle lokationer'}`; }
     const finishBtn = $('finishSessionBtn'); if(finishBtn) finishBtn.disabled = false;
+    const cancelBtn = $('cancelSessionBtn'); if(cancelBtn) cancelBtn.disabled = false;
   } else {
     // Ingen aktiv optælling - vis tom tabel med besked
     const tr = document.createElement('tr');
@@ -2658,6 +3892,7 @@ function renderLagerTable(){
     const info = $('sessionInfo'); if(info) info.classList.add('hidden');
     const finishBtn = $('finishSessionBtn'); if(finishBtn) finishBtn.disabled = true;
     const finishBtnNumberPad = $('finishSessionBtnNumberPad'); if(finishBtnNumberPad) finishBtnNumberPad.disabled = true;
+    const cancelBtn = $('cancelSessionBtn'); if(cancelBtn) cancelBtn.disabled = true;
   }
   $('totalLager').textContent = total.toFixed(2) + ' kr.';
 }
@@ -3201,7 +4436,7 @@ function renderReports(){
       lokationDisplay = r.scope || r.placering || '-';
     }
     
-    tr.innerHTML = `<td>${formatTime(r.ts)}</td><td>${title}</td><td>${summary}</td><td>${antalDisplay}</td><td>${lokationDisplay}</td><td style="white-space:nowrap"><button class="secondary small" onclick="viewReportPDF(${i})" style="margin-right:4px;">📄 Vis PDF</button><button class="secondary small" onclick="exportReportPDF(${i})">💾 Download</button></td>`;
+    tr.innerHTML = `<td>${formatTime(r.ts)}</td><td>${title}</td><td>${summary}</td><td>${antalDisplay}</td><td>${lokationDisplay}</td><td style="white-space:nowrap"><button class="secondary small" onclick="viewReportPDF(${i})" style="margin-right:4px;">📄 Vis PDF</button><button class="secondary small" onclick="exportReportPDF(${i})" style="margin-right:4px;">💾 Download</button><button class="secondary small" onclick="moveReportToArchive(${i})" style="background:#FF9800; color:white;">📦 Arkiver</button></td>`;
     tbody.appendChild(tr); shown++;
   });
   
@@ -3283,6 +4518,7 @@ function checkAndArchiveReports(showAlert = true){
   
   if(archivedCount > 0 || showAlert){
     renderReports();
+    renderArchivedReports(); // Opdater også arkiverede rapporter
     if(status && archivedCount > 0){
       setTimeout(() => {
         if(status) status.textContent = '';
@@ -3291,11 +4527,168 @@ function checkAndArchiveReports(showAlert = true){
   }
 }
 
+function moveReportToArchive(index){
+  if(!confirm('Er du sikker på at du vil flytte denne rapport til arkiv?')){
+    return;
+  }
+  
+  if(index < 0 || index >= reports.length){
+    alert('Ugyldig rapport index');
+    return;
+  }
+  
+  const report = reports[index];
+  archivedReports.push(report);
+  reports.splice(index, 1);
+  
+  // Sorter arkiverede rapporter efter dato (nyeste først)
+  archivedReports.sort((a, b) => b.ts - a.ts);
+  
+  saveAllData();
+  renderReports();
+  renderArchivedReports();
+  alert('Rapport flyttet til arkiv');
+}
+
+function renderArchivedReports(){
+  const tbody = $('archivedReportsTable');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  
+  if(archivedReports.length === 0){
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#666;">Ingen arkiverede rapporter</td></tr>';
+    return;
+  }
+  
+  // Hent søgekriterier
+  const monthFilter = $('archivedReportsMonth')?.value || '';
+  const dateFilter = $('archivedReportsDate')?.value || '';
+  
+  // Filtrer rapporter
+  let filtered = [...archivedReports];
+  
+  if(monthFilter){
+    // Filtrer efter måned/år (format: YYYY-MM)
+    const [year, month] = monthFilter.split('-');
+    filtered = filtered.filter(r => {
+      const reportDate = new Date(r.ts);
+      return reportDate.getFullYear() === parseInt(year) && 
+             (reportDate.getMonth() + 1) === parseInt(month);
+    });
+  }
+  
+  if(dateFilter){
+    // Filtrer efter specifik dato
+    const filterDate = new Date(dateFilter);
+    const filterDateStart = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate()).getTime();
+    const filterDateEnd = filterDateStart + (24 * 60 * 60 * 1000) - 1;
+    filtered = filtered.filter(r => r.ts >= filterDateStart && r.ts <= filterDateEnd);
+  }
+  
+  // Sorter efter dato (nyeste først)
+  const sorted = filtered.sort((a, b) => b.ts - a.ts);
+  
+  if(sorted.length === 0){
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#666;">Ingen rapporter fundet for de valgte søgekriterier</td></tr>';
+    return;
+  }
+  
+  sorted.forEach((r, i) => {
+    const tr = document.createElement('tr');
+    const title = r.handling;
+    const summary = r.type === 'session' ? `${r.details.length} linjer — ${r.total.toFixed(2)} kr.` : (r.vare || '-');
+    
+    // Beregn total antal for sessions
+    let antalDisplay = '';
+    if(r.type === 'session'){
+      if(r.details && r.details.length > 0){
+        const totalAntal = r.details.reduce((sum, d) => sum + (Number(d.antal) || 0), 0);
+        antalDisplay = totalAntal.toString();
+      } else {
+        antalDisplay = '-';
+      }
+    } else {
+      antalDisplay = (r.antal || '').toString();
+    }
+    
+    // Bestem lokation
+    let lokationDisplay = '';
+    if(r.type === 'session'){
+      if(r.details && r.details.length > 0){
+        const uniqueLocs = [...new Set(r.details.map(d => d.placering).filter(p => p))];
+        lokationDisplay = uniqueLocs.length > 0 ? uniqueLocs.join(', ') : (r.scope || '-');
+      } else {
+        lokationDisplay = r.scope || '-';
+      }
+    } else {
+      lokationDisplay = r.scope || r.placering || '-';
+    }
+    
+    tr.innerHTML = `<td>${formatTime(r.ts)}</td><td>${title}</td><td>${summary}</td><td>${antalDisplay}</td><td>${lokationDisplay}</td><td style="white-space:nowrap"><button class="secondary small" onclick="viewArchivedReportPDF(${i})" style="margin-right:4px;">📄 Vis PDF</button><button class="secondary small" onclick="exportArchivedReportPDF(${i})">💾 Download</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+async function viewArchivedReportPDF(index){
+  if(index < 0 || index >= archivedReports.length){
+    alert('Ugyldig rapport index');
+    return;
+  }
+  const r = archivedReports[index];
+  if(!r) return alert('Rapport ikke fundet');
+  try {
+    const pdfUrl = await generateReportPDF(r, true);
+    if(pdfUrl){
+      window.open(pdfUrl, '_blank');
+    }
+  } catch(err){
+    alert('Fejl ved visning af PDF: ' + err.message);
+  }
+}
+
+async function exportArchivedReportPDF(index){
+  if(index < 0 || index >= archivedReports.length){
+    alert('Ugyldig rapport index');
+    return;
+  }
+  const r = archivedReports[index];
+  if(!r) return alert('Rapport ikke fundet');
+  try {
+    const doc = await generateReportPDF(r, false);
+    const filename = `rapport_${(r.handling||'optaelling').replace(/[^\w\-]+/g,'_')}_${r.ts}.pdf`;
+    doc.save(filename);
+  } catch(err){
+    alert('Fejl ved download af PDF: ' + err.message);
+  }
+}
+
 async function getLogoDataURL(){
-  const imgWrap = document.querySelector('.logo-svg svg');
-  if(!imgWrap) return null;
+  // Tjek først om der er et uploaded logo (img tag)
+  const imgTag = document.querySelector('.logo-svg img');
+  if(imgTag && imgTag.src){
+    // Hvis det er en data URL, returner den direkte
+    if(imgTag.src.startsWith('data:')){
+      return imgTag.src;
+    }
+    // Hvis det er en fil URL, konverter til data URL
+    try {
+      const response = await fetch(imgTag.src);
+      const blob = await response.blob();
+      return await new Promise(resolve=>{
+        const reader = new FileReader();
+        reader.onload = ()=> resolve(reader.result);
+        reader.readAsDataURL(blob);
+      });
+    } catch(e) {
+      console.warn('Kunne ikke konvertere logo:', e);
+    }
+  }
+  
+  // Ellers brug standard SVG
+  const svgWrap = document.querySelector('.logo-svg svg');
+  if(!svgWrap) return null;
   // serialize inline svg to data URL
-  const svg = imgWrap.outerHTML;
+  const svg = svgWrap.outerHTML;
   const blob = new Blob([svg], {type:'image/svg+xml;charset=utf-8'});
   return await new Promise(resolve=>{
     const reader = new FileReader();
@@ -3379,7 +4772,7 @@ async function generateReportPDF(r, forView = false){
       grouped[loc][reol][hylle].push(d);
     });
     
-  let grandTotal = 0;
+    let grandTotal = 0;
     let headerShown = false;
     let pageStartY = y; // Track where current page content started
     
@@ -3648,8 +5041,8 @@ async function exportReportPDF(index){
   const r = reports[index]; if(!r) return alert('Rapport ikke fundet');
   try {
     const doc = await generateReportPDF(r, false);
-  const filename = `rapport_${(r.handling||'optaelling').replace(/[^\w\-]+/g,'_')}_${r.ts}.pdf`;
-  doc.save(filename);
+    const filename = `rapport_${(r.handling||'optaelling').replace(/[^\w\-]+/g,'_')}_${r.ts}.pdf`;
+    doc.save(filename);
   } catch(err){
     alert('Fejl ved download af PDF: ' + err.message);
   }
@@ -3658,8 +5051,8 @@ async function exportReportPDF(index){
 async function viewAllReportsPDF(){
   const { jsPDF } = window.jspdf; if(!jsPDF) return alert('jsPDF mangler');
   try {
-  const doc = new jsPDF({ unit:'mm', format:'a4' }); let y=15; const margin=15;
-  const logo = await getLogoDataURL(); if(logo){ try{ doc.addImage(logo,'SVG',margin,y,40,15); y+=20; }catch(e){ y+=5; } }
+    const doc = new jsPDF({ unit:'mm', format:'a4' }); let y=15; const margin=15;
+    const logo = await getLogoDataURL(); if(logo){ try{ doc.addImage(logo,'SVG',margin,y,40,15); y+=20; }catch(e){ y+=5; } }
     
     // Titel med ramme
     doc.setDrawColor(100, 100, 100);
@@ -3667,9 +5060,9 @@ async function viewAllReportsPDF(){
     doc.rect(margin, y-5, 180, 8);
     doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.text('Samlet rapport', margin+2, y+2); y+=12;
     
-  for(let i=0;i<reports.length;i++){
-    const r = reports[i];
-    if(y>260){ doc.addPage(); y=15; }
+    for(let i=0;i<reports.length;i++){
+      const r = reports[i];
+      if(y>260){ doc.addPage(); y=15; }
       
       // Rapport header med ramme
       doc.setDrawColor(150, 150, 150);
@@ -3678,9 +5071,9 @@ async function viewAllReportsPDF(){
       doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.text(`${r.handling} — ${formatTime(r.ts)}`, margin+2, y+1); y+=8;
       
       if(r.type === 'session' && r.details && r.details.length > 0){
-    const byLoc = {}; (r.details||[]).forEach(d=>{ if(!byLoc[d.placering]) byLoc[d.placering]=[]; byLoc[d.placering].push(d); });
-    for(const loc of Object.keys(byLoc)){
-      if(y>260){ doc.addPage(); y=15; }
+        const byLoc = {}; (r.details||[]).forEach(d=>{ if(!byLoc[d.placering]) byLoc[d.placering]=[]; byLoc[d.placering].push(d); });
+        for(const loc of Object.keys(byLoc)){
+          if(y>260){ doc.addPage(); y=15; }
           
           // Lokation header
           doc.setDrawColor(180, 180, 180);
@@ -3700,7 +5093,7 @@ async function viewAllReportsPDF(){
           doc.line(margin, y, 195, y);
           y+=2;
           
-      let subtotal=0;
+          let subtotal=0;
           byLoc[loc].forEach((d, idx)=>{
             if(y>275){ doc.addPage(); y=15; }
             
@@ -3734,9 +5127,9 @@ async function viewAllReportsPDF(){
           doc.text(`Subtotal ${loc}: ${subtotal.toFixed(2)} kr.`, margin+142, y+1);
           y+=8;
         }
+      }
+      y+=4;
     }
-    y+=4;
-  }
     
     const pdfUrl = doc.output('bloburl');
     if(pdfUrl){
@@ -3770,10 +5163,21 @@ function generateLabels(){
   const container = $('labelContainer'); if(!container) return; container.innerHTML='';
   const count = parseInt($('labelCount')?.value) || 1;
   const selectedLoc = $('labelSelect')?.value || '';
+  const selectedReol = $('labelReolSelect')?.value || '';
   const single = $('labelSingle')?.value || '';
   let items = [];
-  if(single){ const found = masterVarelager.find(v=>v.id===single); if(found) items=[found]; }
-  else if(selectedLoc){ items = masterVarelager.filter(v=>v.placering === selectedLoc); }
+  if(single){ 
+    const found = masterVarelager.find(v=>v.id===single); 
+    if(found) items=[found]; 
+  }
+  else if(selectedLoc){
+    items = masterVarelager.filter(v => {
+      if(v.placering !== selectedLoc) return false;
+      // Hvis reol er valgt, filtrer også på reol
+      if(selectedReol && v.reolNr !== selectedReol) return false;
+      return true;
+    });
+  }
   items.forEach(v=>{
     for(let i=0;i<count;i++){
       const d = document.createElement('div'); d.className='label'; d.style.width='90mm'; d.style.height='50mm';
@@ -3782,6 +5186,89 @@ function generateLabels(){
       try{ JsBarcode(d.querySelector('.barcode'), v.id, { format:'CODE128', displayValue:true, width:2, height:40 }); }catch(e){}
     }
   });
+}
+
+// Opdater reol dropdown baseret på valgt lokation
+function updateLabelReolSelect(){
+  const labelSelect = $('labelSelect');
+  const labelReolSelect = $('labelReolSelect');
+  const labelReolLabel = $('labelReolLabel');
+  
+  if(!labelSelect || !labelReolSelect || !labelReolLabel) return;
+  
+  const selectedLoc = labelSelect.value;
+  
+  // Skjul reol dropdown hvis ingen lokation er valgt
+  if(!selectedLoc){
+    labelReolSelect.style.display = 'none';
+    labelReolLabel.style.display = 'none';
+    labelReolSelect.value = '';
+    return;
+  }
+  
+  // Hent alle unikke reoler i den valgte lokation
+  const varer = masterVarelager.filter(v => v.placering === selectedLoc && v.reolNr);
+  const unikkeReoler = [...new Set(varer.map(v => v.reolNr).filter(r => r))].sort();
+  
+  // Hvis der er reoler, vis dropdown
+  if(unikkeReoler.length > 0){
+    labelReolSelect.style.display = 'inline-block';
+    labelReolLabel.style.display = 'inline-block';
+    
+    // Opdater dropdown
+    labelReolSelect.innerHTML = '<option value="">Alle reoler</option>';
+    unikkeReoler.forEach(reol => {
+      labelReolSelect.add(new Option(`Reol ${reol}`, reol));
+    });
+  } else {
+    // Hvis ingen reoler, skjul dropdown
+    labelReolSelect.style.display = 'none';
+    labelReolLabel.style.display = 'none';
+    labelReolSelect.value = '';
+  }
+  
+  // Opdater enkelt vare dropdown
+  updateLabelSingleSelect();
+}
+
+// Opdater enkelt vare dropdown baseret på valgt lokation og reol
+function updateLabelSingleSelect(){
+  const labelSelect = $('labelSelect');
+  const labelReolSelect = $('labelReolSelect');
+  const labelSingle = $('labelSingle');
+  
+  if(!labelSelect || !labelSingle) return;
+  
+  const selectedLoc = labelSelect.value;
+  const selectedReol = labelReolSelect?.value || '';
+  
+  // Opdater dropdown
+  labelSingle.innerHTML = '<option value="">--- Ingen ---</option>';
+  
+  if(selectedLoc){
+    let varer = masterVarelager.filter(v => v.placering === selectedLoc);
+    
+    // Hvis reol er valgt, filtrer også på reol
+    if(selectedReol){
+      varer = varer.filter(v => v.reolNr === selectedReol);
+    }
+    
+    // Sorter varer
+    varer.sort((a, b) => {
+      if(a.navn < b.navn) return -1;
+      if(a.navn > b.navn) return 1;
+      return 0;
+    });
+    
+    varer.forEach(v => {
+      labelSingle.add(new Option(v.navn, v.id));
+    });
+  } else {
+    // Hvis ingen lokation er valgt, vis alle varer
+    masterVarelager.forEach(v => {
+      labelSingle.add(new Option(v.navn, v.id));
+    });
+  }
 }
 
 /* Leverandører */
@@ -3833,7 +5320,7 @@ async function fetchPostnummer(postnr){
 /* CSV/Excel import/export for master */
 function downloadExcelTemplate(){
   // Opret Excel-skabelon med realistiske demo-data med reol og hylle struktur
-  let csv = "navn;maaleenhed;pris;placering;reol;hylle;raekkefoelge\n";
+  let csv = "Navn;Måleenhed;Pris;Placering;Reol;Hylle;Rækkefølge\n";
   
   // Funktion til at generere varer med reol/hylle struktur
   function genererVarerMedStruktur(varerListe, placering) {
@@ -4354,7 +5841,7 @@ function downloadExcelTemplate(){
 }
 
 function exportCSV(){ 
-  let csv = "navn;maaleenhed;pris;placering;reol;hylle;raekkefoelge\n"; 
+  let csv = "Navn;Måleenhed;Pris;Placering;Reol;Hylle;Rækkefølge\n"; 
   masterVarelager.forEach(v=> {
     const reol = v.reolNr || '';
     const hylle = v.hylleNr || '';
@@ -4950,7 +6437,7 @@ function processImportText(text, importType = 'add'){
   });
   
   if(fileVarer.length === 0){
-    alert('Ingen varer fundet i filen. Tjek at filen har korrekt format:\nnavn;maaleenhed;pris;placering;reol;hylle;raekkefoelge\n\nReol, hylle og rækkefølge er valgfrie.');
+    alert('Ingen varer fundet i filen. Tjek at filen har korrekt format:\nNavn;Måleenhed;Pris;Placering;Reol;Hylle;Rækkefølge\n\nReol, hylle og rækkefølge er valgfrie.');
     return;
   }
   
@@ -5037,7 +6524,7 @@ function processImportText(text, importType = 'add'){
   // Opdater UI
   renderMasterTable(); 
   renderLagerOpsaetning(); // Opdater også lager opsætning hvis nye placeringer er tilføjet
-  updateAllSelects(); 
+  updateAllSelects();
   // Opdater hylle dropdowns
   updateHylleReolSelect();
   updateHylleHylleSelect();
@@ -5168,6 +6655,149 @@ function downloadManuelOptaeling(){
   }
 }
 
+// Generate QR code with varelager data for scanner app
+function generateVarelagerQR(){
+  try {
+    // Prepare data - only masterVarelager to keep QR code small
+    const installationId = getInstallationId();
+    const dataToExport = {
+      masterVarelager: masterVarelager || [],
+      lagerLokationer: lagerLokationer || [],
+      mainInstallationId: installationId, // Include main program installation ID
+      version: '1.0',
+      exportedAt: Date.now()
+    };
+    
+    if (!dataToExport.masterVarelager || dataToExport.masterVarelager.length === 0) {
+      alert('⚠️ Ingen varelager data at eksportere.\n\nTilføj varer i varelager administration først.');
+      return;
+    }
+    
+    // Convert to JSON string
+    const jsonString = JSON.stringify(dataToExport);
+    
+    // Check size - QR codes can handle up to ~2953 alphanumeric characters
+    // For safety, we'll use base64 encoding which is more compact
+    const base64Data = btoa(unescape(encodeURIComponent(jsonString)));
+    
+    // Create data URL with prefix so scanner knows it's varelager data
+    const qrData = 'VARELAGER:' + base64Data;
+    
+    // Check if data is too large for QR code
+    if (qrData.length > 2500) {
+      // Data too large - offer to download file instead
+      if (confirm('⚠️ Varelager data er for stor til QR-kode.\n\nVil du downloade en fil i stedet?\n\n✅ Ja = Download fil til import\n❌ Nej = Annuller')) {
+        // Download as JSON file for import
+        const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `varelager-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        alert('✅ Fil downloadet!\n\n📱 Næste skridt:\n\n1. Send filen til din telefon (email, cloud, etc.)\n2. Åbn scanner-appen på telefonen\n3. Tryk "📥 Import fil" knappen\n4. Vælg den downloadede fil\n5. Varelageret importeres automatisk!');
+      }
+      return;
+    }
+    
+    // Get container
+    const container = document.getElementById('varelagerQRContainer');
+    const qrCodeDiv = document.getElementById('varelagerQRCode');
+    
+    if (!container || !qrCodeDiv) {
+      alert('⚠️ QR-kode container ikke fundet.');
+      return;
+    }
+    
+    // Clear previous QR code
+    qrCodeDiv.innerHTML = '';
+    
+    // Generate QR code
+    if (typeof QRCode !== 'undefined') {
+      new QRCode(qrCodeDiv, {
+        text: qrData,
+        width: 300,
+        height: 300,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H // High error correction
+      });
+      
+      // Show container
+      container.style.display = 'block';
+      
+      // Scroll to QR code
+      container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+      alert('✅ QR-kode genereret!\n\n📱 Næste skridt:\n\n1. Åbn scanner-appen på telefonen\n2. Tryk "📥 Scan QR-kode" knappen\n3. Scan denne QR-kode\n4. Varelageret importeres automatisk!');
+    } else {
+      alert('⚠️ QR-kode bibliotek ikke indlæst.\n\nGenindlæs siden og prøv igen.');
+    }
+  } catch(err) {
+    console.error('Error generating QR code:', err);
+    alert('⚠️ Fejl ved generering af QR-kode: ' + err.message);
+  }
+}
+
+function downloadStregkodeScanner(){
+  try {
+    // Try to fetch the file
+    fetch('stregkode-scanner.html')
+      .then(response => {
+        if(!response.ok) {
+          throw new Error('Filen blev ikke fundet');
+        }
+        return response.text();
+      })
+      .then(html => {
+        // Create a blob and download
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'stregkode-scanner.html';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        // Also download manifest if possible
+        fetch('stregkode-scanner-manifest.json')
+          .then(res => res.text())
+          .then(manifest => {
+            const manifestBlob = new Blob([manifest], { type: 'application/json' });
+            const manifestUrl = URL.createObjectURL(manifestBlob);
+            const manifestLink = document.createElement('a');
+            manifestLink.href = manifestUrl;
+            manifestLink.download = 'stregkode-scanner-manifest.json';
+            document.body.appendChild(manifestLink);
+            manifestLink.click();
+            document.body.removeChild(manifestLink);
+            URL.revokeObjectURL(manifestUrl);
+          })
+          .catch(() => {
+            // Ignore manifest download errors
+          });
+        
+        // Show instructions
+        setTimeout(() => {
+          alert('✅ Filen er downloadet!\n\n📋 Næste skridt:\n\n1. Find filen i din Downloads-mappe\n2. Send filen til din telefon:\n   - Via email\n   - Via USB\n   - Via OneDrive\n   - Via AirDrop (Mac/iPhone)\n\n3. På telefonen:\n   - Åbn filen med din browser\n   - Tilføj til hjem-skærmen\n\n💡 VIGTIGT: Scanner appen kræver HTTPS eller localhost for at bruge kameraet!\n\n💡 Tip: Du kan også bruge "📱 Send link til telefon" knappen hvis du har webserveren kørende!');
+        }, 500);
+      })
+      .catch(err => {
+        console.error('Download error:', err);
+        // Fallback: show instructions
+        alert('⚠️ Kunne ikke downloade filen automatisk.\n\n📋 Gør dette i stedet:\n\n1. Gå til projektmappen på din computer\n2. Find filen: "stregkode-scanner.html"\n3. Send filen til din telefon:\n   - Højreklik → Send til → Mail-modtager\n   - Eller kopiér til OneDrive\n   - Eller send via USB\n\n4. På telefonen:\n   - Åbn filen med din browser\n   - Tilføj til hjem-skærmen\n\n💡 VIGTIGT: Scanner appen kræver HTTPS eller localhost for at bruge kameraet!');
+      });
+  } catch(e) {
+    console.error('Download error:', e);
+    alert('⚠️ Kunne ikke downloade filen automatisk.\n\n📋 Gør dette i stedet:\n\n1. Gå til projektmappen på din computer\n2. Find filen: "stregkode-scanner.html"\n3. Send filen til din telefon via email, OneDrive eller USB\n\n4. På telefonen: Åbn filen med din browser\n\n💡 VIGTIGT: Scanner appen kræver HTTPS eller localhost for at bruge kameraet!');
+  }
+}
+
 function importManualCountingData(){
   try{
     // Check for manual counting data
@@ -5241,6 +6871,126 @@ function importManualCountingData(){
 /* Import scanner data from scanner app */
 function importScannerData(){
   try{
+    // First, try to import from file (exported reports)
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = function(e) {
+      const file = e.target.files[0];
+      if (!file) {
+        // User cancelled - try localStorage method
+        importScannerDataFromStorage();
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const importedData = JSON.parse(e.target.result);
+          
+          // Check if this is a scanner reports export
+          if (importedData.reports && Array.isArray(importedData.reports) && (importedData.source === 'stregkode-scanner' || importedData.reports.some(r => r.handling && r.handling.startsWith('OPTA-')))) {
+            // Import reports directly
+            const storageKey = 'køkkenlager_data';
+            let data = {};
+            const existingData = localStorage.getItem(storageKey);
+            if (existingData) {
+              try {
+                data = JSON.parse(existingData);
+              } catch(err) {
+                console.warn('Could not parse existing data:', err);
+              }
+            }
+            
+            if (!data.reports || !Array.isArray(data.reports)) {
+              data.reports = [];
+            }
+            
+            // Add imported reports (avoid duplicates by handling name and timestamp)
+            let added = 0;
+            let skipped = 0;
+            importedData.reports.forEach(report => {
+              // Check for duplicates by handling name (OPTA-000004) or timestamp
+              const exists = data.reports.some(r => 
+                (r.handling === report.handling) || 
+                (Math.abs(r.ts - report.ts) < 1000 && r.handling && report.handling && r.handling.startsWith('OPTA-'))
+              );
+              
+              if (!exists) {
+                // Ensure report has all required fields
+                if (!report.type) report.type = 'session';
+                if (!report.details) report.details = [];
+                if (!report.total) report.total = 0;
+                
+                data.reports.unshift(report);
+                added++;
+                console.log('✅ Imported report:', report.handling, 'with', report.details ? report.details.length : 0, 'items');
+              } else {
+                skipped++;
+                console.log('⚠️ Skipped duplicate report:', report.handling);
+              }
+            });
+            
+            // Update sessionCounter if needed (use highest value)
+            if (importedData.sessionCounter) {
+              const currentCounter = data.sessionCounter || sessionCounter || 0;
+              if (importedData.sessionCounter > currentCounter) {
+                data.sessionCounter = importedData.sessionCounter;
+                sessionCounter = importedData.sessionCounter;
+              }
+            }
+            
+            // Store scanner installation ID for tracking
+            if (importedData.installationId) {
+              if (!data.scannerInstallationIds) data.scannerInstallationIds = [];
+              if (!data.scannerInstallationIds.includes(importedData.installationId)) {
+                data.scannerInstallationIds.push(importedData.installationId);
+              }
+            }
+            
+            // Save data
+            localStorage.setItem(storageKey, JSON.stringify(data));
+            
+            // Reload reports
+            reports = data.reports;
+            if (data.sessionCounter) sessionCounter = data.sessionCounter;
+            
+            renderReports();
+            updateLogPreview();
+            saveAllData();
+            
+            let message = `✅ ${added} rapport(er) importeret!`;
+            if (skipped > 0) {
+              message += `\n⚠️ ${skipped} rapport(er) sprunget over (findes allerede)`;
+            }
+            message += `\n\nRapporterne er nu tilgængelige under "Rapporter" fanen.`;
+            if (importedData.installationId) {
+              message += `\n\n🔗 Installation ID: ${importedData.installationId.substring(0, 20)}...`;
+            }
+            
+            alert(message);
+            return;
+          }
+        } catch(err) {
+          console.error('Error importing from file:', err);
+          alert('❌ Fejl ved import: ' + err.message + '\n\nPrøver localStorage metode...');
+        }
+        
+        // If file import failed, try localStorage
+        importScannerDataFromStorage();
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+    
+  } catch(err){
+    console.error('Fejl ved import af scanner data:', err);
+    alert('Fejl ved import: ' + err.message);
+  }
+}
+
+function importScannerDataFromStorage(){
+  try{
     // Find alle localStorage keys der starter med 'lager_scans_'
     const scannerKeys = [];
     for(let i = 0; i < localStorage.length; i++){
@@ -5251,7 +7001,7 @@ function importScannerData(){
     }
     
     if(scannerKeys.length === 0){
-      alert('Ingen scanner data fundet.\n\nBrug scanner app til at scanne stregkoder først.');
+      alert('Ingen scanner data fundet.\n\nBrug scanner app til at scanne stregkoder først, eller eksporter rapporter fra scanner-appen.');
       return;
     }
     
@@ -5344,9 +7094,8 @@ function refreshReportsFromStorage(){
         
         const newCount = reports.length;
         if(newCount > oldCount) {
-          alert(`✅ Rapporter opdateret! ${newCount - oldCount} ny(e) rapport(er) tilføjet.`);
-        } else {
-          alert(`Rapporter opdateret. Total: ${newCount} rapport(er).`);
+          // Silent update - no alert needed
+          console.log(`Rapporter opdateret: ${newCount - oldCount} ny(e) rapport(er) tilføjet. Total: ${newCount}`);
         }
         console.log('Reports refreshed manually. Count:', reports.length);
         return;
@@ -5359,21 +7108,299 @@ function refreshReportsFromStorage(){
   }
 }
 
+/* Sync reports from scanner app - checks both localStorage and prompts for file import */
+function syncReportsFromScanner(){
+  try {
+    const storageKey = 'køkkenlager_data';
+    const mainData = localStorage.getItem(storageKey);
+    let foundNew = false;
+    let newCount = 0;
+    
+    // First check localStorage (if same domain)
+    if(mainData) {
+      try {
+        const data = JSON.parse(mainData);
+        if(data.reports && Array.isArray(data.reports)) {
+          const oldCount = reports.length;
+          
+          // Check for new reports
+          data.reports.forEach(report => {
+            const exists = reports.some(r => 
+              r.handling === report.handling && 
+              Math.abs(r.ts - report.ts) < 1000
+            );
+            
+            if (!exists && report.handling && report.handling.startsWith('Stregkode scanner')) {
+              reports.unshift(report);
+              foundNew = true;
+              newCount++;
+            }
+          });
+          
+          if(foundNew) {
+            // Update sessionCounter
+            if(data.sessionCounter !== undefined && data.sessionCounter > sessionCounter) {
+              sessionCounter = data.sessionCounter;
+            }
+            
+            // Save updated reports
+            data.reports = reports;
+            localStorage.setItem(storageKey, JSON.stringify(data));
+            saveAllData();
+            
+            renderReports();
+            updateLogPreview();
+            
+            alert(`✅ ${newCount} ny(e) rapport(er) synkroniseret fra scanner-appen!\n\nRapporterne er nu tilgængelige under "Rapporter" fanen.`);
+            return;
+          }
+        }
+      } catch(e) {
+        console.error('Error checking localStorage:', e);
+      }
+    }
+    
+    // If no new reports in localStorage, offer to import from file
+    if(!foundNew) {
+      if(confirm('Ingen nye rapporter fundet i localStorage.\n\nHvis scanner-appen kører på en anden enhed/domæne, skal du:\n\n1. Eksportere rapporter fra scanner-appen (📤 Eksport rapporter)\n2. Importere filen her\n\nVil du importere fra fil nu?')) {
+        importScannerData();
+      } else {
+        alert('💡 Tip: Hvis scanner-appen kører på samme enhed, skal rapporterne synkroniseres automatisk.\n\nHvis den kører på en anden enhed, brug "📤 Eksport rapporter" i scanner-appen og "📷 Importer Scanner Data" her.');
+      }
+    }
+  } catch(e) {
+    console.error('Error syncing reports:', e);
+    alert('Fejl ved synkronisering: ' + e.message);
+  }
+}
+
+/* Show and sync scanner installation ID */
+function showScannerInstallationId(){
+  try {
+    const storageKey = 'køkkenlager_data';
+    const mainData = localStorage.getItem(storageKey);
+    const mainInstallationId = getInstallationId();
+    
+    let info = '🔑 Installation ID Information:\n\n';
+    info += '💻 Hovedprogram (PC):\n' + mainInstallationId + '\n\n';
+    
+    if (mainData) {
+      const data = JSON.parse(mainData);
+      
+      // Get scanner installation IDs from reports
+      const scannerIds = new Set();
+      if (data.reports && Array.isArray(data.reports)) {
+        data.reports.forEach(r => {
+          if (r.installationId && r.installationId.startsWith('SCANNER-')) {
+            scannerIds.add(r.installationId);
+          }
+        });
+      }
+      
+      // Get scanner ID from data if exists
+      if (data.scannerInstallationIds && Array.isArray(data.scannerInstallationIds)) {
+        data.scannerInstallationIds.forEach(id => scannerIds.add(id));
+      }
+      
+      if (scannerIds.size > 0) {
+        info += '📱 Scanner Installation ID(er):\n';
+        scannerIds.forEach(id => {
+          info += id + '\n';
+        });
+        info += '\n';
+        
+        // Check if they match
+        const scannerIdArray = Array.from(scannerIds);
+        if (scannerIdArray.length === 1) {
+          const scannerId = scannerIdArray[0];
+          // Extract numeric part for comparison
+          const mainIdNum = mainInstallationId.replace(/[^0-9]/g, '');
+          const scannerIdNum = scannerId.replace(/[^0-9]/g, '');
+          
+          if (mainIdNum === scannerIdNum || scannerId.includes(mainIdNum)) {
+            info += '✅ ID\'erne matcher!\n\n';
+          } else {
+            info += '⚠️ ID\'erne matcher ikke.\n\n';
+            info += '💡 Tip: For at synkronisere:\n';
+            info += '1. I scanner-appen: Klik "🔑 Vis ID"\n';
+            info += '2. Kopiér scanner ID\n';
+            info += '3. Indtast det her nedenfor\n\n';
+            
+            if (confirm(info + 'Vil du indtaste scanner ID manuelt?')) {
+              const manualId = prompt('Indtast scanner installation ID fra telefonen:', scannerId);
+              if (manualId && manualId.trim()) {
+                if (!data.scannerInstallationIds) data.scannerInstallationIds = [];
+                if (!data.scannerInstallationIds.includes(manualId.trim())) {
+                  data.scannerInstallationIds.push(manualId.trim());
+                }
+                data.scannerInstallationId = manualId.trim();
+                localStorage.setItem(storageKey, JSON.stringify(data));
+                alert('✅ Scanner ID gemt: ' + manualId.trim() + '\n\nID\'erne er nu synkroniseret!');
+                return;
+              }
+            }
+            return;
+          }
+        } else {
+          info += '⚠️ Flere scanner ID\'er fundet.\n\n';
+        }
+      } else {
+        info += '📱 Ingen scanner ID fundet endnu.\n\n';
+        info += '💡 Tip: Eksporter en rapport fra scanner-appen for at se ID.\n\n';
+        
+        if (confirm(info + 'Vil du indtaste scanner ID manuelt?')) {
+          const manualId = prompt('Indtast scanner installation ID fra telefonen:', '');
+          if (manualId && manualId.trim()) {
+            if (!data.scannerInstallationIds) data.scannerInstallationIds = [];
+            if (!data.scannerInstallationIds.includes(manualId.trim())) {
+              data.scannerInstallationIds.push(manualId.trim());
+            }
+            data.scannerInstallationId = manualId.trim();
+            localStorage.setItem(storageKey, JSON.stringify(data));
+            alert('✅ Scanner ID gemt: ' + manualId.trim());
+          }
+          return;
+        }
+      }
+    } else {
+      info += '📱 Ingen data fundet.\n\n';
+    }
+    
+    info += '💡 Tip: Brug samme installation ID på begge enheder for bedre synkronisering.';
+    alert(info);
+    
+  } catch(err) {
+    console.error('Error showing scanner installation ID:', err);
+    alert('❌ Fejl: ' + err.message);
+  }
+}
+
 /* ================================
    [JS 10] UTIL & UI helpers
    ================================ */
 function navClick(e){ document.querySelectorAll('nav .menu-item').forEach(it=>it.classList.remove('active')); e.target.classList.add('active'); showPage(e.target.dataset.target); }
-function showPage(id){ document.querySelectorAll('#content section').forEach(s=>s.classList.add('hidden')); const el = $(id); if(el) el.classList.remove('hidden'); if(id==='lageropt') renderLagerTable(); if(id==='opsaetning') { renderLagerOpsaetning(); updateAllSelects(); } if(id==='rapporter') { refreshReportsFromStorage(); renderReports(); } if(id==='labels') { updateAllSelects(); renderMasterTable(); } if(id==='leverandor') renderLeverandorTable(); if(id==='master') { renderMasterTable(); renderHylleRaekkefoelge(); } if(id==='systemOpsaetning') { showSettingsSection('password'); } }
-function showSettingsSection(sectionId){
-  // Hide all sections
-  document.querySelectorAll('.settings-section').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.settings-item').forEach(i=>i.classList.remove('active'));
+function showPage(id){ document.querySelectorAll('#content section').forEach(s=>s.classList.add('hidden')); const el = $(id); if(el) el.classList.remove('hidden'); if(id==='lageropt') renderLagerTable(); if(id==='opsaetning') { renderLagerOpsaetning(); updateAllSelects(); } if(id==='rapporter') { refreshReportsFromStorage(); renderReports(); renderArchivedReports(); showReportsSection('active'); } if(id==='labels') { updateAllSelects(); renderMasterTable(); updateLabelReolSelect(); } if(id==='leverandor') renderLeverandorTable(); if(id==='master') { showMasterSection('add'); updateAllSelects(); } if(id==='systemOpsaetning') { showSettingsSection('password'); } if(id==='licens') { updateLicenseStatusDisplay(); } }
+function showPage(id){ document.querySelectorAll('#content section').forEach(s=>s.classList.add('hidden')); const el = $(id); if(el) el.classList.remove('hidden'); if(id==='lageropt') renderLagerTable(); if(id==='opsaetning') { renderLagerOpsaetning(); updateAllSelects(); } if(id==='rapporter') { refreshReportsFromStorage(); renderReports(); renderArchivedReports(); showReportsSection('active'); } if(id==='labels') { updateAllSelects(); renderMasterTable(); updateLabelReolSelect(); } if(id==='leverandor') renderLeverandorTable(); if(id==='master') { showMasterSection('add'); updateAllSelects(); } if(id==='systemOpsaetning') { showSettingsSection('password'); } if(id==='licens') { updateLicenseStatusDisplay(); } }
+function toggleSidebar(sidebarId){
+  try {
+    const sidebar = document.getElementById(sidebarId);
+    if(!sidebar) {
+      console.error('Sidebar ikke fundet:', sidebarId);
+      return;
+    }
+    
+    const isCollapsed = sidebar.classList.contains('collapsed');
+    
+    // Find toggle-knappen baseret på sidebar ID
+    let toggleBtn = null;
+    if(sidebarId === 'reportsSidebar') {
+      toggleBtn = document.getElementById('reportsToggleBtn');
+    } else if(sidebarId === 'masterSidebar') {
+      toggleBtn = document.getElementById('masterToggleBtn');
+    } else if(sidebarId === 'settingsSidebar') {
+      toggleBtn = document.getElementById('settingsToggleBtn');
+    }
+    
+    if(isCollapsed){
+      // Åbn sidebar
+      sidebar.classList.remove('collapsed');
+      if(toggleBtn) toggleBtn.setAttribute('data-state', 'open');
+    } else {
+      // Luk sidebar
+      sidebar.classList.add('collapsed');
+      if(toggleBtn) toggleBtn.setAttribute('data-state', 'closed');
+    }
+  } catch(error) {
+    console.error('Fejl ved toggle sidebar:', error);
+  }
+}
+
+function showMasterSection(sectionId){
+  // Skjul alle master sektioner
+  document.querySelectorAll('#master .settings-section').forEach(s => {
+    s.classList.remove('active');
+    s.style.display = 'none';
+  });
   
-  // Show selected section
+  // Skjul alle sidebar items i master
+  document.querySelectorAll('#master .settings-item').forEach(item => {
+    item.classList.remove('active');
+  });
+  
+  // Vis valgt sektion
+  const section = $(`master-section-${sectionId}`);
+  if(section){
+    section.classList.add('active');
+    section.style.display = 'block';
+  }
+  
+  // Marker sidebar item som aktiv
+  const sidebarItems = document.querySelectorAll('#master .settings-item');
+  if(sectionId === 'add' && sidebarItems[0]){
+    sidebarItems[0].classList.add('active');
+  } else if(sectionId === 'shelf' && sidebarItems[1]){
+    sidebarItems[1].classList.add('active');
+  } else if(sectionId === 'view' && sidebarItems[2]){
+    sidebarItems[2].classList.add('active');
+    renderMasterTable(); // Opdater tabel når sektionen vises
+  }
+  
+  // Auto-collapse sidebar efter valg
+  const sidebar = $('masterSidebar');
+  if(sidebar && !sidebar.classList.contains('collapsed')){
+    setTimeout(() => toggleSidebar('masterSidebar'), 300);
+  }
+}
+
+function showReportsSection(sectionId){
+  // Skjul alle rapporter sektioner
+  document.querySelectorAll('#rapporter .settings-section').forEach(s => {
+    s.classList.remove('active');
+    s.style.display = 'none';
+  });
+  
+  // Skjul alle sidebar items i rapporter
+  document.querySelectorAll('#rapporter .settings-item').forEach(item => {
+    item.classList.remove('active');
+  });
+  
+  // Vis valgt sektion
+  const section = $(`reports-section-${sectionId}`);
+  if(section){
+    section.classList.add('active');
+    section.style.display = 'block';
+  }
+  
+  // Marker sidebar item som aktiv
+  const sidebarItems = document.querySelectorAll('#rapporter .settings-item');
+  if(sectionId === 'active' && sidebarItems[0]){
+    sidebarItems[0].classList.add('active');
+  } else if(sectionId === 'archived' && sidebarItems[1]){
+    sidebarItems[1].classList.add('active');
+  }
+  
+  // Opdater arkiverede rapporter hvis den sektion vises
+  if(sectionId === 'archived'){
+    renderArchivedReports();
+  }
+  
+  // Auto-collapse sidebar efter valg
+  const sidebar = document.getElementById('reportsSidebar');
+  if(sidebar && !sidebar.classList.contains('collapsed')){
+    setTimeout(() => toggleSidebar('reportsSidebar'), 300);
+  }
+}
+
+function showSettingsSection(sectionId){
+  // Hide all sections (kun i systemOpsaetning)
+  document.querySelectorAll('#systemOpsaetning .settings-section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('#systemOpsaetning .settings-item').forEach(i=>i.classList.remove('active'));
+  
+  // Show selected section (kun i systemOpsaetning)
   const section = document.getElementById('settings-' + sectionId);
   if(section) section.classList.add('active');
   
-  // Highlight menu item - find by section mapping
+  // Highlight menu item - find by section mapping (kun i systemOpsaetning)
   const sectionMap = {
     'password': 'Skift password',
     'backup': 'Backup',
@@ -5382,12 +7409,18 @@ function showSettingsSection(sectionId){
     'branding': 'Logo'
   };
   const searchText = sectionMap[sectionId] || sectionId;
-  const menuItems = Array.from(document.querySelectorAll('.settings-item'));
+  const menuItems = Array.from(document.querySelectorAll('#systemOpsaetning .settings-item'));
   const menuItem = menuItems.find(item => {
     const text = item.textContent.toLowerCase();
     return text.includes(searchText.toLowerCase());
   });
   if(menuItem) menuItem.classList.add('active');
+  
+  // Auto-collapse sidebar efter valg
+  const sidebar = $('settingsSidebar');
+  if(sidebar && !sidebar.classList.contains('collapsed')){
+    setTimeout(() => toggleSidebar('settingsSidebar'), 300);
+  }
 }
 
 /* small preview update */
