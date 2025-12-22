@@ -2,932 +2,495 @@
 <html lang="da">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-<meta name="theme-color" content="#0078D4" />
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+<meta name="theme-color" content="#4CAF50" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Stregkode Scanner" />
 <link rel="manifest" href="stregkode-scanner-manifest.json" />
-<title>Stregkode Scanner</title>
+<title>Stregkode Scanner - Telefon</title>
 <style>
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: #f5f5f5;
-  color: #333;
-  padding: 10px;
-}
-
-.container {
-  max-width: 600px;
-  margin: 0 auto;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  overflow: hidden;
-}
-
-.header {
-  background: linear-gradient(135deg, #0078D4 0%, #005A9E 100%);
-  color: white;
-  padding: 20px;
-  text-align: center;
-}
-
-.header h1 {
-  font-size: 24px;
-  font-weight: 600;
-  margin-bottom: 5px;
-}
-
-.session-info {
-  background: #E3F2FD;
-  padding: 15px 20px;
-  border-bottom: 2px solid #0078D4;
-}
-
-.session-info.active {
-  background: #FFF3CD;
-  border-bottom-color: #FFC107;
-}
-
-.session-name {
-  font-weight: 600;
-  font-size: 16px;
-  color: #0078D4;
-}
-
-.session-info.active .session-name {
-  color: #856404;
-}
-
-.session-location {
-  font-size: 14px;
-  color: #666;
-  margin-top: 5px;
-}
-
-.scanner-section {
-  padding: 20px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-#scannerVideo {
-  width: 100%;
-  max-width: 640px;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  display: none;
-}
-
-.scanner-controls {
-  display: flex;
-  gap: 10px;
-  margin-top: 15px;
-  flex-wrap: wrap;
-}
-
-.btn {
-  padding: 12px 20px;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  flex: 1;
-  min-width: 120px;
-}
-
-.btn-primary {
-  background: #0078D4;
-  color: white;
-}
-
-.btn-primary:active {
-  background: #005A9E;
-}
-
-.btn-secondary {
-  background: #6c757d;
-  color: white;
-}
-
-.btn-success {
-  background: #28a745;
-  color: white;
-}
-
-.btn-danger {
-  background: #dc3545;
-  color: white;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.status-message {
-  padding: 15px 20px;
-  margin: 10px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  display: none;
-}
-
-.status-success {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
-.status-error {
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
-
-.status-info {
-  background: #d1ecf1;
-  color: #0c5460;
-  border: 1px solid #bee5eb;
-}
-
-.scanned-items {
-  padding: 20px;
-  border-top: 2px solid #e0e0e0;
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.scanned-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  background: #f9f9f9;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  border-left: 4px solid #0078D4;
-}
-
-.scanned-item-info {
-  flex: 1;
-}
-
-.scanned-item-name {
-  font-weight: 600;
-  font-size: 16px;
-  color: #333;
-  margin-bottom: 4px;
-}
-
-.scanned-item-details {
-  font-size: 13px;
-  color: #666;
-}
-
-.scanned-item-count {
-  font-size: 24px;
-  font-weight: 700;
-  color: #0078D4;
-  min-width: 60px;
-  text-align: center;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 40px 20px;
-  color: #999;
-}
-
-.empty-state-icon {
-  font-size: 48px;
-  margin-bottom: 10px;
-}
-
-.footer-actions {
-  padding: 20px;
-  background: #f9f9f9;
-  border-top: 1px solid #e0e0e0;
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.stats {
-  padding: 15px 20px;
-  background: #E3F2FD;
-  border-bottom: 1px solid #0078D4;
-  display: flex;
-  justify-content: space-around;
-  text-align: center;
-}
-
-.stat-item {
-  flex: 1;
-}
-
-.stat-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: #0078D4;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: #666;
-  margin-top: 4px;
-}
-
-.manual-input-section {
-  padding: 20px;
-  border-top: 1px solid #e0e0e0;
-  background: #f9f9f9;
-}
-
-.manual-input {
-  width: 100%;
-  padding: 15px;
-  font-size: 16px;
-  border: 2px solid #ddd;
-  border-radius: 8px;
-  outline: none;
-  margin-bottom: 10px;
-}
-
-.manual-input:focus {
-  border-color: #0078D4;
-}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:#f5f5f5;padding:10px;max-width:600px;margin:0 auto}
+.header{background:#4CAF50;color:#fff;padding:15px;border-radius:8px;margin-bottom:15px;text-align:center}
+.header h1{font-size:20px;margin-bottom:5px}
+.header p{font-size:13px;opacity:0.9}
+.scanner-container{background:#fff;border-radius:8px;padding:15px;margin-bottom:15px;box-shadow:0 2px 4px rgba(0,0,0,0.1)}
+#scannerVideo{width:100%;max-height:60vh;border:3px solid #4CAF50;border-radius:8px;background:#000;display:none;position:relative}
+.status{padding:10px;margin:10px 0;border-radius:6px;text-align:center;font-weight:700;min-height:50px;display:flex;align-items:center;justify-content:center}
+.status.waiting{background:#fff3cd;color:#856404}
+.status.scanning{background:#d4edda;color:#155724}
+.status.success{background:#d1ecf1;color:#0c5460}
+.status.error{background:#f8d7da;color:#721c24;white-space:pre-line}
+.button{width:100%;padding:15px;margin:8px 0;border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;background:#4CAF50;color:#fff}
+.button:active{opacity:0.8}
+.button.secondary{background:#6c757d}
+.button.danger{background:#dc3545}
+.scanned-list{background:#fff;border-radius:8px;padding:15px;margin-top:15px;box-shadow:0 2px 4px rgba(0,0,0,0.1);max-height:40vh;overflow-y:auto}
+.scanned-item{padding:10px;margin:5px 0;background:#f8f9fa;border-radius:6px;border-left:4px solid #4CAF50;display:flex;justify-content:space-between;align-items:center}
+.scanned-item .info{flex:1}
+.scanned-item .name{font-weight:700;font-size:16px;color:#333}
+.scanned-item .details{font-size:12px;color:#666;margin-top:3px}
+.scanned-item .count{font-size:20px;font-weight:700;color:#4CAF50;margin-left:10px;min-width:40px;text-align:center}
+.scanned-item .remove{background:#dc3545;color:#fff;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;font-size:12px;margin-left:5px}
+.actions{display:flex;gap:10px;margin-top:15px}
+.actions .button{flex:1}
+.empty{text-align:center;padding:20px;color:#999}
+.stats{display:flex;gap:15px;margin:15px 0;padding:15px;background:#f8f9fa;border-radius:8px}
+.stat{text-align:center;flex:1}
+.stat-value{font-size:24px;font-weight:700;color:#4CAF50}
+.stat-label{font-size:12px;color:#666;margin-top:5px}
 </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>📷 Stregkode Scanner <span style="color:#ff0000; font-weight:bold; font-size:28px;">V 2.4</span></h1>
-      <div style="font-size:14px; opacity:0.9;">Scan stregkoder og optæl varer</div>
-    </div>
+<div class="header">
+  <h1>📱 Stregkode Scanner</h1>
+  <p>Scan stregkoder med din telefon - V 2.5</p>
+</div>
 
-    <div id="sessionInfo" class="session-info active">
-      <div class="session-name" id="sessionName">Stregkode Scanner</div>
-      <div class="session-location" id="sessionLocation">Scan stregkoder - lokation findes automatisk</div>
-    </div>
+<div class="scanner-container">
+  <div id="status" class="status waiting">Klik "Start Scanner" for at begynde</div>
+  <div id="scannerVideo"></div>
+  <button id="startBtn" class="button" onclick="startScanner()">📷 Start Scanner</button>
+  <button id="stopBtn" class="button secondary" onclick="stopScanner()" style="display:none">⏹ Stop Scanner</button>
+</div>
 
-    <div id="installPrompt" style="display:none; padding:15px 20px; background:#E3F2FD; border-bottom:2px solid #0078D4; text-align:center;">
-      <div style="font-size:14px; margin-bottom:10px; color:#0078D4; font-weight:600;">📱 Tilføj til hjem-skærmen for nem adgang</div>
-      <button id="installBtn" class="btn btn-primary" style="width:100%; max-width:300px; margin:0 auto;">➕ Tilføj til hjem-skærm</button>
-      <div id="installInstructions" style="display:none; margin-top:15px; padding:10px; background:white; border-radius:8px; font-size:12px; color:#666; text-align:left;">
-        <strong>Android (Chrome):</strong><br>
-        1. Tryk på ⋮ menu (øverst til højre)<br>
-        2. Vælg "Tilføj til hjem-skærm" eller "Installér app"<br>
-        3. Bekræft installation<br><br>
-        <strong>iPhone (Safari):</strong><br>
-        1. Tryk på del-knappen (nederst i midten)<br>
-        2. Scroll ned og vælg "Tilføj til hjem-skærm"<br>
-        3. Bekræft
-      </div>
-    </div>
-
-    <div id="statusMessage" class="status-message"></div>
-
-    <div id="scannerSection" class="scanner-section">
-      <div id="scannerVideo"></div>
-      <div class="scanner-controls">
-        <button id="startScannerBtn" class="btn btn-primary" onclick="startScanner()">📷 Start scanner</button>
-        <button id="stopScannerBtn" class="btn btn-secondary" onclick="stopScanner()" style="display:none;">⏹️ Stop scanner</button>
-        <button id="manualInputBtn" class="btn btn-secondary" onclick="toggleManualInput()">✏️ Indtast manuelt</button>
-        <button class="btn btn-secondary" onclick="testLibraries()" style="margin-top:10px; background:#6c757d;">🧪 Test Biblioteker</button>
-        <div id="testResult" style="margin-top:10px; font-size:12px; color:#666; padding:10px; background:#f9f9f9; border-radius:6px; display:none;"></div>
-      </div>
-      
-      <div id="manualInputSection" class="manual-input-section" style="display:none;">
-        <input 
-          type="text" 
-          id="manualBarcodeInput" 
-          class="manual-input" 
-          placeholder="Indtast stregkode..."
-          onkeypress="if(event.key==='Enter') handleManualBarcode()"
-        />
-        <button class="btn btn-primary" onclick="handleManualBarcode()" style="width:100%;">Tilføj stregkode</button>
-      </div>
-    </div>
-
-    <div id="stats" class="stats">
-      <div class="stat-item">
-        <div class="stat-value" id="totalScanned">0</div>
-        <div class="stat-label">Total scannet</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-value" id="uniqueItems">0</div>
-        <div class="stat-label">Unikke varer</div>
-      </div>
-    </div>
-
-    <div id="scannedItems" class="scanned-items">
-      <div id="scannedItemsList"></div>
-    </div>
-
-    <div id="footerActions" class="footer-actions">
-      <button class="btn btn-success" onclick="finishSession()" style="flex:2;">✅ Afslut optælling</button>
-      <button class="btn btn-danger" onclick="clearAll()">🗑️ Ryd alt</button>
-    </div>
+<div class="stats" id="stats" style="display:none">
+  <div class="stat">
+    <div class="stat-value" id="totalScanned">0</div>
+    <div class="stat-label">Total scannet</div>
   </div>
+  <div class="stat">
+    <div class="stat-value" id="uniqueItems">0</div>
+    <div class="stat-label">Unikke varer</div>
+  </div>
+</div>
 
-  <!-- Html5Qrcode - virker bedre på Android mobile -->
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<div class="scanned-list">
+  <h3 style="margin-bottom:10px">Scannede varer (<span id="count">0</span>)</h3>
+  <div id="scannedList">
+    <div class="empty">Ingen varer scannet endnu</div>
+  </div>
+  <div class="actions">
+    <button class="button secondary" onclick="clearAll()">🗑 Ryd alt</button>
+    <button class="button" onclick="finishSession()">✅ Afslut optælling</button>
+  </div>
+</div>
 
-  <script>
-    // State
-    let scannedItems = {}; // { barcode: { vare, count } }
-    let scannerActive = false;
-    let html5QrCode = null;
-    let allItems = []; // masterVarelager
-    let lastScannedCode = null;
-    let lastScanTime = 0;
-    const SCAN_COOLDOWN = 1500; // 1.5 sekunder mellem scans
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+let scannerActive = false;
+let html5QrCode = null;
+let scannedItems = {};
+let allItems = [];
+let lastScannedCode = null;
+let lastScanTime = 0;
+const SCAN_COOLDOWN = 1000;
 
-    // Helper functions
-    function $(id) {
-      return document.getElementById(id);
+// Load items from main app
+function loadItemsFromMainApp(){
+  try {
+    const storageKey = 'køkkenlager_data';
+    const dataStr = localStorage.getItem(storageKey);
+    if (!dataStr) {
+      updateStatus('⚠️ Ingen varelager data fundet. Opret varer i hovedprogrammet først.', 'error');
+      return false;
     }
-
-    function showStatus(message, type = 'info') {
-      const statusEl = $('statusMessage');
-      if (!statusEl) return;
-      
-      statusEl.textContent = message;
-      statusEl.className = 'status-message status-' + type;
-      statusEl.style.display = 'block';
-      
-      setTimeout(() => {
-        statusEl.style.display = 'none';
-      }, 3000);
-    }
-
-    // Load items from main app
-    function loadItemsFromMainApp() {
-      try {
-        const storageKey = 'køkkenlager_data';
-        const dataStr = localStorage.getItem(storageKey);
-        if (!dataStr) {
-          showStatus('⚠️ Ingen varelager data fundet. Opret varer i hovedprogrammet først.', 'error');
-          return false;
-        }
-        
-        const data = JSON.parse(dataStr);
-        allItems = data.masterVarelager || [];
-        
-        if (allItems.length === 0) {
-          showStatus('⚠️ Varelageret er tomt. Tilføj varer i hovedprogrammet først.', 'error');
-          return false;
-        }
-        
-        console.log('Indlæst ' + allItems.length + ' varer fra hovedprogrammet');
-        return true;
-      } catch (err) {
-        console.error('Fejl ved indlæsning af varer:', err);
-        showStatus('Fejl ved indlæsning af varer: ' + err.message, 'error');
-        return false;
-      }
-    }
-
-    // Initialize scanner - start immediately
-    function initScanner() {
-      if (!loadItemsFromMainApp()) {
-        return;
-      }
-      
-      // Update UI
-      $('sessionName').textContent = 'Stregkode Scanner';
-      $('sessionLocation').textContent = 'Klar til scanning - lokation findes automatisk';
-      
-      $('scannerSection').style.display = 'block';
-      $('stats').style.display = 'flex';
-      $('scannedItems').style.display = 'block';
-      $('footerActions').style.display = 'flex';
-      
-      updateStats();
-      renderScannedItems();
-    }
-
-    // Start scanner - using Html5Qrcode (works better on Android)
-    async function startScanner() {
-      // Stop existing scanning first if active
-      if (html5QrCode && html5QrCode.isScanning) {
-        try {
-          await html5QrCode.stop();
-          html5QrCode.clear();
-        } catch (stopErr) {
-          console.warn('Fejl ved stop af eksisterende scanning:', stopErr);
-        }
-      }
-      
-      try {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          showStatus('Kamera API ikke tilgængelig. Brug HTTPS eller localhost.', 'error');
-          return;
-        }
-        
-        if (typeof Html5Qrcode === 'undefined') {
-          showStatus('Html5Qrcode bibliotek ikke indlæst. Genindlæs siden og prøv igen.', 'error');
-          return;
-        }
-        
-        const video = $('scannerVideo');
-        if (!video) return;
-        
-        showStatus('Starter kamera...', 'info');
-        video.style.display = 'block';
-        scannerActive = true; // Sæt til true FØR vi starter scanning
-        
-        html5QrCode = new Html5Qrcode("scannerVideo");
-        
-        // Simpel konfiguration - præcis som den fungerende fil
-        const config = {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0
-          // Html5Qrcode scanner automatisk både QR-koder og stregkoder (EAN, UPC, CODE_128, osv.)
-        };
-        
-        try {
-          await html5QrCode.start(
-            { facingMode: "environment" }, // Brug bagkamera
-            config,
-            (decodedText, decodedResult) => {
-              console.log('✅ Scannet stregkode/QR-kode:', decodedText);
-              const now = Date.now();
-              
-              // Undgå duplikater
-              if (now - lastScanTime < SCAN_COOLDOWN && decodedText === lastScannedCode) {
-                return;
-              }
-              
-              lastScannedCode = decodedText;
-              lastScanTime = now;
-              
-              // Handle scanned barcode
-              handleScannedBarcode(decodedText);
-            },
-            (errorMessage) => {
-              // Ignorer scanning fejl - de er normale når der ikke er fundet noget
-            }
-          );
-          
-          showStatus('Scanner aktiv - Peg på stregkoden', 'info');
-          $('startScannerBtn').style.display = 'none';
-          $('stopScannerBtn').style.display = 'inline-block';
-          console.log('✅ Scanning startet med Html5Qrcode');
-          
-        } catch (scanErr) {
-          console.error('Fejl ved start af scanning:', scanErr);
-          showStatus('Fejl ved start af scanning: ' + (scanErr.message || scanErr), 'error');
-          alert('Kunne ikke starte scanning. Prøv at genindlæse siden.\n\nFejl: ' + (scanErr.message || scanErr));
-          scannerActive = false;
-          video.style.display = 'none';
-          $('startScannerBtn').style.display = 'inline-block';
-          $('stopScannerBtn').style.display = 'none';
-        }
-        
-      } catch (error) {
-        console.error('Kamera fejl:', error);
-        showStatus(`Fejl: ${error.message}`, 'error');
-        alert('Kunne ikke starte scanner:\n\n' + error.message + '\n\nTip: Brug HTTPS eller tillad kamera-adgang i browser indstillinger.');
-        scannerActive = false;
-        $('scannerVideo').style.display = 'none';
-        $('startScannerBtn').style.display = 'inline-block';
-        $('stopScannerBtn').style.display = 'none';
-      }
-    }
-
-    // Stop scanner
-    async function stopScanner() {
-      scannerActive = false;
-      console.log('Stopper scanning...');
-
-      if (html5QrCode && html5QrCode.isScanning) {
-        try {
-          await html5QrCode.stop();
-          html5QrCode.clear();
-        } catch (e) {
-          console.warn('Fejl ved stop af scanner:', e);
-        }
-        html5QrCode = null;
-      }
-      
-      const video = $('scannerVideo');
-      if (video) {
-        video.style.display = 'none';
-        video.innerHTML = ''; // Clear Html5Qrcode content
-      }
-      
-      $('startScannerBtn').style.display = 'inline-block';
-      $('stopScannerBtn').style.display = 'none';
-      showStatus('Scanner stoppet', 'info');
-      
-      lastScannedCode = null;
-      lastScanTime = 0;
-    }
-
-    // Toggle manual input
-    function toggleManualInput() {
-      const section = $('manualInputSection');
-      if (section.style.display === 'none') {
-        section.style.display = 'block';
-        $('manualBarcodeInput').focus();
-      } else {
-        section.style.display = 'none';
-        $('manualBarcodeInput').value = '';
-      }
-    }
-
-    // Handle manual barcode input
-    function handleManualBarcode() {
-      const input = $('manualBarcodeInput');
-      const barcode = input.value.trim();
-      if (!barcode) return;
-      
-      handleScannedBarcode(barcode);
-      input.value = '';
-    }
-
-    // Handle scanned barcode
-    function handleScannedBarcode(barcode) {
-      // Find item by barcode (id)
-      const item = allItems.find(v => v.id === barcode);
-      
-      if (!item) {
-        showStatus('⚠️ Vare ikke fundet: ' + barcode, 'error');
-        return;
-      }
-      
-      // Add to scanned items
-      if (!scannedItems[barcode]) {
-        scannedItems[barcode] = {
-          vare: item,
-          count: 0
-        };
-      }
-      
-      scannedItems[barcode].count++;
-      
-      // Visual feedback
-      showStatus('✅ ' + item.navn + ' tilføjet', 'success');
-      
-      // Update UI
-      updateStats();
-      renderScannedItems();
-      
-      // Vibrate if available
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
-      }
-    }
-
-    // Update stats
-    function updateStats() {
-      const total = Object.values(scannedItems).reduce((sum, item) => sum + item.count, 0);
-      const unique = Object.keys(scannedItems).length;
-      
-      $('totalScanned').textContent = total;
-      $('uniqueItems').textContent = unique;
-      
-      // Update session location info
-      const items = Object.values(scannedItems);
-      if (items.length > 0) {
-        const locations = [...new Set(items.map(item => item.vare.placering || 'Ikke angivet'))];
-        const locationText = locations.length === 1 
-          ? `Lokation: ${locations[0]}` 
-          : `${locations.length} lokationer: ${locations.join(', ')}`;
-        $('sessionLocation').textContent = locationText;
-      } else {
-        $('sessionLocation').textContent = 'Scan stregkoder - lokation findes automatisk';
-      }
-    }
-
-    // Render scanned items - grouped by location
-    function renderScannedItems() {
-      const container = $('scannedItemsList');
-      if (!container) return;
-      
-      const items = Object.values(scannedItems);
-      
-      if (items.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📦</div><div>Ingen varer scannet endnu</div></div>';
-        return;
-      }
-      
-      // Group items by location
-      const itemsByLocation = {};
-      items.forEach(item => {
-        const location = item.vare.placering || 'Ingen placering';
-        if (!itemsByLocation[location]) {
-          itemsByLocation[location] = [];
-        }
-        itemsByLocation[location].push(item);
-      });
-      
-      // Render grouped
-      let html = '';
-      Object.keys(itemsByLocation).sort().forEach(location => {
-        html += `<div style="margin-bottom:20px; padding:10px; background:#f0f0f0; border-radius:8px;">`;
-        html += `<div style="font-weight:700; font-size:16px; color:#0078D4; margin-bottom:10px; padding-bottom:8px; border-bottom:2px solid #0078D4;">📍 ${location}</div>`;
-        
-        itemsByLocation[location].forEach(item => {
-          const v = item.vare;
-          html += `
-            <div class="scanned-item" style="margin-bottom:8px;">
-              <div class="scanned-item-info">
-                <div class="scanned-item-name">${v.navn}</div>
-                <div class="scanned-item-details">
-                  ${v.maaleenhed || 'stk'}
-                  ${v.reolNr ? ' • Reol ' + v.reolNr : ''}
-                  ${v.hylleNr ? ' • Hylle ' + v.hylleNr : ''}
-                </div>
-              </div>
-              <div class="scanned-item-count">${item.count}</div>
-            </div>
-          `;
-        });
-        
-        html += `</div>`;
-      });
-      
-      container.innerHTML = html;
-    }
-
-    // Clear all
-    function clearAll() {
-      if (!confirm('Er du sikker på at du vil rydde alle scannede varer?')) {
-        return;
-      }
-      
-      scannedItems = {};
-      updateStats();
-      renderScannedItems();
-      showStatus('Alle varer ryddet', 'success');
-    }
-
-    // Finish session - create report directly
-    function finishSession() {
-      const items = Object.values(scannedItems);
-      if (items.length === 0) {
-        showStatus('⚠️ Ingen varer scannet. Tilføj varer før du afslutter.', 'error');
-        return;
-      }
-      
-      // Stop scanner if active
-      if (scannerActive) {
-        stopScanner();
-      }
-      
-      try {
-        // Group items by location
-        const itemsByLocation = {};
-        items.forEach(item => {
-          const location = item.vare.placering || 'Ikke angivet';
-          if (!itemsByLocation[location]) {
-            itemsByLocation[location] = [];
-          }
-          itemsByLocation[location].push(item);
-        });
-        
-        // Get session counter from main app
-        const storageKey = 'køkkenlager_data';
-        let data = {};
-        const existingData = localStorage.getItem(storageKey);
-        if (existingData) {
-          try {
-            data = JSON.parse(existingData);
-          } catch (e) {
-            console.error('Error parsing existing data:', e);
-            data = {};
-          }
-        }
-        
-        let sessionCounter = (data.sessionCounter || 0) + 1;
-        
-        // Create report for each location (grouped)
-        const reports = [];
-        Object.keys(itemsByLocation).sort().forEach(location => {
-          const locationItems = itemsByLocation[location];
-          const details = [];
-          let grandTotal = 0;
-          
-          locationItems.forEach(item => {
-            const v = item.vare;
-            const antal = Number(item.count) || 0;
-            const pris = Number(v.pris) || 0;
-            const linjetotal = antal * pris;
-            grandTotal += linjetotal;
-            
-            const detailItem = {
-              vareId: v.id,
-              navn: v.navn || 'Ukendt',
-              maaleenhed: v.maaleenhed || 'stk',
-              pris: pris,
-              antal: antal,
-              linjetotal: linjetotal,
-              placering: location
-            };
-            
-            // Add reol and hylle if available
-            if (v.reolNr) detailItem.reolNr = v.reolNr;
-            if (v.hylleNr) detailItem.hylleNr = v.hylleNr;
-            
-            details.push(detailItem);
-          });
-          
-          // Create report (same format as main app)
-          const report = {
-            ts: Date.now(),
-            handling: `Stregkode scanner - ${location}`,
-            type: 'session',
-            scope: location,
-            details: details,
-            total: grandTotal
-          };
-          
-          reports.push(report);
-        });
-        
-        // Preserve ALL existing data
-        if (!data.reports || !Array.isArray(data.reports)) {
-          data.reports = [];
-        }
-        
-        // Add all reports to beginning of reports array
-        reports.forEach(report => {
-          // Check if report already exists
-          const reportExists = data.reports.some(r => 
-            r.handling === report.handling && 
-            Math.abs(r.ts - report.ts) < 1000
-          );
-          
-          if (!reportExists) {
-            data.reports.unshift(report);
-            console.log('✅ New report added:', report.handling);
-          }
-        });
-        
-        // Update sessionCounter
-        data.sessionCounter = sessionCounter;
-        
-        // Clear active session
-        data.activeSession = null;
-        
-        // Add/update metadata
-        data.version = data.version || '1.0';
-        data.savedAt = Date.now();
-        
-        // Save all data to localStorage
-        const savedData = JSON.stringify(data);
-        localStorage.setItem(storageKey, savedData);
-        localStorage.removeItem('activeSession');
-        
-        const totalItems = items.reduce((sum, item) => sum + item.count, 0);
-        const locationsCount = Object.keys(itemsByLocation).length;
-        
-        showStatus(`✅ Rapport oprettet! ${totalItems} varer i ${locationsCount} lokation(er)`, 'success');
-        
-        console.log('✅ Reports saved successfully:', reports.length);
-        console.log('Total reports in array:', data.reports.length);
-        
-        // Reset after 3 seconds
-        setTimeout(() => {
-          if (confirm(`Rapport oprettet!\n\n${totalItems} varer i ${locationsCount} lokation(er)\n\nVil du starte en ny optælling?`)) {
-            scannedItems = {};
-            updateStats();
-            renderScannedItems();
-            showStatus('Klar til ny optælling', 'info');
-          }
-        }, 3000);
-        
-      } catch (err) {
-        console.error('Fejl ved afslutning:', err);
-        showStatus('Fejl ved afslutning: ' + err.message, 'error');
-      }
-    }
-
-    // Test libraries function
-    function testLibraries() {
-      const testResult = $('testResult');
-      if (!testResult) return;
-      
-      let results = [];
-      
-      // Test Html5Qrcode
-      if (typeof Html5Qrcode !== 'undefined') {
-        results.push('✅ Html5Qrcode bibliotek: OK');
-      } else {
-        results.push('❌ Html5Qrcode bibliotek: IKKE INDLÆST');
-      }
-      
-      // Test kamera API
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        results.push('✅ Kamera API: Tilgængelig');
-      } else {
-        results.push('❌ Kamera API: Ikke tilgængelig (kræver HTTPS)');
-      }
-      
-      // Test HTTPS
-      const isSecure = window.location.protocol === 'https:' || 
-                     window.location.hostname === 'localhost' || 
-                     window.location.hostname === '127.0.0.1';
-      if (isSecure) {
-        results.push(`✅ Sikkerhed: ${window.location.protocol}//${window.location.hostname}`);
-      } else {
-        results.push(`⚠️ Sikkerhed: ${window.location.protocol} (HTTPS anbefalet)`);
-      }
-      
-      testResult.innerHTML = results.join('<br>');
-      testResult.style.display = 'block';
-    }
-
-    // PWA Install prompt
-    let deferredPrompt;
-    const installPromptEl = $('installPrompt');
-    const installBtn = $('installBtn');
-    const installInstructions = $('installInstructions');
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-      // Prevent the mini-infobar from appearing on mobile
-      e.preventDefault();
-      // Stash the event so it can be triggered later
-      deferredPrompt = e;
-      // Show install button
-      if (installPromptEl) {
-        installPromptEl.style.display = 'block';
-      }
-    });
-
-    if (installBtn) {
-      installBtn.addEventListener('click', async () => {
-        if (!deferredPrompt) {
-          // Show manual instructions
-          if (installInstructions) {
-            installInstructions.style.display = 'block';
-          }
-          return;
-        }
-        
-        // Show the install prompt
-        deferredPrompt.prompt();
-        
-        // Wait for the user to respond to the prompt
-        const { outcome } = await deferredPrompt.userChoice;
-        
-        console.log(`User response to install prompt: ${outcome}`);
-        
-        // Clear the deferredPrompt
-        deferredPrompt = null;
-        
-        // Hide install button
-        if (installPromptEl) {
-          installPromptEl.style.display = 'none';
-        }
-      });
-    }
-
-    // Check if already installed
-    window.addEventListener('appinstalled', () => {
-      console.log('PWA was installed');
-      if (installPromptEl) {
-        installPromptEl.style.display = 'none';
-      }
-      showStatus('✅ App installeret! Du kan nu åbne den fra hjem-skærmen.', 'success');
-    });
-
-    // Show install instructions on iOS (Safari doesn't support beforeinstallprompt)
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                        window.navigator.standalone || 
-                        document.referrer.includes('android-app://');
     
-    if (isIOS && !isStandalone && installPromptEl) {
-      installPromptEl.style.display = 'block';
-      if (installInstructions) {
-        installInstructions.style.display = 'block';
+    const data = JSON.parse(dataStr);
+    allItems = data.masterVarelager || [];
+    
+    if (allItems.length === 0) {
+      updateStatus('⚠️ Varelageret er tomt. Tilføj varer i hovedprogrammet først.', 'error');
+      return false;
+    }
+    
+    console.log('Indlæst ' + allItems.length + ' varer fra hovedprogrammet');
+    return true;
+  } catch (err) {
+    console.error('Fejl ved indlæsning af varer:', err);
+    updateStatus('Fejl ved indlæsning af varer: ' + err.message, 'error');
+    return false;
+  }
+}
+
+function updateStatus(text, type){
+  const status = document.getElementById('status');
+  status.textContent = text;
+  status.className = 'status ' + (type || 'waiting');
+}
+
+async function startScanner(){
+  if(scannerActive){
+    stopScanner();
+    return;
+  }
+  
+  if(!loadItemsFromMainApp()){
+    return;
+  }
+  
+  const status = document.getElementById('status');
+  const video = document.getElementById('scannerVideo');
+  const startBtn = document.getElementById('startBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  
+  const isSecure = window.location.protocol === 'https:' || 
+                   window.location.hostname === 'localhost' || 
+                   window.location.hostname === '127.0.0.1';
+  
+  if(!isSecure && window.location.protocol === 'file:'){
+    updateStatus('⚠️ KAMERA KRÆVER WEBSERVER\n\nFilen skal hostes på en webserver for at kameraet virker.\n\nBrug webserveren fra hovedprogrammet eller GitHub Pages.', 'error');
+    return;
+  }
+  
+  if(typeof Html5Qrcode === 'undefined'){
+    updateStatus('Scanner library ikke indlæst. Genindlæs siden og prøv igen.', 'error');
+    return;
+  }
+  
+  updateStatus('Starter kamera...', 'waiting');
+  
+  try {
+    // Stop existing scanning first if active
+    if (html5QrCode && html5QrCode.isScanning) {
+      try {
+        await html5QrCode.stop();
+        html5QrCode.clear();
+      } catch (stopErr) {
+        console.warn('Fejl ved stop af eksisterende scanning:', stopErr);
       }
     }
-
-    // Initialize
-    function init() {
-      initScanner();
-      
-      // Test libraries automatically after 2 seconds
-      setTimeout(() => {
-        testLibraries();
-      }, 2000);
+    
+    video.style.display = 'block';
+    scannerActive = true;
+    
+    html5QrCode = new Html5Qrcode("scannerVideo");
+    
+    const config = {
+      fps: 10,
+      qrbox: { width: 250, height: 250 },
+      aspectRatio: 1.0
+    };
+    
+    await html5QrCode.start(
+      { facingMode: "environment" },
+      config,
+      (decodedText, decodedResult) => {
+        console.log('✅ Scannet stregkode/QR-kode:', decodedText);
+        const now = Date.now();
+        
+        if (now - lastScanTime < SCAN_COOLDOWN && decodedText === lastScannedCode) {
+          return;
+        }
+        
+        lastScannedCode = decodedText;
+        lastScanTime = now;
+        
+        handleScannedBarcode(decodedText);
+      },
+      (errorMessage) => {
+        // Ignorer scanning fejl - de er normale når der ikke er fundet noget
+      }
+    );
+    
+    updateStatus('Peger på stregkoden...', 'scanning');
+    startBtn.style.display = 'none';
+    stopBtn.style.display = 'block';
+    document.getElementById('stats').style.display = 'flex';
+    
+  } catch(err){
+    console.error('Kamera fejl:', err);
+    scannerActive = false;
+    let errorMsg = '';
+    let instructions = '';
+    if(err.name === 'NotAllowedError'){
+      errorMsg = 'Kamera tilladelse nægtet.';
+      instructions = 'Giv tilladelse til kamera:\n1. Klik på kamera-ikonet i browserens adresselinje\n2. Vælg "Tillad" for kamera\n3. Genindlæs siden og prøv igen';
+    } else if(err.name === 'NotFoundError'){
+      errorMsg = 'Ingen kamera fundet.';
+      instructions = 'Tjek at dit kamera er tilsluttet og ikke bruges af andre programmer.';
+    } else {
+      errorMsg = 'Kunne ikke starte scanner: ' + (err.message || err.name);
+      instructions = 'Prøv:\n1. Genindlæs siden\n2. Tjek browser tilladelser for kamera\n3. Sørg for at filen hostes på en webserver';
     }
+    updateStatus(errorMsg + '\n\n' + instructions, 'error');
+    startBtn.style.display = 'block';
+    stopBtn.style.display = 'none';
+    video.style.display = 'none';
+  }
+}
 
-    // Start when page loads
-    init();
-  </script>
+function handleScannedBarcode(barcode){
+  const item = allItems.find(v => v.id === barcode);
+  
+  if (!item) {
+    updateStatus('⚠️ Vare ikke fundet: ' + barcode, 'error');
+    setTimeout(() => {
+      if(scannerActive){
+        updateStatus('Peger på stregkoden...', 'scanning');
+      }
+    }, 2000);
+    return;
+  }
+  
+  if (!scannedItems[barcode]) {
+    scannedItems[barcode] = {
+      vare: item,
+      count: 0
+    };
+  }
+  
+  scannedItems[barcode].count++;
+  
+  updateStatus('✅ ' + item.navn + ' tilføjet', 'success');
+  
+  updateStats();
+  renderList();
+  
+  if (navigator.vibrate) {
+    navigator.vibrate(50);
+  }
+  
+  setTimeout(() => {
+    if(scannerActive){
+      updateStatus('Peger på stregkoden...', 'scanning');
+    }
+  }, 1000);
+}
+
+function updateStats(){
+  const total = Object.values(scannedItems).reduce((sum, item) => sum + item.count, 0);
+  const unique = Object.keys(scannedItems).length;
+  
+  document.getElementById('totalScanned').textContent = total;
+  document.getElementById('uniqueItems').textContent = unique;
+  document.getElementById('count').textContent = total;
+}
+
+function renderList(){
+  const list = document.getElementById('scannedList');
+  const items = Object.values(scannedItems);
+  
+  if(items.length === 0){
+    list.innerHTML = '<div class="empty">Ingen varer scannet endnu</div>';
+    return;
+  }
+  
+  // Group by location
+  const itemsByLocation = {};
+  items.forEach(item => {
+    const location = item.vare.placering || 'Ikke angivet';
+    if (!itemsByLocation[location]) {
+      itemsByLocation[location] = [];
+    }
+    itemsByLocation[location].push(item);
+  });
+  
+  let html = '';
+  Object.keys(itemsByLocation).sort().forEach(location => {
+    html += `<div style="margin-bottom:15px; padding:10px; background:#f0f0f0; border-radius:6px;">`;
+    html += `<div style="font-weight:700; font-size:14px; color:#4CAF50; margin-bottom:8px;">📍 ${location}</div>`;
+    
+    itemsByLocation[location].forEach((item, idx) => {
+      const v = item.vare;
+      const key = Object.keys(scannedItems).find(k => scannedItems[k] === item);
+      html += `
+        <div class="scanned-item">
+          <div class="info">
+            <div class="name">${v.navn}</div>
+            <div class="details">${v.maaleenhed || 'stk'}${v.reolNr ? ' • Reol ' + v.reolNr : ''}${v.hylleNr ? ' • Hylle ' + v.hylleNr : ''}</div>
+          </div>
+          <div class="count">${item.count}</div>
+          <button class="remove" onclick="removeItem('${key}')">Slet</button>
+        </div>
+      `;
+    });
+    
+    html += `</div>`;
+  });
+  
+  list.innerHTML = html;
+}
+
+function removeItem(key){
+  delete scannedItems[key];
+  updateStats();
+  renderList();
+}
+
+function clearAll(){
+  if(confirm('Er du sikker på at du vil slette alle scannede varer?')){
+    scannedItems = {};
+    updateStats();
+    renderList();
+    updateStatus('Alle varer ryddet', 'waiting');
+  }
+}
+
+async function stopScanner(){
+  scannerActive = false;
+  const status = document.getElementById('status');
+  const video = document.getElementById('scannerVideo');
+  const startBtn = document.getElementById('startBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  
+  if(html5QrCode){
+    try {
+      if(html5QrCode.isScanning){
+        await html5QrCode.stop();
+      }
+      html5QrCode.clear();
+    } catch(err){
+      console.warn('Fejl ved stop:', err);
+    }
+    html5QrCode = null;
+  }
+  
+  video.style.display = 'none';
+  startBtn.style.display = 'block';
+  stopBtn.style.display = 'none';
+  updateStatus('Scanner stoppet', 'waiting');
+}
+
+function finishSession(){
+  const items = Object.values(scannedItems);
+  if(items.length === 0){
+    updateStatus('⚠️ Ingen varer scannet. Tilføj varer før du afslutter.', 'error');
+    return;
+  }
+  
+  if(scannerActive){
+    stopScanner();
+  }
+  
+  try {
+    // Group items by location
+    const itemsByLocation = {};
+    items.forEach(item => {
+      const location = item.vare.placering || 'Ikke angivet';
+      if (!itemsByLocation[location]) {
+        itemsByLocation[location] = [];
+      }
+      itemsByLocation[location].push(item);
+    });
+    
+    // Get session counter from main app
+    const storageKey = 'køkkenlager_data';
+    let data = {};
+    const existingData = localStorage.getItem(storageKey);
+    if (existingData) {
+      try {
+        data = JSON.parse(existingData);
+      } catch (e) {
+        console.error('Error parsing existing data:', e);
+        data = {};
+      }
+    }
+    
+    let sessionCounter = (data.sessionCounter || 0) + 1;
+    
+    // Create report for each location (grouped)
+    const reports = [];
+    Object.keys(itemsByLocation).sort().forEach(location => {
+      const locationItems = itemsByLocation[location];
+      const details = [];
+      let grandTotal = 0;
+      
+      locationItems.forEach(item => {
+        const v = item.vare;
+        const antal = Number(item.count) || 0;
+        const pris = Number(v.pris) || 0;
+        const linjetotal = antal * pris;
+        grandTotal += linjetotal;
+        
+        const detailItem = {
+          vareId: v.id,
+          navn: v.navn || 'Ukendt',
+          maaleenhed: v.maaleenhed || 'stk',
+          pris: pris,
+          antal: antal,
+          linjetotal: linjetotal,
+          placering: location
+        };
+        
+        if (v.reolNr) detailItem.reolNr = v.reolNr;
+        if (v.hylleNr) detailItem.hylleNr = v.hylleNr;
+        
+        details.push(detailItem);
+      });
+      
+      const report = {
+        ts: Date.now(),
+        handling: `Stregkode scanner - ${location}`,
+        type: 'session',
+        scope: location,
+        details: details,
+        total: grandTotal
+      };
+      
+      reports.push(report);
+    });
+    
+    // Preserve ALL existing data
+    if (!data.reports || !Array.isArray(data.reports)) {
+      data.reports = [];
+    }
+    
+    // Add all reports to beginning of reports array
+    reports.forEach(report => {
+      const reportExists = data.reports.some(r => 
+        r.handling === report.handling && 
+        Math.abs(r.ts - report.ts) < 1000
+      );
+      
+      if (!reportExists) {
+        data.reports.unshift(report);
+        console.log('✅ New report added:', report.handling);
+      }
+    });
+    
+    // Update sessionCounter
+    data.sessionCounter = sessionCounter;
+    
+    // Clear active session
+    data.activeSession = null;
+    
+    // Add/update metadata
+    data.version = data.version || '1.0';
+    data.savedAt = Date.now();
+    
+    // Save all data to localStorage
+    const savedData = JSON.stringify(data);
+    localStorage.setItem(storageKey, savedData);
+    localStorage.removeItem('activeSession');
+    
+    const totalItems = items.reduce((sum, item) => sum + item.count, 0);
+    const locationsCount = Object.keys(itemsByLocation).length;
+    
+    updateStatus(`✅ Rapport oprettet! ${totalItems} varer i ${locationsCount} lokation(er)`, 'success');
+    
+    console.log('✅ Reports saved successfully:', reports.length);
+    
+    // Clear scanned items
+    scannedItems = {};
+    updateStats();
+    renderList();
+    
+    alert(`✅ Optælling afsluttet!\n\n📊 Total varer: ${totalItems}\n📍 Lokationer: ${locationsCount}\n\nRapporten er nu tilgængelig i hovedprogrammet under "Rapporter".`);
+    
+  } catch(err){
+    console.error('Fejl ved oprettelse af rapport:', err);
+    updateStatus('Fejl ved oprettelse af rapport: ' + err.message, 'error');
+  }
+}
+
+// Initialize on load
+if(loadItemsFromMainApp()){
+  updateStatus('Klar til scanning - Klik "Start Scanner"', 'waiting');
+} else {
+  updateStatus('⚠️ Ingen varelager data fundet. Opret varer i hovedprogrammet først.', 'error');
+}
+</script>
 </body>
 </html>
