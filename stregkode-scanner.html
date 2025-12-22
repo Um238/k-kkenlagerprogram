@@ -53,7 +53,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <body>
 <div class="header">
   <h1>📱 Stregkode Scanner</h1>
-  <p>Scan stregkoder med din telefon - V 3.5</p>
+  <p>Scan stregkoder med din telefon - V 3.6</p>
 </div>
 
 <div class="scanner-container">
@@ -85,6 +85,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
     <button class="button secondary" onclick="scanVarelagerQR()" style="font-size:14px; padding:10px; background:#4CAF50;">📥 Scan QR-kode</button>
     <button class="button secondary" onclick="importVarelager()" style="font-size:14px; padding:10px;">📥 Import fil</button>
     <button class="button secondary" onclick="exportReports()" style="font-size:14px; padding:10px; background:#2196F3;">📤 Eksport rapporter</button>
+    <button class="button secondary" onclick="showInstallationId()" style="font-size:14px; padding:10px; background:#FF9800;">🔑 Vis ID</button>
     <button class="button" onclick="finishSession()">✅ Afslut optælling</button>
   </div>
 </div>
@@ -944,10 +945,34 @@ function finishSession(){
     data.version = data.version || '1.0';
     data.savedAt = Date.now();
     
+    // Add unique installation ID for tracking
+    if (!data.installationId) {
+      // Generate unique ID if not exists
+      data.installationId = 'SCANNER-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    }
+    
+    // Add report metadata
+    report.source = 'stregkode-scanner';
+    report.installationId = data.installationId;
+    
     // Save all data to localStorage
     const savedData = JSON.stringify(data);
-    localStorage.setItem(storageKey, savedData);
-    localStorage.removeItem('activeSession');
+    try {
+      localStorage.setItem(storageKey, savedData);
+      localStorage.removeItem('activeSession');
+      
+      // Verify save was successful
+      const verifyData = localStorage.getItem(storageKey);
+      if (!verifyData) {
+        throw new Error('Kunne ikke gemme data i localStorage');
+      }
+      
+      console.log('✅ Data saved and verified. Report:', reportName, 'Items:', details.length);
+    } catch(saveErr) {
+      console.error('Save error:', saveErr);
+      alert('⚠️ Fejl ved gemning af rapport!\n\n' + saveErr.message + '\n\nPrøv at genindlæse siden og prøv igen.');
+      throw saveErr;
+    }
     
     const totalItems = items.reduce((sum, item) => sum + item.count, 0);
     const uniqueItems = items.length;
@@ -973,7 +998,24 @@ function finishSession(){
       exportInfo = `\n\n💡 Tip: For at få rapporterne ind i hovedprogrammet:\n\n1. Klik "📤 Eksport rapporter" knappen nedenfor\n2. I hovedprogrammet: "Opsætning" → "Import data" → "📷 Importer Scanner Data"\n3. Vælg den downloadede fil\n\nEller brug "🔄 Synkroniser Rapporter" i hovedprogrammet hvis begge kører på samme enhed.`;
     }
     
-    alert(`✅ Optælling afsluttet!\n\n📋 Rapport: ${reportName}\n📊 ${uniqueItems} unikke varer, ${totalItems} total antal\n📍 ${locationsCount} lokation(er)\n💰 Total værdi: ${grandTotal.toFixed(2)} kr.\n\nRapporten er nu gemt.${exportInfo}`);
+    // Verify report was saved
+    const verifyData = localStorage.getItem(storageKey);
+    let saveStatus = '';
+    if (verifyData) {
+      try {
+        const verify = JSON.parse(verifyData);
+        const found = verify.reports && verify.reports.some(r => r.handling === reportName);
+        if (found) {
+          saveStatus = '\n\n✅ Rapport gemt og verificeret!';
+        } else {
+          saveStatus = '\n\n⚠️ Rapport gemt, men verificering fejlede.';
+        }
+      } catch(e) {
+        saveStatus = '\n\n⚠️ Kunne ikke verificere gemning.';
+      }
+    }
+    
+    alert(`✅ Optælling afsluttet!\n\n📋 Rapport: ${reportName}\n📊 ${uniqueItems} unikke varer, ${totalItems} total antal\n📍 ${locationsCount} lokation(er)\n💰 Total værdi: ${grandTotal.toFixed(2)} kr.${saveStatus}${exportInfo}`);
     
   } catch(err){
     console.error('Fejl ved oprettelse af rapport:', err);
@@ -999,9 +1041,9 @@ function exportReports(){
       return;
     }
     
-    // Filter only scanner reports (reports created by this app)
+    // Filter only scanner reports (reports created by this app - OPTA- format)
     const scannerReports = data.reports.filter(r => 
-      r.handling && r.handling.startsWith('Stregkode scanner')
+      r.handling && (r.handling.startsWith('OPTA-') || r.handling.startsWith('Stregkode scanner'))
     );
     
     if (scannerReports.length === 0) {
@@ -1009,13 +1051,22 @@ function exportReports(){
       return;
     }
     
+    // Get or create installation ID
+    if (!data.installationId) {
+      data.installationId = 'SCANNER-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+      // Save installation ID
+      localStorage.setItem(storageKey, JSON.stringify(data));
+    }
+    const installationId = data.installationId;
+    
     // Create export data
     const exportData = {
       reports: scannerReports,
       sessionCounter: data.sessionCounter || 0,
       exportedAt: Date.now(),
       version: '1.0',
-      source: 'stregkode-scanner'
+      source: 'stregkode-scanner',
+      installationId: installationId
     };
     
     // Create download
@@ -1029,7 +1080,8 @@ function exportReports(){
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    alert(`✅ ${scannerReports.length} rapport(er) eksporteret!\n\n📥 Filen er downloadet.\n\n💡 I hovedprogrammet: Gå til "Opsætning" → "Import data" → "📷 Importer Scanner Data" og vælg filen.`);
+    const reportNames = scannerReports.map(r => r.handling || 'Ukendt').join(', ');
+    alert(`✅ ${scannerReports.length} rapport(er) eksporteret!\n\n📋 Rapporter: ${reportNames}\n📥 Filen er downloadet.\n\n💡 I hovedprogrammet:\n1. Gå til "Opsætning" → "Import data"\n2. Klik "📷 Importer Scanner Data"\n3. Vælg den downloadede fil\n4. Rapporterne importeres automatisk!\n\n🔗 Installation ID: ${installationId.substring(0, 20)}...`);
     
   } catch(err) {
     console.error('Fejl ved eksport:', err);

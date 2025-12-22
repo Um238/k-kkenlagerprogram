@@ -6865,7 +6865,7 @@ function importScannerData(){
           const importedData = JSON.parse(e.target.result);
           
           // Check if this is a scanner reports export
-          if (importedData.reports && Array.isArray(importedData.reports) && importedData.source === 'stregkode-scanner') {
+          if (importedData.reports && Array.isArray(importedData.reports) && (importedData.source === 'stregkode-scanner' || importedData.reports.some(r => r.handling && r.handling.startsWith('OPTA-')))) {
             // Import reports directly
             const storageKey = 'køkkenlager_data';
             let data = {};
@@ -6882,23 +6882,46 @@ function importScannerData(){
               data.reports = [];
             }
             
-            // Add imported reports (avoid duplicates)
+            // Add imported reports (avoid duplicates by handling name and timestamp)
             let added = 0;
+            let skipped = 0;
             importedData.reports.forEach(report => {
+              // Check for duplicates by handling name (OPTA-000004) or timestamp
               const exists = data.reports.some(r => 
-                r.handling === report.handling && 
-                Math.abs(r.ts - report.ts) < 1000
+                (r.handling === report.handling) || 
+                (Math.abs(r.ts - report.ts) < 1000 && r.handling && report.handling && r.handling.startsWith('OPTA-'))
               );
               
               if (!exists) {
+                // Ensure report has all required fields
+                if (!report.type) report.type = 'session';
+                if (!report.details) report.details = [];
+                if (!report.total) report.total = 0;
+                
                 data.reports.unshift(report);
                 added++;
+                console.log('✅ Imported report:', report.handling, 'with', report.details ? report.details.length : 0, 'items');
+              } else {
+                skipped++;
+                console.log('⚠️ Skipped duplicate report:', report.handling);
               }
             });
             
-            // Update sessionCounter if needed
-            if (importedData.sessionCounter && importedData.sessionCounter > (data.sessionCounter || 0)) {
-              data.sessionCounter = importedData.sessionCounter;
+            // Update sessionCounter if needed (use highest value)
+            if (importedData.sessionCounter) {
+              const currentCounter = data.sessionCounter || sessionCounter || 0;
+              if (importedData.sessionCounter > currentCounter) {
+                data.sessionCounter = importedData.sessionCounter;
+                sessionCounter = importedData.sessionCounter;
+              }
+            }
+            
+            // Store scanner installation ID for tracking
+            if (importedData.installationId) {
+              if (!data.scannerInstallationIds) data.scannerInstallationIds = [];
+              if (!data.scannerInstallationIds.includes(importedData.installationId)) {
+                data.scannerInstallationIds.push(importedData.installationId);
+              }
             }
             
             // Save data
@@ -6912,7 +6935,16 @@ function importScannerData(){
             updateLogPreview();
             saveAllData();
             
-            alert(`✅ ${added} rapport(er) importeret!\n\nRapporterne er nu tilgængelige under "Rapporter" fanen.`);
+            let message = `✅ ${added} rapport(er) importeret!`;
+            if (skipped > 0) {
+              message += `\n⚠️ ${skipped} rapport(er) sprunget over (findes allerede)`;
+            }
+            message += `\n\nRapporterne er nu tilgængelige under "Rapporter" fanen.`;
+            if (importedData.installationId) {
+              message += `\n\n🔗 Installation ID: ${importedData.installationId.substring(0, 20)}...`;
+            }
+            
+            alert(message);
             return;
           }
         } catch(err) {
