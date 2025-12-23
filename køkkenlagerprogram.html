@@ -1291,8 +1291,7 @@ a:hover{color:#45a049;text-decoration:none}
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 <!-- ZXing for barcode scanning -->
 <script src="https://unpkg.com/@zxing/library@0.19.1"></script>
-<!-- QR Code generator -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- QR Code generator (already included in head, but kept here for compatibility) -->
 
 <!-- =========================
      [JS ALL-IN-ONE — nummereret (JS 1.. JS 4.x) ]
@@ -6727,8 +6726,30 @@ function downloadManuelOptaeling(){
 // Generate QR code with varelager data for scanner app
 function generateVarelagerQR(){
   try {
+    console.log('🔄 Starter QR-kode generering...');
+    
+    // Check if QRCode library is loaded - wait up to 2 seconds if not ready
+    let attempts = 0;
+    const maxAttempts = 20; // 20 attempts * 100ms = 2 seconds
+    
+    const checkQRCodeLibrary = () => {
+      if (typeof QRCode !== 'undefined') {
+        proceedWithQRGeneration();
+      } else if (attempts < maxAttempts) {
+        attempts++;
+        setTimeout(checkQRCodeLibrary, 100);
+      } else {
+        console.error('❌ QRCode bibliotek ikke fundet efter', maxAttempts * 100, 'ms');
+        alert('⚠️ QR-kode bibliotek ikke indlæst.\n\nPrøv at:\n1. Genindlæs siden (Ctrl+F5 eller Cmd+Shift+R)\n2. Tjek din internetforbindelse\n3. Vent et øjeblik og prøv igen');
+      }
+    };
+    
+    const proceedWithQRGeneration = () => {
+    
     // Prepare data - only masterVarelager to keep QR code small
     const installationId = getInstallationId();
+    console.log('📋 Installation ID:', installationId);
+    
     const dataToExport = {
       masterVarelager: masterVarelager || [],
       lagerLokationer: lagerLokationer || [],
@@ -6742,6 +6763,8 @@ function generateVarelagerQR(){
       return;
     }
     
+    console.log('📦 Varelager items:', dataToExport.masterVarelager.length);
+    
     // Convert to JSON string
     const jsonString = JSON.stringify(dataToExport);
     
@@ -6751,6 +6774,8 @@ function generateVarelagerQR(){
     
     // Create data URL with prefix so scanner knows it's varelager data
     const qrData = 'VARELAGER:' + base64Data;
+    
+    console.log('📏 QR data størrelse:', qrData.length, 'tegn');
     
     // Check if data is too large for QR code
     if (qrData.length > 2500) {
@@ -6777,15 +6802,18 @@ function generateVarelagerQR(){
     const qrCodeDiv = document.getElementById('varelagerQRCode');
     
     if (!container || !qrCodeDiv) {
-      alert('⚠️ QR-kode container ikke fundet.');
+      console.error('❌ Container ikke fundet:', { container: !!container, qrCodeDiv: !!qrCodeDiv });
+      alert('⚠️ QR-kode container ikke fundet.\n\nPrøv at genindlæse siden.');
       return;
     }
+    
+    console.log('✅ Container fundet, genererer QR-kode...');
     
     // Clear previous QR code
     qrCodeDiv.innerHTML = '';
     
     // Generate QR code
-    if (typeof QRCode !== 'undefined') {
+    try {
       new QRCode(qrCodeDiv, {
         text: qrData,
         width: 300,
@@ -6795,19 +6823,28 @@ function generateVarelagerQR(){
         correctLevel: QRCode.CorrectLevel.H // High error correction
       });
       
+      console.log('✅ QR-kode genereret!');
+      
       // Show container
       container.style.display = 'block';
       
       // Scroll to QR code
-      container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => {
+        container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
       
       alert('✅ QR-kode genereret!\n\n📱 Næste skridt:\n\n1. Åbn scanner-appen på telefonen\n2. Tryk "📥 Scan QR-kode" knappen\n3. Scan denne QR-kode\n4. Varelageret importeres automatisk!');
-    } else {
-      alert('⚠️ QR-kode bibliotek ikke indlæst.\n\nGenindlæs siden og prøv igen.');
+    } catch(qrError) {
+      console.error('❌ Fejl ved QR-kode generering:', qrError);
+      alert('⚠️ Fejl ved generering af QR-kode: ' + qrError.message + '\n\nTjek konsollen for flere detaljer.');
     }
+    }; // End of proceedWithQRGeneration
+    
+    // Start checking for library
+    checkQRCodeLibrary();
   } catch(err) {
-    console.error('Error generating QR code:', err);
-    alert('⚠️ Fejl ved generering af QR-kode: ' + err.message);
+    console.error('❌ Error generating QR code:', err);
+    alert('⚠️ Fejl ved generering af QR-kode: ' + err.message + '\n\nTjek konsollen (F12) for flere detaljer.');
   }
 }
 
