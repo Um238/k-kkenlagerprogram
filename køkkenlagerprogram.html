@@ -7190,17 +7190,26 @@ function syncReportsFromScanner(){
         if(data.reports && Array.isArray(data.reports)) {
           const oldCount = reports.length;
           
-          // Check for new reports
+          // Check for new reports - find both OPTA- format and old "Stregkode scanner" format
           data.reports.forEach(report => {
             const exists = reports.some(r => 
               r.handling === report.handling && 
               Math.abs(r.ts - report.ts) < 1000
             );
             
-            if (!exists && report.handling && report.handling.startsWith('Stregkode scanner')) {
+            // Check if this is a scanner report (OPTA- format or old format)
+            const isScannerReport = report.handling && (
+              report.handling.startsWith('OPTA-') || 
+              report.handling.startsWith('Stregkode scanner') ||
+              (report.source === 'stregkode-scanner') ||
+              (report.installationId && report.installationId.startsWith('SCANNER-'))
+            );
+            
+            if (!exists && isScannerReport) {
               reports.unshift(report);
               foundNew = true;
               newCount++;
+              console.log('✅ Found new scanner report:', report.handling);
             }
           });
           
@@ -7227,12 +7236,83 @@ function syncReportsFromScanner(){
       }
     }
     
-    // If no new reports in localStorage, offer to import from file
+    // If no new reports in localStorage, check if there are any scanner reports we haven't imported yet
     if(!foundNew) {
-      if(confirm('Ingen nye rapporter fundet i localStorage.\n\nHvis scanner-appen kører på en anden enhed/domæne, skal du:\n\n1. Eksportere rapporter fra scanner-appen (📤 Eksport rapporter)\n2. Importere filen her\n\nVil du importere fra fil nu?')) {
-        importScannerData();
-      } else {
-        alert('💡 Tip: Hvis scanner-appen kører på samme enhed, skal rapporterne synkroniseres automatisk.\n\nHvis den kører på en anden enhed, brug "📤 Eksport rapporter" i scanner-appen og "📷 Importer Scanner Data" her.');
+      // Check if there are any scanner reports in data that we might have missed
+      if(mainData) {
+        try {
+          const data = JSON.parse(mainData);
+          if(data.reports && Array.isArray(data.reports)) {
+            // Find all scanner reports (OPTA- format)
+            const allScannerReports = data.reports.filter(r => 
+              r.handling && (
+                r.handling.startsWith('OPTA-') || 
+                r.handling.startsWith('Stregkode scanner') ||
+                (r.source === 'stregkode-scanner') ||
+                (r.installationId && r.installationId.startsWith('SCANNER-'))
+              )
+            );
+            
+            // Find which ones we already have
+            const existingScannerReports = reports.filter(r => 
+              r.handling && (
+                r.handling.startsWith('OPTA-') || 
+                r.handling.startsWith('Stregkode scanner') ||
+                (r.source === 'stregkode-scanner') ||
+                (r.installationId && r.installationId.startsWith('SCANNER-'))
+              )
+            );
+            
+            // Find missing reports
+            const missingReports = allScannerReports.filter(scannerReport => 
+              !existingScannerReports.some(existing => 
+                existing.handling === scannerReport.handling && 
+                Math.abs(existing.ts - scannerReport.ts) < 1000
+              )
+            );
+            
+            if(missingReports.length > 0) {
+              // There are scanner reports we haven't imported yet
+              if(confirm(`Fundet ${missingReports.length} scanner rapport(er) der ikke er importeret endnu.\n\nVil du importere dem nu?`)) {
+                // Import all missing scanner reports
+                missingReports.forEach(report => {
+                  reports.unshift(report);
+                  newCount++;
+                  console.log('✅ Importing missing scanner report:', report.handling);
+                });
+                
+                if(newCount > 0) {
+                  // Update sessionCounter
+                  if(data.sessionCounter !== undefined && data.sessionCounter > sessionCounter) {
+                    sessionCounter = data.sessionCounter;
+                  }
+                  
+                  // Save updated reports
+                  data.reports = reports;
+                  localStorage.setItem(storageKey, JSON.stringify(data));
+                  saveAllData();
+                  
+                  renderReports();
+                  updateLogPreview();
+                  
+                  alert(`✅ ${newCount} rapport(er) importeret!\n\nRapporterne er nu tilgængelige under "Rapporter" fanen.`);
+                  return;
+                }
+              }
+            }
+          }
+        } catch(e) {
+          console.error('Error checking for missed reports:', e);
+        }
+      }
+      
+      // If still no new reports, offer to import from file
+      if(!foundNew) {
+        if(confirm('Ingen nye rapporter fundet i localStorage.\n\nHvis scanner-appen kører på en anden enhed/domæne, skal du:\n\n1. Eksportere rapporter fra scanner-appen (📤 Eksport rapporter)\n2. Importere filen her\n\nVil du importere fra fil nu?')) {
+          importScannerData();
+        } else {
+          alert('💡 Tip:\n\n• Hvis scanner-appen kører på samme enhed: Rapporterne skulle synkroniseres automatisk\n• Hvis scanner-appen kører på telefon: Brug "📤 Eksport rapporter" i scanner-appen og "📷 Importer Scanner Data" her\n• Tjek at begge programmer bruger samme installation ID');
+        }
       }
     }
   } catch(e) {
