@@ -482,6 +482,7 @@ a:hover{color:#45a049;text-decoration:none}
   <span class="menu-item" data-target="labels" onclick="navClick(event)">🏷️ Labels</span>
   <span class="menu-item" data-target="leverandor" onclick="navClick(event)">🚚 Leverandører</span>
   <span class="menu-item" data-target="master" onclick="navClick(event)">📋 Varelager administration</span>
+  <span class="menu-item" data-target="scanner" onclick="navClick(event)">📱 Stregkode Scanner</span>
   <span class="menu-item" data-target="systemOpsaetning" onclick="navClick(event)">⚙️ Opsætning</span>
 </nav>
 
@@ -1177,7 +1178,7 @@ a:hover{color:#45a049;text-decoration:none}
       <button onclick="retryIPDetection()" class="secondary" style="padding:6px 12px; font-size:12px;">Prøv automatisk igen</button>
     </div>
     <div id="phoneLinkContent" style="display:none;">
-      <p style="margin-bottom:12px; color:#666; font-weight:700;">📱 Manuel Optælling til din telefon</p>
+      <p style="margin-bottom:12px; color:#666; font-weight:700;">📱 App til din telefon</p>
       <p style="margin-bottom:12px; color:#666; font-size:14px;">Scan QR-koden med din telefon eller kopiér linket nedenfor:</p>
       <div style="text-align:center; margin:20px 0;">
         <div id="qrcode" style="display:inline-block; padding:15px; background:#fff; border:2px solid #0078D4; border-radius:8px;"></div>
@@ -1212,7 +1213,13 @@ a:hover{color:#45a049;text-decoration:none}
               <li><strong>iPhone:</strong> Del-ikon → "Tilføj til hjem-skærm"</li>
             </ul>
           </li>
-          <li><strong>4. Brug Manuel Optælling:</strong> Nu kan du tælle op direkte fra telefonen!</li>
+          <li><strong>4. Tilføj til hjem-skærmen (Genvej):</strong>
+            <ul style="margin:4px 0 0 20px; padding:0;">
+              <li><strong>Android (Chrome):</strong> Menu (3 prikker) → "Tilføj til startskærm"</li>
+              <li><strong>iPhone (Safari):</strong> Del-ikon (firkant med pil) → "Tilføj til hjem-skærm"</li>
+            </ul>
+          </li>
+          <li><strong>5. Brug appen:</strong> Nu kan du bruge appen direkte fra telefonen med genvej!</li>
         </ol>
         <div style="margin-top:12px; padding:8px; background:#fff; border-radius:4px; font-size:12px;">
           <strong>💡 Tip:</strong> Hvis linket ikke virker, tjek at både computer og telefon er på samme WiFi-netværk.
@@ -5938,7 +5945,7 @@ function closeImportModal(){
 /* ================================
    [JS 11] PHONE LINK GENERATOR
    ================================ */
-async function showPhoneLinkModal(){
+async function showPhoneLinkModal(appType = 'manuel'){
   const modal = $('phoneLinkModal');
   const status = $('phoneLinkStatus');
   const content = $('phoneLinkContent');
@@ -5947,10 +5954,23 @@ async function showPhoneLinkModal(){
   
   if(!modal || !status || !content) return;
   
+  // Gem app type for senere brug
+  modal.dataset.appType = appType;
+  
   // Vis modal
   modal.classList.remove('hidden');
   modal.style.display = 'flex';
   modal.setAttribute('aria-hidden', 'false');
+  
+  // Opdater titel baseret på app type
+  const modalTitle = modal.querySelector('h3');
+  if(modalTitle) {
+    if(appType === 'scanner') {
+      modalTitle.textContent = '📷 Stregkode Scanner link til telefon';
+    } else {
+      modalTitle.textContent = '📱 Manuel Optælling link til telefon';
+    }
+  }
   
   // Skjul indhold indtil IP er fundet
   content.style.display = 'none';
@@ -5979,7 +5999,7 @@ async function showPhoneLinkModal(){
     const currentPort = window.location.port || defaultPort;
     
     // Brug fundet IP
-    generatePhoneLink(ip, currentPort, isHTTPS);
+    generatePhoneLink(ip, currentPort, isHTTPS, appType);
     
   } catch(err){
     console.error('Fejl ved IP lookup:', err);
@@ -5991,12 +6011,18 @@ async function showPhoneLinkModal(){
   }
 }
 
-function generatePhoneLink(ip, port, useHTTPS = false){
+function generatePhoneLink(ip, port, useHTTPS = false, appType = 'manuel'){
   const status = $('phoneLinkStatus');
   const content = $('phoneLinkContent');
   const qrContainer = $('qrcode');
   const linkInput = $('phoneLinkInput');
   const manualDiv = $('phoneLinkManual');
+  const modal = $('phoneLinkModal');
+  
+  // Hent app type fra modal hvis ikke angivet
+  if(!appType && modal) {
+    appType = modal.dataset.appType || 'manuel';
+  }
   
   // Skjul manuel indtastning
   if(manualDiv) manualDiv.style.display = 'none';
@@ -6005,34 +6031,40 @@ function generatePhoneLink(ip, port, useHTTPS = false){
   const protocol = useHTTPS ? 'https' : 'http';
   const finalPort = port || (useHTTPS ? '8443' : '8000');
   
-  // Generer link til manuel optælling (mere relevant for telefon)
-  const manualFileName = 'manuel-optaelling.html';
-  const link = `${protocol}://${ip}:${finalPort}/${manualFileName}`;
-  
-  // Også generer link til hovedprogram (til reference)
-  let mainFileName = 'køkkenlagerprogram.html';
-  const currentPath = window.location.pathname;
-  if(currentPath && currentPath !== '/' && currentPath.includes('.')){
-    const pathParts = currentPath.split('/');
-    const extractedName = pathParts[pathParts.length - 1];
-    if(extractedName && extractedName.includes('.html')){
-      mainFileName = extractedName;
-    }
+  // Generer link baseret på app type
+  let fileName, link, appName, labelText;
+  if(appType === 'scanner') {
+    fileName = 'stregkode-scanner.html';
+    appName = 'Stregkode Scanner';
+    labelText = 'Link til Stregkode Scanner:';
+  } else {
+    fileName = 'manuel-optaelling.html';
+    appName = 'Manuel Optælling';
+    labelText = 'Link til Manuel Optælling:';
   }
   
-  if(window.location.protocol === 'file:'){
-    const urlParts = window.location.href.split('/');
-    const urlFileName = urlParts[urlParts.length - 1];
-    if(urlFileName && urlFileName.includes('.html')){
-      mainFileName = urlFileName;
-    }
+  // Hvis vi er på GitHub Pages, brug GitHub URL i stedet
+  if(window.location.hostname.includes('github.io')) {
+    const repoPath = window.location.pathname.split('/').slice(0, 3).join('/');
+    link = `${window.location.protocol}//${window.location.hostname}${repoPath}/salg køkkenoptælling/${fileName}`;
+  } else {
+    link = `${protocol}://${ip}:${finalPort}/${fileName}`;
   }
-  
-  const mainLink = `${protocol}://${ip}:${finalPort}/${mainFileName}`;
   
   // Vis link
   if(linkInput){
     linkInput.value = link;
+  }
+  
+  // Opdater label og beskrivelse
+  const label = content.querySelector('label');
+  if(label) {
+    label.textContent = labelText;
+  }
+  
+  const contentDesc = content.querySelector('p');
+  if(contentDesc && contentDesc.textContent.includes('📱')) {
+    contentDesc.textContent = `📱 ${appName} til din telefon - Scan QR-koden eller kopiér linket nedenfor:`;
   }
   
   // Generer QR-kode
@@ -6087,6 +6119,8 @@ function useManualIP(){
   const ipInput = $('manualIPInput');
   const portInput = $('manualPortInput');
   const httpsCheckbox = $('useHTTPS');
+  const modal = $('phoneLinkModal');
+  const appType = modal ? (modal.dataset.appType || 'manuel') : 'manuel';
   
   if(!ipInput) return;
   
@@ -6116,7 +6150,7 @@ function useManualIP(){
     if(portInput) portInput.value = '8443';
   }
   
-  generatePhoneLink(ip, port, useHTTPS);
+  generatePhoneLink(ip, port, useHTTPS, appType);
 }
 
 function retryIPDetection(){
