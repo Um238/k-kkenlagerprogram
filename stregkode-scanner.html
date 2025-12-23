@@ -53,7 +53,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <body>
 <div class="header">
   <h1>📱 Stregkode Scanner</h1>
-  <p>Scan stregkoder med din telefon - V 3.8</p>
+  <p>Scan stregkoder med din telefon - V 3.9</p>
 </div>
 
 <div class="scanner-container">
@@ -978,15 +978,19 @@ function finishSession(){
     
     // Add unique installation ID for tracking
     // Try to get from main program first, otherwise generate new
-    if (!data.installationId) {
+    if (!data.installationId || !data.installationId.startsWith('SCANNER-')) {
       // Check if main program has installation ID
-      const mainInstallationId = data.mainInstallationId || null;
-      if (mainInstallationId) {
-        // Use main program's ID as base, but add SCANNER prefix
-        data.installationId = 'SCANNER-' + mainInstallationId;
+      const mainInstallationId = data.mainInstallationId || data.installationId || null;
+      if (mainInstallationId && mainInstallationId.startsWith('INST-')) {
+        // Use main program's ID as base - extract numeric part and create matching scanner ID
+        const mainIdNum = mainInstallationId.replace(/[^0-9]/g, '');
+        data.installationId = 'SCANNER-' + mainIdNum;
+        data.scannerInstallationId = 'SCANNER-' + mainIdNum;
+        console.log('✅ Synced scanner ID with main program:', data.installationId);
       } else {
         // Generate unique ID if not exists
         data.installationId = 'SCANNER-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        data.scannerInstallationId = data.installationId;
       }
     }
     
@@ -1165,11 +1169,20 @@ function showInstallationId(){
       const scannerIdNum = scannerInstallationId.replace(/[^0-9]/g, '');
       const mainIdNum = mainInstallationId.replace(/[^0-9]/g, '');
       
-      if (scannerIdNum === mainIdNum || scannerInstallationId.includes(mainIdNum)) {
+      if (scannerIdNum === mainIdNum || scannerInstallationId.includes(mainIdNum) || scannerInstallationId.includes(mainInstallationId.replace('INST-', ''))) {
         info += '✅ ID\'erne matcher!\n\n';
       } else {
         info += '⚠️ ID\'erne matcher ikke.\n\n';
-        info += '💡 Tip: Brug samme installation ID på begge enheder.\n\n';
+        info += '💡 Tip: For at synkronisere automatisk:\n';
+        info += '1. I hovedprogrammet: "Mobil tilgang" → "📱 Synkroniser Varelager til Scanner"\n';
+        info += '2. Scan QR-koden eller import fil i scanner-appen\n';
+        info += '3. ID\'erne synkroniseres automatisk!\n\n';
+        
+        if (confirm(info + 'Vil du synkronisere ID nu ved at importere varelager data?')) {
+          // Guide user to import varelager
+          alert('📋 Sådan synkroniserer du ID:\n\n1. I hovedprogrammet:\n   "Opsætning" → "Mobil tilgang"\n   "📱 Synkroniser Varelager til Scanner"\n   Klik "📱 Generer QR-kode"\n\n2. I scanner-appen:\n   Klik "📥 Scan QR-kode"\n   Scan QR-koden fra hovedprogrammet\n\n3. ID\'erne synkroniseres automatisk!');
+        }
+        return;
       }
     }
     
