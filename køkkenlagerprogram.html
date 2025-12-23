@@ -955,10 +955,10 @@ a:hover{color:#45a049;text-decoration:none}
           <div class="settings-option">
             <div class="settings-option-label">
               <h3>📷 Importer Scanner Data</h3>
-              <p>Importer data fra Scanner appen eller eksterne stregkode læsere.</p>
+              <p>Importer rapporter fra scanner-appen. Tjekker først localStorage, derefter fil-import fra telefon.</p>
             </div>
             <div class="settings-option-action">
-              <button onclick="importScannerData()" style="background:#2196F3; color:white;">Importer Scanner</button>
+              <button onclick="importScannerData()" style="background:#2196F3; color:white;">📥 Importer Scanner Data</button>
             </div>
           </div>
           <div class="settings-option">
@@ -1013,10 +1013,11 @@ a:hover{color:#45a049;text-decoration:none}
           <div class="settings-option">
             <div class="settings-option-label">
               <h3>📱 Synkroniser Varelager til Scanner</h3>
-              <p>Generer QR-kode med varelager data. Scan QR-koden med scanner-appen på telefonen for automatisk import.</p>
+              <p>Generer QR-kode eller download fil med varelager data. Store datasæt downloades automatisk som fil.</p>
+              <p style="font-size:12px; color:#666; margin-top:4px;">💡 Tip: Hvis du har mange varer, downloades en fil automatisk i stedet for QR-kode.</p>
             </div>
             <div class="settings-option-action">
-              <button onclick="generateVarelagerQR()" style="background:#4CAF50; color:white;">📱 Generer QR-kode</button>
+              <button onclick="generateVarelagerQR()" style="background:#4CAF50; color:white;">📱 Generer QR-kode / Download Fil</button>
               <button onclick="testQRCodeLibrary()" style="background:#6c757d; color:white; margin-left:8px; font-size:12px; padding:6px 12px;">🔍 Test QR-bibliotek</button>
             </div>
             <div id="varelagerQRContainer" style="margin-top:15px; display:none; text-align:center; padding:15px; background:#f9f9f9; border-radius:8px;">
@@ -6784,12 +6785,26 @@ function generateVarelagerQR(){
     
     const proceedWithQRGeneration = () => {
     
-    // Prepare data - only masterVarelager to keep QR code small
+    // Prepare data - only essential fields to minimize size
     const installationId = getInstallationId();
     console.log('📋 Installation ID:', installationId);
     
+    // Optimize: Only include essential fields from masterVarelager to reduce size
+    const optimizedVarelager = (masterVarelager || []).map(item => ({
+      id: item.id,
+      navn: item.navn,
+      stregkode: item.stregkode,
+      placering: item.placering,
+      reolNr: item.reolNr,
+      hylleNr: item.hylleNr,
+      raekkefoelge: item.raekkefoelge,
+      pris: item.pris,
+      maaleenhed: item.maaleenhed
+      // Exclude: beskrivelse, kategori, leverandør, etc. to reduce size
+    }));
+    
     const dataToExport = {
-      masterVarelager: masterVarelager || [],
+      masterVarelager: optimizedVarelager,
       lagerLokationer: lagerLokationer || [],
       mainInstallationId: installationId, // Include main program installation ID
       version: '1.0',
@@ -6814,24 +6829,53 @@ function generateVarelagerQR(){
     const qrData = 'VARELAGER:' + base64Data;
     
     console.log('📏 QR data størrelse:', qrData.length, 'tegn');
+    console.log('📦 JSON størrelse:', jsonString.length, 'tegn');
     
-    // Check if data is too large for QR code
-    if (qrData.length > 2500) {
-      // Data too large - offer to download file instead
-      if (confirm('⚠️ Varelager data er for stor til QR-kode.\n\nVil du downloade en fil i stedet?\n\n✅ Ja = Download fil til import\n❌ Nej = Annuller')) {
-        // Download as JSON file for import
-        const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `varelager-${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        alert('✅ Fil downloadet!\n\n📱 Næste skridt:\n\n1. Send filen til din telefon (email, cloud, etc.)\n2. Åbn scanner-appen på telefonen\n3. Tryk "📥 Import fil" knappen\n4. Vælg den downloadede fil\n5. Varelageret importeres automatisk!');
-      }
+    // Check if data is too large for QR code (QR codes max ~2953 chars, we use 2500 as safe limit)
+    const qrDataSize = qrData.length;
+    const jsonSize = jsonString.length;
+    const itemCount = dataToExport.masterVarelager.length;
+    
+    if (qrDataSize > 2500) {
+      // Data too large - automatically download file instead
+      console.log('⚠️ Data for stor til QR-kode:', {
+        qrDataSize,
+        jsonSize,
+        itemCount,
+        limit: 2500
+      });
+      
+      // Show info about why file download is needed
+      const sizeInfo = `📊 Data størrelse:\n` +
+        `• Varer: ${itemCount}\n` +
+        `• JSON: ${(jsonSize / 1024).toFixed(1)} KB\n` +
+        `• QR-kode ville være: ${qrDataSize} tegn (max: 2500)\n\n` +
+        `💡 QR-koder kan maksimalt håndtere ~2500 tegn.\n` +
+        `Din data er ${qrDataSize} tegn, så vi bruger fil-download i stedet.`;
+      
+      // Download as JSON file for import
+      const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `varelager-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      // Show instructions
+      alert(sizeInfo + '\n\n✅ Fil downloadet automatisk!\n\n📱 Næste skridt:\n\n' +
+        '1. Send filen til din telefon:\n' +
+        '   • Via email (vedhæft filen)\n' +
+        '   • Via OneDrive/Google Drive\n' +
+        '   • Via USB-kabel\n' +
+        '   • Via AirDrop (Mac/iPhone)\n\n' +
+        '2. Åbn scanner-appen på telefonen\n' +
+        '3. Klik "📥 Import fil" knappen\n' +
+        '4. Vælg den downloadede fil\n' +
+        '5. Varelageret importeres automatisk!\n\n' +
+        '💡 Tip: Filen er gemt i din Downloads-mappe.');
       return;
     }
     
@@ -7056,15 +7100,106 @@ function importManualCountingData(){
 /* Import scanner data from scanner app */
 function importScannerData(){
   try{
-    // First, try to import from file (exported reports)
+    console.log('🔄 Starter import af scanner data...');
+    
+    // FIRST: Check localStorage for scanner reports (if same domain/device)
+    const storageKey = 'køkkenlager_data';
+    const mainData = localStorage.getItem(storageKey);
+    
+    if (mainData) {
+      try {
+        const data = JSON.parse(mainData);
+        if (data.reports && Array.isArray(data.reports)) {
+          // Find scanner reports (OPTA- format)
+          const scannerReports = data.reports.filter(r => 
+            r.handling && (
+              r.handling.startsWith('OPTA-') || 
+              r.handling.startsWith('Stregkode scanner') ||
+              (r.source === 'stregkode-scanner') ||
+              (r.installationId && r.installationId.startsWith('SCANNER-'))
+            )
+          );
+          
+          // Find which ones we don't have yet
+          const missingReports = scannerReports.filter(scannerReport => 
+            !reports.some(existing => 
+              existing.handling === scannerReport.handling && 
+              Math.abs(existing.ts - scannerReport.ts) < 1000
+            )
+          );
+          
+          if (missingReports.length > 0) {
+            // Found scanner reports in localStorage - import them
+            if (confirm(`✅ Fundet ${missingReports.length} scanner rapport(er) i localStorage!\n\nVil du importere dem nu?`)) {
+              let added = 0;
+              missingReports.forEach(report => {
+                // Ensure report has all required fields
+                if (!report.type) report.type = 'session';
+                if (!report.details) report.details = [];
+                if (!report.total) report.total = 0;
+                
+                reports.unshift(report);
+                added++;
+                console.log('✅ Imported report from localStorage:', report.handling);
+              });
+              
+              // Update sessionCounter
+              if (data.sessionCounter !== undefined && data.sessionCounter > sessionCounter) {
+                sessionCounter = data.sessionCounter;
+                data.sessionCounter = sessionCounter;
+              }
+              
+              // Save updated reports
+              data.reports = reports;
+              localStorage.setItem(storageKey, JSON.stringify(data));
+              saveAllData();
+              
+              renderReports();
+              updateLogPreview();
+              
+              alert(`✅ ${added} rapport(er) importeret fra localStorage!\n\nRapporterne er nu tilgængelige under "Rapporter" fanen.`);
+              return;
+            }
+          } else if (scannerReports.length > 0) {
+            // All scanner reports already imported
+            alert(`ℹ️ Alle scanner rapporter er allerede importeret.\n\nFundet ${scannerReports.length} rapport(er) i systemet.\n\nHvis du har nye rapporter på telefonen, brug "🔄 Synkroniser Rapporter" knappen.`);
+            return;
+          }
+        }
+      } catch(e) {
+        console.error('Error checking localStorage:', e);
+      }
+    }
+    
+    // SECOND: If no data in localStorage, offer to import from file
+    // This is for when scanner app is on a different device (phone)
+    const instructions = '📱 Importer Scanner Data fra Fil\n\n' +
+      'Hvis scanner-appen kører på telefonen:\n\n' +
+      '1. Åbn scanner-appen på telefonen\n' +
+      '2. Klik "📤 Eksport rapporter" knappen\n' +
+      '3. Send filen til din PC:\n' +
+      '   • Via email\n' +
+      '   • Via OneDrive/Google Drive\n' +
+      '   • Via USB-kabel\n' +
+      '4. Klik "OK" nedenfor og vælg filen\n\n' +
+      '💡 Tip: Hvis scanner-appen kører på samme enhed, brug "🔄 Synkroniser Rapporter" i stedet.';
+    
+    if (!confirm(instructions + '\n\nVil du importere fra fil nu?')) {
+      // User cancelled - suggest sync instead
+      if (confirm('💡 Tip: Hvis scanner-appen kører på samme enhed/domæne, prøv "🔄 Synkroniser Rapporter" i stedet.\n\nVil du prøve synkronisering nu?')) {
+        syncReportsFromScanner();
+      }
+      return;
+    }
+    
+    // Open file dialog
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
     input.onchange = function(e) {
       const file = e.target.files[0];
       if (!file) {
-        // User cancelled - try localStorage method
-        importScannerDataFromStorage();
+        alert('❌ Ingen fil valgt.\n\nPrøv igen eller brug "🔄 Synkroniser Rapporter" hvis scanner-appen kører på samme enhed.');
         return;
       }
       
@@ -7076,7 +7211,6 @@ function importScannerData(){
           // Check if this is a scanner reports export
           if (importedData.reports && Array.isArray(importedData.reports) && (importedData.source === 'stregkode-scanner' || importedData.reports.some(r => r.handling && r.handling.startsWith('OPTA-')))) {
             // Import reports directly
-            const storageKey = 'køkkenlager_data';
             let data = {};
             const existingData = localStorage.getItem(storageKey);
             if (existingData) {
@@ -7155,14 +7289,13 @@ function importScannerData(){
             
             alert(message);
             return;
+          } else {
+            alert('❌ Filen indeholder ikke scanner rapporter.\n\nForventet format: JSON fil med "reports" array fra scanner-appen.\n\nBrug "📤 Eksport rapporter" i scanner-appen for at få korrekt fil.');
           }
         } catch(err) {
           console.error('Error importing from file:', err);
-          alert('❌ Fejl ved import: ' + err.message + '\n\nPrøver localStorage metode...');
+          alert('❌ Fejl ved import: ' + err.message + '\n\nTjek at filen er en gyldig JSON fil fra scanner-appen.');
         }
-        
-        // If file import failed, try localStorage
-        importScannerDataFromStorage();
       };
       reader.readAsText(file);
     };
@@ -7170,7 +7303,7 @@ function importScannerData(){
     
   } catch(err){
     console.error('Fejl ved import af scanner data:', err);
-    alert('Fejl ved import: ' + err.message);
+    alert('Fejl ved import: ' + err.message + '\n\nPrøv "🔄 Synkroniser Rapporter" hvis scanner-appen kører på samme enhed.');
   }
 }
 
