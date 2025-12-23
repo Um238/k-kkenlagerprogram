@@ -8,8 +8,39 @@
 <meta name="description" content="Lager optælling system til køkken og lager - Scan stregkoder, administrer varelager og generer rapporter" />
 <title>Lager optælling — Færdig version</title>
 <link rel="manifest" href="manifest.json" />
-<!-- QR code library for varelager sync -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- QR code library for varelager sync (with fallback) -->
+<script>
+  // Load QRCode library with fallback
+  (function() {
+    const scripts = [
+      'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
+      'https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js',
+      'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js'
+    ];
+    let currentIndex = 0;
+    
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = () => {
+          currentIndex++;
+          if (currentIndex < scripts.length) {
+            loadScript(scripts[currentIndex]).then(resolve).catch(reject);
+          } else {
+            reject(new Error('Could not load QRCode library from any CDN'));
+          }
+        };
+        document.head.appendChild(script);
+      });
+    }
+    
+    loadScript(scripts[0]).catch(err => {
+      console.warn('QRCode library loading failed, QR code generation may not work:', err);
+    });
+  })();
+</script>
 <!-- PWA: Tilføj manifest link for at gøre det til en installable app -->
 
 <!-- =========================
@@ -7493,8 +7524,13 @@ function showScannerInstallationId(){
     const mainData = localStorage.getItem(storageKey);
     const mainInstallationId = getInstallationId();
     
+    console.log('🔍 Checking installation IDs...', { mainInstallationId });
+    
     let info = '🔑 Installation ID Information:\n\n';
     info += '💻 Hovedprogram (PC):\n' + mainInstallationId + '\n\n';
+    
+    // Extract numeric part from main ID for comparison
+    const mainIdNum = mainInstallationId.replace(/[^0-9]/g, '');
     
     if (mainData) {
       const data = JSON.parse(mainData);
@@ -7505,6 +7541,7 @@ function showScannerInstallationId(){
         data.reports.forEach(r => {
           if (r.installationId && r.installationId.startsWith('SCANNER-')) {
             scannerIds.add(r.installationId);
+            console.log('📱 Found scanner ID in report:', r.installationId);
           }
         });
       }
@@ -7514,8 +7551,13 @@ function showScannerInstallationId(){
         data.scannerInstallationIds.forEach(id => scannerIds.add(id));
       }
       
+      // Also check if mainInstallationId is stored in data (from QR sync)
+      if (data.mainInstallationId) {
+        console.log('📋 Main installation ID in data:', data.mainInstallationId);
+      }
+      
       if (scannerIds.size > 0) {
-        info += '📱 Scanner Installation ID(er):\n';
+        info += '📱 Scanner Installation ID(er) fundet:\n';
         scannerIds.forEach(id => {
           info += id + '\n';
         });
@@ -7523,62 +7565,51 @@ function showScannerInstallationId(){
         
         // Check if they match
         const scannerIdArray = Array.from(scannerIds);
-        if (scannerIdArray.length === 1) {
-          const scannerId = scannerIdArray[0];
-          // Extract numeric part for comparison
-          const mainIdNum = mainInstallationId.replace(/[^0-9]/g, '');
+        let matched = false;
+        
+        scannerIdArray.forEach(scannerId => {
           const scannerIdNum = scannerId.replace(/[^0-9]/g, '');
+          if (mainIdNum === scannerIdNum) {
+            matched = true;
+            info += '✅ ID matcher: ' + scannerId + '\n';
+          }
+        });
+        
+        if (!matched) {
+          info += '⚠️ ID\'erne matcher ikke.\n\n';
+          info += '💡 Tip: For at synkronisere automatisk:\n';
+          info += '1. I hovedprogrammet: "Mobil tilgang" → "📱 Synkroniser Varelager til Scanner"\n';
+          info += '2. Klik "📱 Generer QR-kode"\n';
+          info += '3. I scanner-appen: Klik "📥 Scan QR-kode"\n';
+          info += '4. Scan QR-koden\n';
+          info += '5. ID\'erne synkroniseres automatisk!\n\n';
           
-          if (mainIdNum === scannerIdNum || scannerId.includes(mainIdNum)) {
-            info += '✅ ID\'erne matcher!\n\n';
-          } else {
-            info += '⚠️ ID\'erne matcher ikke.\n\n';
-            info += '💡 Tip: For at synkronisere:\n';
-            info += '1. I scanner-appen: Klik "🔑 Vis ID"\n';
-            info += '2. Kopiér scanner ID\n';
-            info += '3. Indtast det her nedenfor\n\n';
-            
-            if (confirm(info + 'Vil du indtaste scanner ID manuelt?')) {
-              const manualId = prompt('Indtast scanner installation ID fra telefonen:', scannerId);
-              if (manualId && manualId.trim()) {
-                if (!data.scannerInstallationIds) data.scannerInstallationIds = [];
-                if (!data.scannerInstallationIds.includes(manualId.trim())) {
-                  data.scannerInstallationIds.push(manualId.trim());
-                }
-                data.scannerInstallationId = manualId.trim();
-                localStorage.setItem(storageKey, JSON.stringify(data));
-                alert('✅ Scanner ID gemt: ' + manualId.trim() + '\n\nID\'erne er nu synkroniseret!');
-                return;
-              }
-            }
+          if (confirm(info + 'Vil du prøve at synkronisere nu?')) {
+            // Guide user to sync
+            alert('📋 Sådan synkroniserer du ID:\n\n1. Klik "📱 Generer QR-kode" knappen herunder\n2. Åbn scanner-appen på telefonen\n3. Klik "📥 Scan QR-kode"\n4. Scan QR-koden\n5. ID\'erne synkroniseres automatisk!');
             return;
           }
         } else {
-          info += '⚠️ Flere scanner ID\'er fundet.\n\n';
+          info += '\n✅ Alle ID\'er matcher korrekt!\n\n';
         }
       } else {
-        info += '📱 Ingen scanner ID fundet endnu.\n\n';
-        info += '💡 Tip: Eksporter en rapport fra scanner-appen for at se ID.\n\n';
-        
-        if (confirm(info + 'Vil du indtaste scanner ID manuelt?')) {
-          const manualId = prompt('Indtast scanner installation ID fra telefonen:', '');
-          if (manualId && manualId.trim()) {
-            if (!data.scannerInstallationIds) data.scannerInstallationIds = [];
-            if (!data.scannerInstallationIds.includes(manualId.trim())) {
-              data.scannerInstallationIds.push(manualId.trim());
-            }
-            data.scannerInstallationId = manualId.trim();
-            localStorage.setItem(storageKey, JSON.stringify(data));
-            alert('✅ Scanner ID gemt: ' + manualId.trim());
-          }
-          return;
-        }
+        info += '⚠️ Ingen scanner ID fundet endnu.\n\n';
+        info += '💡 Tip: For at synkronisere:\n';
+        info += '1. I hovedprogrammet: "Mobil tilgang" → "📱 Synkroniser Varelager til Scanner"\n';
+        info += '2. Klik "📱 Generer QR-kode"\n';
+        info += '3. I scanner-appen: Klik "📥 Scan QR-kode"\n';
+        info += '4. Scan QR-koden\n';
+        info += '5. ID\'erne synkroniseres automatisk!\n\n';
       }
+      
+      info += '📊 Status:\n';
+      info += '• Rapporter: ' + (data.reports ? data.reports.length : 0) + '\n';
+      info += '• Varelager: ' + (data.masterVarelager ? data.masterVarelager.length : 0) + ' varer\n\n';
     } else {
       info += '📱 Ingen data fundet.\n\n';
+      info += '💡 Tip: Brug "📱 Synkroniser Varelager til Scanner" for at synkronisere ID\'er.\n\n';
     }
     
-    info += '💡 Tip: Brug samme installation ID på begge enheder for bedre synkronisering.';
     alert(info);
     
   } catch(err) {

@@ -147,14 +147,21 @@ function loadItemsFromMainApp(){
     
     allItems = data.masterVarelager || [];
     
-    // Sync installation ID from main program if available
+    // Sync installation ID from main program if available - ALWAYS update to match
     if (data.mainInstallationId) {
-      // Main program installation ID found - use it as reference
-      if (!data.scannerInstallationId) {
-        // Create scanner ID based on main ID for matching
-        data.scannerInstallationId = 'SCANNER-' + data.mainInstallationId.replace('INST-', '');
-        data.installationId = data.scannerInstallationId;
+      // Extract numeric part from main ID (e.g., "INST-123456" -> "123456")
+      const mainIdNum = data.mainInstallationId.replace(/[^0-9]/g, '');
+      // Create matching scanner ID
+      const newScannerId = 'SCANNER-' + mainIdNum;
+      // Always update to ensure they match
+      if (data.scannerInstallationId !== newScannerId || !data.installationId || !data.installationId.startsWith('SCANNER-')) {
+        data.scannerInstallationId = newScannerId;
+        data.installationId = newScannerId;
         localStorage.setItem(storageKey, JSON.stringify(data));
+        console.log('✅ ID synkroniseret fra hovedprogram:', {
+          main: data.mainInstallationId,
+          scanner: newScannerId
+        });
       }
     }
     
@@ -627,14 +634,19 @@ function handleVarelagerQR(qrData){
       existingData.lagerLokationer = importedData.lagerLokationer;
     }
     
-    // Sync installation ID from main program
+    // Sync installation ID from main program - ALWAYS update to match
     if (importedData.mainInstallationId) {
       existingData.mainInstallationId = importedData.mainInstallationId;
-      // Create scanner ID based on main ID for matching
-      if (!existingData.scannerInstallationId) {
-        existingData.scannerInstallationId = 'SCANNER-' + importedData.mainInstallationId.replace('INST-', '');
-        existingData.installationId = existingData.scannerInstallationId;
-      }
+      // Extract numeric part from main ID (e.g., "INST-123456" -> "123456")
+      const mainIdNum = importedData.mainInstallationId.replace(/[^0-9]/g, '');
+      // Create matching scanner ID
+      const newScannerId = 'SCANNER-' + mainIdNum;
+      existingData.scannerInstallationId = newScannerId;
+      existingData.installationId = newScannerId;
+      console.log('✅ ID synkroniseret fra hovedprogram:', {
+        main: importedData.mainInstallationId,
+        scanner: newScannerId
+      });
     }
     
     // Save merged data
@@ -790,14 +802,19 @@ function importVarelager(){
           existingData.lagerLokationer = importedData.lagerLokationer;
         }
         
-        // Sync installation ID from main program
+        // Sync installation ID from main program - ALWAYS update to match
         if (importedData.mainInstallationId) {
           existingData.mainInstallationId = importedData.mainInstallationId;
-          // Create scanner ID based on main ID for matching
-          if (!existingData.scannerInstallationId) {
-            existingData.scannerInstallationId = 'SCANNER-' + importedData.mainInstallationId.replace('INST-', '');
-            existingData.installationId = existingData.scannerInstallationId;
-          }
+          // Extract numeric part from main ID (e.g., "INST-123456" -> "123456")
+          const mainIdNum = importedData.mainInstallationId.replace(/[^0-9]/g, '');
+          // Create matching scanner ID
+          const newScannerId = 'SCANNER-' + mainIdNum;
+          existingData.scannerInstallationId = newScannerId;
+          existingData.installationId = newScannerId;
+          console.log('✅ ID synkroniseret fra hovedprogram:', {
+            main: importedData.mainInstallationId,
+            scanner: newScannerId
+          });
         }
         
         // Save merged data
@@ -977,21 +994,24 @@ function finishSession(){
     data.savedAt = Date.now();
     
     // Add unique installation ID for tracking
-    // Try to get from main program first, otherwise generate new
-    if (!data.installationId || !data.installationId.startsWith('SCANNER-')) {
-      // Check if main program has installation ID
-      const mainInstallationId = data.mainInstallationId || data.installationId || null;
-      if (mainInstallationId && mainInstallationId.startsWith('INST-')) {
-        // Use main program's ID as base - extract numeric part and create matching scanner ID
-        const mainIdNum = mainInstallationId.replace(/[^0-9]/g, '');
-        data.installationId = 'SCANNER-' + mainIdNum;
-        data.scannerInstallationId = 'SCANNER-' + mainIdNum;
-        console.log('✅ Synced scanner ID with main program:', data.installationId);
-      } else {
-        // Generate unique ID if not exists
-        data.installationId = 'SCANNER-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-        data.scannerInstallationId = data.installationId;
-      }
+    // ALWAYS try to sync with main program first, otherwise generate new
+    const mainInstallationId = data.mainInstallationId || null;
+    if (mainInstallationId && mainInstallationId.startsWith('INST-')) {
+      // Use main program's ID as base - extract numeric part and create matching scanner ID
+      const mainIdNum = mainInstallationId.replace(/[^0-9]/g, '');
+      const newScannerId = 'SCANNER-' + mainIdNum;
+      // Always update to ensure they match
+      data.installationId = newScannerId;
+      data.scannerInstallationId = newScannerId;
+      console.log('✅ Synced scanner ID with main program:', {
+        main: mainInstallationId,
+        scanner: newScannerId
+      });
+    } else if (!data.installationId || !data.installationId.startsWith('SCANNER-')) {
+      // Generate unique ID if main program ID not available
+      data.installationId = 'SCANNER-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+      data.scannerInstallationId = data.installationId;
+      console.log('⚠️ Generated new scanner ID (main program ID not found):', data.installationId);
     }
     
     // Add report metadata
@@ -1263,3 +1283,4 @@ if (document.readyState === 'loading') {
 </script>
 </body>
 </html>
+
