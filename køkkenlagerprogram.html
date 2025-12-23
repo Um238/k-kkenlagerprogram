@@ -839,7 +839,22 @@ a:hover{color:#45a049;text-decoration:none}
     </div>
   </section>
 
-  <!-- [HTML 3.7] SYSTEM OPSÆTNING -->
+  <!-- [HTML 3.7] STREGKODE SCANNER (Integreret) -->
+  <section id="scanner" class="page hidden">
+    <div style="max-width:1200px; margin:0 auto;">
+      <h2>📱 Stregkode Scanner</h2>
+      <p style="color:#666; margin-bottom:20px;">Scan stregkoder direkte i hovedprogrammet. Data synkroniseres automatisk.</p>
+      
+      <div id="scannerContainer" style="background:#fff; border-radius:8px; padding:20px; border:1px solid #e6e6e6;">
+        <!-- Scanner indhold indlæses her -->
+        <div id="scannerContent">
+          <p style="text-align:center; color:#666; padding:40px;">Scanner indlæses...</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- [HTML 3.8] SYSTEM OPSÆTNING -->
   <section id="systemOpsaetning" class="page hidden">
     <div class="settings-page">
       <div class="settings-sidebar" id="settingsSidebar">
@@ -892,6 +907,24 @@ a:hover{color:#45a049;text-decoration:none}
             </div>
             <div class="settings-option-action">
               <button onclick="exportAllBackup()">Download Backup</button>
+            </div>
+          </div>
+          <div class="settings-option">
+            <div class="settings-option-label">
+              <h3>🔐 Backup Login & Licens</h3>
+              <p>Download backup af login og licens data. VIGTIGT: Gem denne fil sikkert! Uden den kan du ikke logge ind igen hvis cache slettes.</p>
+            </div>
+            <div class="settings-option-action">
+              <button onclick="exportLoginAndLicense()" style="background:#dc3545; color:white;">📥 Download Login/Licens</button>
+            </div>
+          </div>
+          <div class="settings-option">
+            <div class="settings-option-label">
+              <h3>📤 Gendan Login & Licens</h3>
+              <p>Gendan login og licens data fra en tidligere backup. Brug dette hvis du har slettet browser cache.</p>
+            </div>
+            <div class="settings-option-action">
+              <button onclick="importLoginAndLicense()" style="background:#28a745; color:white;">📤 Gendan Login/Licens</button>
             </div>
           </div>
         </div>
@@ -7174,6 +7207,132 @@ function syncReportsFromScanner(){
   }
 }
 
+/* Export login and license data for backup */
+function exportLoginAndLicense(){
+  try {
+    const loginData = {
+      passwordHash: localStorage.getItem(PASSWORD_KEY),
+      recoveryEmail: localStorage.getItem(RECOVERY_EMAIL_KEY),
+      recoveryEmailHash: localStorage.getItem(RECOVERY_EMAIL_HASH_KEY),
+      userName: localStorage.getItem('user_name'),
+      installationId: getInstallationId(),
+      license: localStorage.getItem('app_license'),
+      exportedAt: Date.now(),
+      version: '1.0'
+    };
+    
+    // Check if there's any data to export
+    if (!loginData.passwordHash && !loginData.license) {
+      alert('⚠️ Ingen login eller licens data at eksportere.\n\nOpret først en konto og/eller aktivér en licens.');
+      return;
+    }
+    
+    const dataStr = JSON.stringify(loginData, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `køkkenlager-login-licens-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    alert('✅ Login og licens data eksporteret!\n\n⚠️ VIGTIGT:\n• Gem denne fil på et sikkert sted\n• Uden denne fil kan du ikke logge ind igen hvis cache slettes\n• Del IKKE denne fil med andre\n\n💡 Tip: Gem filen i en sikker mappe eller cloud storage.');
+  } catch(err) {
+    console.error('Error exporting login/license:', err);
+    alert('❌ Fejl ved eksport: ' + err.message);
+  }
+}
+
+/* Import login and license data from backup */
+function importLoginAndLicense(){
+  try {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const importedData = JSON.parse(e.target.result);
+          
+          // Validate data structure
+          if (!importedData.version) {
+            alert('⚠️ Filen ser ikke ud til at være en gyldig backup fil.');
+            return;
+          }
+          
+          let restored = [];
+          
+          // Restore password data
+          if (importedData.passwordHash) {
+            localStorage.setItem(PASSWORD_KEY, importedData.passwordHash);
+            restored.push('Password');
+          }
+          
+          if (importedData.recoveryEmail) {
+            localStorage.setItem(RECOVERY_EMAIL_KEY, importedData.recoveryEmail);
+            restored.push('Recovery Email');
+          }
+          
+          if (importedData.recoveryEmailHash) {
+            localStorage.setItem(RECOVERY_EMAIL_HASH_KEY, importedData.recoveryEmailHash);
+          }
+          
+          if (importedData.userName) {
+            localStorage.setItem('user_name', importedData.userName);
+            restored.push('Bruger Navn');
+          }
+          
+          // Restore installation ID if it matches or is compatible
+          if (importedData.installationId) {
+            const currentId = getInstallationId();
+            if (importedData.installationId !== currentId) {
+              // Store the imported ID as backup, but keep current if different
+              localStorage.setItem('backup_installation_id', importedData.installationId);
+            }
+          }
+          
+          // Restore license data
+          if (importedData.license) {
+            try {
+              const license = JSON.parse(importedData.license);
+              localStorage.setItem('app_license', importedData.license);
+              restored.push('Licens');
+            } catch(e) {
+              console.warn('Could not parse license data:', e);
+            }
+          }
+          
+          if (restored.length === 0) {
+            alert('⚠️ Ingen data at gendanne fra filen.');
+            return;
+          }
+          
+          alert(`✅ Data gendannet!\n\nGendannet:\n${restored.map(r => '• ' + r).join('\n')}\n\n💡 Tip: Genindlæs siden og log ind med dit password.`);
+          
+          // Reload page to apply changes
+          if (confirm('Vil du genindlæse siden nu for at anvende ændringerne?')) {
+            location.reload();
+          }
+        } catch(err) {
+          console.error('Error importing login/license:', err);
+          alert('❌ Fejl ved import: ' + err.message + '\n\nTjek at filen er en gyldig backup fil.');
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  } catch(err) {
+    console.error('Error setting up import:', err);
+    alert('❌ Fejl: ' + err.message);
+  }
+}
+
 /* Show and sync scanner installation ID */
 function showScannerInstallationId(){
   try {
@@ -7279,8 +7438,20 @@ function showScannerInstallationId(){
    [JS 10] UTIL & UI helpers
    ================================ */
 function navClick(e){ document.querySelectorAll('nav .menu-item').forEach(it=>it.classList.remove('active')); e.target.classList.add('active'); showPage(e.target.dataset.target); }
-function showPage(id){ document.querySelectorAll('#content section').forEach(s=>s.classList.add('hidden')); const el = $(id); if(el) el.classList.remove('hidden'); if(id==='lageropt') renderLagerTable(); if(id==='opsaetning') { renderLagerOpsaetning(); updateAllSelects(); } if(id==='rapporter') { refreshReportsFromStorage(); renderReports(); renderArchivedReports(); showReportsSection('active'); } if(id==='labels') { updateAllSelects(); renderMasterTable(); updateLabelReolSelect(); } if(id==='leverandor') renderLeverandorTable(); if(id==='master') { showMasterSection('add'); updateAllSelects(); } if(id==='systemOpsaetning') { showSettingsSection('password'); } if(id==='licens') { updateLicenseStatusDisplay(); } }
-function showPage(id){ document.querySelectorAll('#content section').forEach(s=>s.classList.add('hidden')); const el = $(id); if(el) el.classList.remove('hidden'); if(id==='lageropt') renderLagerTable(); if(id==='opsaetning') { renderLagerOpsaetning(); updateAllSelects(); } if(id==='rapporter') { refreshReportsFromStorage(); renderReports(); renderArchivedReports(); showReportsSection('active'); } if(id==='labels') { updateAllSelects(); renderMasterTable(); updateLabelReolSelect(); } if(id==='leverandor') renderLeverandorTable(); if(id==='master') { showMasterSection('add'); updateAllSelects(); } if(id==='systemOpsaetning') { showSettingsSection('password'); } if(id==='licens') { updateLicenseStatusDisplay(); } }
+function showPage(id){ 
+  document.querySelectorAll('#content section').forEach(s=>s.classList.add('hidden')); 
+  const el = $(id); 
+  if(el) el.classList.remove('hidden'); 
+  if(id==='lageropt') renderLagerTable(); 
+  if(id==='opsaetning') { renderLagerOpsaetning(); updateAllSelects(); } 
+  if(id==='rapporter') { refreshReportsFromStorage(); renderReports(); renderArchivedReports(); showReportsSection('active'); } 
+  if(id==='labels') { updateAllSelects(); renderMasterTable(); updateLabelReolSelect(); } 
+  if(id==='leverandor') renderLeverandorTable(); 
+  if(id==='master') { showMasterSection('add'); updateAllSelects(); } 
+  if(id==='scanner') { loadScannerIntoPage(); }
+  if(id==='systemOpsaetning') { showSettingsSection('password'); } 
+  if(id==='licens') { updateLicenseStatusDisplay(); } 
+}
 function toggleSidebar(sidebarId){
   try {
     const sidebar = document.getElementById(sidebarId);
