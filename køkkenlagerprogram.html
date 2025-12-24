@@ -972,6 +972,15 @@ a:hover{color:#45a049;text-decoration:none}
           </div>
           <div class="settings-option">
             <div class="settings-option-label">
+              <h3>☁️ Hent Rapporter fra Server</h3>
+              <p>Hent rapporter fra serveren (GitHub Gist) som er uploadet fra scanner-appen.</p>
+            </div>
+            <div class="settings-option-action">
+              <button onclick="fetchReportsFromServer()" style="background:#17a2b8; color:white;">☁️ Hent fra Server</button>
+            </div>
+          </div>
+          <div class="settings-option">
+            <div class="settings-option-label">
               <h3>🔑 Scanner Installation ID</h3>
               <p>Se og synkroniser installation ID med scanner-appen for at sikre de matcher.</p>
             </div>
@@ -7569,6 +7578,213 @@ function syncReportsFromScanner(){
   } catch(e) {
     console.error('Error syncing reports:', e);
     alert('Fejl ved synkronisering: ' + e.message);
+  }
+}
+
+/* Fetch reports from server (GitHub Gist) */
+async function fetchReportsFromServer(){
+  try {
+    // Get GitHub token from localStorage or prompt
+    let githubToken = localStorage.getItem('github_gist_token');
+    
+    if (!githubToken) {
+      const token = prompt('🔑 Indtast GitHub Personal Access Token:\n\n' +
+        '1. Gå til: https://github.com/settings/tokens\n' +
+        '2. Klik "Generate new token (classic)"\n' +
+        '3. Vælg "gist" scope\n' +
+        '4. Kopiér token og indtast her\n\n' +
+        '💡 Token gemmes lokalt og bruges til fremtidige downloads.\n' +
+        '💡 Du kan slette token i indstillinger hvis nødvendigt.');
+      
+      if (!token || !token.trim()) {
+        alert('❌ Ingen token indtastet. Hentning annulleret.');
+        return;
+      }
+      
+      githubToken = token.trim();
+      localStorage.setItem('github_gist_token', githubToken);
+    }
+    
+    // Option 1: Get Gist ID from user
+    const gistId = prompt('📋 Indtast Gist ID fra scanner-appen:\n\n' +
+      '💡 Gist ID får du når du uploader rapporter i scanner-appen.\n' +
+      '💡 Eller indtast "mine" for at hente alle dine gists.\n\n' +
+      'Gist ID:');
+    
+    if (!gistId || !gistId.trim()) {
+      alert('❌ Ingen Gist ID indtastet. Hentning annulleret.');
+      return;
+    }
+    
+    if (gistId.trim().toLowerCase() === 'mine') {
+      // Fetch all user's gists
+      const response = await fetch('https://api.github.com/gists', {
+        headers: {
+          'Authorization': `token ${githubToken}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const gists = await response.json();
+      
+      // Filter for scanner reports
+      const scannerGists = gists.filter(g => 
+        g.description && g.description.includes('Scanner rapporter')
+      );
+      
+      if (scannerGists.length === 0) {
+        alert('⚠️ Ingen scanner rapporter fundet i dine gists.');
+        return;
+      }
+      
+      // Show list and let user choose
+      const gistList = scannerGists.map((g, i) => 
+        `${i + 1}. ${g.description} (${new Date(g.created_at).toLocaleDateString('da-DK')})`
+      ).join('\n');
+      
+      const choice = prompt(`Fundet ${scannerGists.length} scanner gist(s):\n\n${gistList}\n\nIndtast nummer (1-${scannerGists.length}):`);
+      const index = parseInt(choice) - 1;
+      
+      if (isNaN(index) || index < 0 || index >= scannerGists.length) {
+        alert('❌ Ugyldigt valg.');
+        return;
+      }
+      
+      // Fetch the selected gist
+      await fetchAndImportGist(scannerGists[index].id, githubToken);
+    } else {
+      // Fetch specific gist
+      await fetchAndImportGist(gistId.trim(), githubToken);
+    }
+    
+  } catch(err) {
+    console.error('Fejl ved hentning fra server:', err);
+    
+    if (err.message.includes('401') || err.message.includes('Bad credentials')) {
+      localStorage.removeItem('github_gist_token');
+      alert('❌ Ugyldig GitHub token.\n\nToken er blevet slettet. Prøv igen og indtast en ny token.');
+    } else if (err.message.includes('404')) {
+      alert('❌ Gist ikke fundet.\n\nTjek at Gist ID er korrekt.');
+    } else {
+      alert('❌ Fejl ved hentning: ' + err.message + '\n\nTjek din internetforbindelse og prøv igen.');
+    }
+  }
+}
+
+/* Fetch and import a specific Gist */
+async function fetchAndImportGist(gistId, githubToken) {
+  try {
+    const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: {
+        'Authorization': `token ${githubToken}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const gist = await response.json();
+    
+    // Find the JSON file in the gist
+    const files = Object.values(gist.files);
+    const jsonFile = files.find(f => f.filename.endsWith('.json'));
+    
+    if (!jsonFile) {
+      throw new Error('Ingen JSON fil fundet i gist');
+    }
+    
+    // Parse the content
+    const importedData = JSON.parse(jsonFile.content);
+    
+    // Check if this is scanner reports
+    if (!importedData.reports || !Array.isArray(importedData.reports)) {
+      throw new Error('Filen indeholder ikke scanner rapporter');
+    }
+    
+    // Import reports (same logic as file import)
+    const storageKey = 'køkkenlager_data';
+    let data = {};
+    const existingData = localStorage.getItem(storageKey);
+    if (existingData) {
+      try {
+        data = JSON.parse(existingData);
+      } catch(err) {
+        console.warn('Could not parse existing data:', err);
+      }
+    }
+    
+    if (!data.reports || !Array.isArray(data.reports)) {
+      data.reports = [];
+    }
+    
+    // Add imported reports (avoid duplicates)
+    let added = 0;
+    let skipped = 0;
+    importedData.reports.forEach(report => {
+      const exists = data.reports.some(r => 
+        (r.handling === report.handling) || 
+        (Math.abs(r.ts - report.ts) < 1000 && r.handling && report.handling && r.handling.startsWith('OPTA-'))
+      );
+      
+      if (!exists) {
+        if (!report.type) report.type = 'session';
+        if (!report.details) report.details = [];
+        if (!report.total) report.total = 0;
+        
+        data.reports.unshift(report);
+        added++;
+        console.log('✅ Imported report from server:', report.handling);
+      } else {
+        skipped++;
+      }
+    });
+    
+    // Update sessionCounter
+    if (importedData.sessionCounter) {
+      const currentCounter = data.sessionCounter || sessionCounter || 0;
+      if (importedData.sessionCounter > currentCounter) {
+        data.sessionCounter = importedData.sessionCounter;
+        sessionCounter = importedData.sessionCounter;
+      }
+    }
+    
+    // Store scanner installation ID
+    if (importedData.installationId) {
+      if (!data.scannerInstallationIds) data.scannerInstallationIds = [];
+      if (!data.scannerInstallationIds.includes(importedData.installationId)) {
+        data.scannerInstallationIds.push(importedData.installationId);
+      }
+    }
+    
+    // Save data
+    localStorage.setItem(storageKey, JSON.stringify(data));
+    reports = data.reports;
+    if (data.sessionCounter) sessionCounter = data.sessionCounter;
+    
+    renderReports();
+    updateLogPreview();
+    saveAllData();
+    
+    let message = `✅ ${added} rapport(er) hentet fra server!`;
+    if (skipped > 0) {
+      message += `\n⚠️ ${skipped} rapport(er) sprunget over (findes allerede)`;
+    }
+    message += `\n\nRapporterne er nu tilgængelige under "Rapporter" fanen.`;
+    if (importedData.installationId) {
+      message += `\n\n🔗 Installation ID: ${importedData.installationId.substring(0, 20)}...`;
+    }
+    
+    alert(message);
+    
+  } catch(err) {
+    console.error('Error fetching gist:', err);
+    throw err;
   }
 }
 
