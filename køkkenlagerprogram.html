@@ -8453,10 +8453,11 @@ async function uploadVarelagerToServer(){
     }
     
     // Prepare varelager data for export
+    const mainInstallationId = getInstallationId();
     const varelagerData = {
       masterVarelager: masterVarelager,
       lagerLokationer: lagerLokationer || [],
-      mainInstallationId: installationId || null,
+      mainInstallationId: mainInstallationId || null,
       exportedAt: Date.now(),
       version: '1.0',
       source: 'køkkenlagerprogram',
