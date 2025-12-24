@@ -4487,12 +4487,22 @@ function renderReports(){
       antalDisplay = (r.antal || '').toString();
     }
     
-    // Bestem lokation - for sessions, saml alle unikke lokationer fra details
+    // Bestem lokation - use scope first, then check details
     let lokationDisplay = '';
     if(r.type === 'session'){
-      if(r.details && r.details.length > 0){
+      // Use scope if available (from scanner selection)
+      if(r.scope && r.scope !== ''){
+        lokationDisplay = r.scope;
+      } else if(r.details && r.details.length > 0){
+        // Otherwise, get unique locations from details
         const uniqueLocs = [...new Set(r.details.map(d => d.placering).filter(p => p))];
-        lokationDisplay = uniqueLocs.length > 0 ? uniqueLocs.join(', ') : (r.scope || '-');
+        if(uniqueLocs.length === 1){
+          lokationDisplay = uniqueLocs[0];
+        } else if(uniqueLocs.length > 1){
+          lokationDisplay = 'Alle lokationer (' + uniqueLocs.join(', ') + ')';
+        } else {
+          lokationDisplay = r.scope || '-';
+        }
       } else {
         lokationDisplay = r.scope || '-';
       }

@@ -59,7 +59,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <div class="scanner-container">
   <div id="status" class="status waiting">Klik "Start Scanner" for at begynde</div>
   <div id="scannerVideo"></div>
-  <button id="startBtn" class="button" onclick="startScanner()">📷 Start Scanner</button>
+  <button id="startBtn" class="button" onclick="showLocationSelection()">📷 Start Optælling</button>
   <button id="stopBtn" class="button secondary" onclick="stopScanner()" style="display:none">⏹ Stop Scanner</button>
 </div>
 
@@ -81,13 +81,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
   </div>
   <div class="actions">
     <button class="button secondary" onclick="clearAll()">🗑 Ryd alt</button>
-    <button class="button secondary" onclick="checkDataConnection()" style="font-size:14px; padding:10px;">🔍 Tjek data</button>
     <button class="button secondary" onclick="scanVarelagerQR()" style="font-size:14px; padding:10px; background:#4CAF50;">📥 Scan QR-kode</button>
     <button class="button secondary" onclick="importVarelager()" style="font-size:14px; padding:10px;">📥 Import fil</button>
     <button class="button secondary" onclick="exportReports()" style="font-size:14px; padding:10px; background:#2196F3;">📤 Eksport rapporter</button>
     <button class="button secondary" onclick="uploadReportsToServer()" style="font-size:14px; padding:10px; background:#28a745;">☁️ Upload til server</button>
-    <button class="button secondary" onclick="showInstallationId()" style="font-size:14px; padding:10px; background:#FF9800;">🔑 Vis ID</button>
     <button class="button" onclick="finishSession()">✅ Afslut optælling</button>
+  </div>
+</div>
+
+<!-- Modal til lokationsvalg -->
+<div id="locationModal" class="modal hidden">
+  <div class="modal-content">
+    <h3>📍 Vælg Lokation</h3>
+    <p style="margin-bottom:15px; color:#666; font-size:14px;">Vælg hvilken lokation du vil optælle. Du kan vælge "Alle lokationer" for at optælle alle.</p>
+    <div style="margin:20px 0">
+      <label for="locationSelect" style="display:block;margin-bottom:8px;font-weight:600;">Lokation:</label>
+      <select id="locationSelect" style="width:100%;padding:15px;font-size:16px;border:2px solid #4CAF50;border-radius:8px;">
+        <option value="">Alle lokationer</option>
+      </select>
+    </div>
+    <div class="modal-buttons">
+      <button onclick="cancelLocationSelection()" style="background:#6c757d;color:white;">Annuller</button>
+      <button onclick="confirmLocationSelection()" style="background:#4CAF50;color:white;">Start Optælling</button>
+    </div>
   </div>
 </div>
 
@@ -115,6 +131,8 @@ let scannedItems = {};
 let allItems = [];
 let lastScannedCode = null;
 let lastScanTime = 0;
+let selectedLocation = ''; // Selected location for current session
+let availableLocations = []; // Available locations from varelager
 let pendingScannedCode = null; // For quantity dialog
 const SCAN_COOLDOWN = 1000;
 
@@ -147,6 +165,14 @@ function loadItemsFromMainApp(){
     console.log('masterVarelager length:', data.masterVarelager ? data.masterVarelager.length : 0);
     
     allItems = data.masterVarelager || [];
+    
+    // Load available locations from lagerLokationer
+    availableLocations = data.lagerLokationer || [];
+    if (availableLocations.length === 0 && allItems.length > 0) {
+      // Extract unique locations from items if lagerLokationer is not available
+      const uniqueLocs = [...new Set(allItems.map(item => item.placering).filter(p => p))];
+      availableLocations = uniqueLocs;
+    }
     
     // Sync installation ID from main program if available - ALWAYS update to match
     if (data.mainInstallationId) {
@@ -187,14 +213,64 @@ function updateStatus(text, type){
   status.className = 'status ' + (type || 'waiting');
 }
 
-async function startScanner(){
+// Show location selection modal
+function showLocationSelection() {
+  // Load items first to get locations
+  loadItemsFromMainApp();
+  
+  const modal = document.getElementById('locationModal');
+  const select = document.getElementById('locationSelect');
+  
+  if (!modal || !select) return;
+  
+  // Populate location dropdown
+  select.innerHTML = '<option value="">Alle lokationer</option>';
+  availableLocations.forEach(loc => {
+    const option = document.createElement('option');
+    option.value = loc;
+    option.textContent = loc;
+    select.appendChild(option);
+  });
+  
+  // If no locations available, show message
+  if (availableLocations.length === 0) {
+    select.innerHTML = '<option value="">Ingen lokationer fundet - brug "Alle lokationer"</option>';
+  }
+  
+  modal.classList.remove('hidden');
+}
+
+// Confirm location selection and start scanner
+function confirmLocationSelection() {
+  const select = document.getElementById('locationSelect');
+  if (!select) return;
+  
+  selectedLocation = select.value || '';
+  hideLocationModal();
+  
+  // Start scanner after location is selected
+  startScannerAfterLocation();
+}
+
+// Cancel location selection
+function cancelLocationSelection() {
+  hideLocationModal();
+}
+
+// Hide location modal
+function hideLocationModal() {
+  const modal = document.getElementById('locationModal');
+  if (modal) {
+    modal.classList.add('hidden');
+  }
+}
+
+// Start scanner after location is selected
+async function startScannerAfterLocation(){
   if(scannerActive){
     stopScanner();
     return;
   }
-  
-  // Try to load items, but don't block if not found
-  loadItemsFromMainApp();
   
   // Allow scanning even without varelager data
   if (allItems.length === 0) {
@@ -504,6 +580,7 @@ function removeItem(key){
 function clearAll(){
   if(confirm('Er du sikker på at du vil slette alle scannede varer?')){
     scannedItems = {};
+    selectedLocation = ''; // Reset location
     updateStats();
     renderList();
     updateStatus('Alle varer ryddet', 'waiting');
@@ -511,78 +588,7 @@ function clearAll(){
 }
 
 // Check data connection
-function checkDataConnection(){
-  const storageKey = 'køkkenlager_data';
-  const dataStr = localStorage.getItem(storageKey);
-  const currentDomain = window.location.hostname;
-  
-  let info = '📊 Data Status:\n\n';
-  info += '📍 Domæne: ' + (currentDomain || 'file://') + '\n';
-  info += '🔑 Storage key: ' + storageKey + '\n';
-  info += '📦 Data fundet: ' + (dataStr ? 'Ja' : 'Nej') + '\n\n';
-  
-  if (dataStr) {
-    try {
-      const data = JSON.parse(dataStr);
-      const itemCount = data.masterVarelager ? data.masterVarelager.length : 0;
-      info += '✅ Varelager: ' + itemCount + ' varer\n';
-      info += '📋 Rapporter: ' + (data.reports ? data.reports.length : 0) + '\n';
-      info += '🔢 Session counter: ' + (data.sessionCounter || 0) + '\n';
-    } catch(e) {
-      info += '❌ Fejl ved parsing: ' + e.message;
-    }
-  } else {
-    info += '⚠️ Ingen data fundet.\n\n';
-    if (currentDomain.includes('github.io')) {
-      info += '💡 Tip: Data deles ikke mellem domæner.\n';
-      info += 'Brug hovedprogrammet på samme enhed først.';
-    }
-  }
-  
-  alert(info);
-  console.log('Data check:', {
-    domain: currentDomain,
-    hasData: !!dataStr,
-    dataLength: dataStr ? dataStr.length : 0
-  });
-}
-
-// Check data connection
-function checkDataConnection(){
-  const storageKey = 'køkkenlager_data';
-  const dataStr = localStorage.getItem(storageKey);
-  const currentDomain = window.location.hostname;
-  
-  let info = '📊 Data Status:\n\n';
-  info += '📍 Domæne: ' + (currentDomain || 'file://') + '\n';
-  info += '🔑 Storage key: ' + storageKey + '\n';
-  info += '📦 Data fundet: ' + (dataStr ? 'Ja' : 'Nej') + '\n\n';
-  
-  if (dataStr) {
-    try {
-      const data = JSON.parse(dataStr);
-      const itemCount = data.masterVarelager ? data.masterVarelager.length : 0;
-      info += '✅ Varelager: ' + itemCount + ' varer\n';
-      info += '📋 Rapporter: ' + (data.reports ? data.reports.length : 0) + '\n';
-      info += '🔢 Session counter: ' + (data.sessionCounter || 0) + '\n';
-    } catch(e) {
-      info += '❌ Fejl ved parsing: ' + e.message;
-    }
-  } else {
-    info += '⚠️ Ingen data fundet.\n\n';
-    if (currentDomain.includes('github.io')) {
-      info += '💡 Tip: Data deles ikke mellem domæner.\n';
-      info += 'Brug hovedprogrammet på samme enhed først.';
-    }
-  }
-  
-  alert(info);
-  console.log('Data check:', {
-    domain: currentDomain,
-    hasData: !!dataStr,
-    dataLength: dataStr ? dataStr.length : 0
-  });
-}
+// checkDataConnection function removed - not needed
 
 // Scan QR code to import varelager
 let qrScanMode = false;
@@ -883,15 +889,19 @@ function finishSession(){
   }
   
   try {
-    // Group items by location
-    const itemsByLocation = {};
-    items.forEach(item => {
-      const location = item.vare.placering || 'Ikke angivet';
-      if (!itemsByLocation[location]) {
-        itemsByLocation[location] = [];
+    // Filter items by selected location if a location was selected
+    let filteredItems = items;
+    if (selectedLocation && selectedLocation !== '') {
+      filteredItems = items.filter(item => {
+        const itemLocation = item.vare?.placering || '';
+        return itemLocation === selectedLocation;
+      });
+      
+      if (filteredItems.length === 0) {
+        alert('⚠️ Ingen varer fundet for den valgte lokation.\n\nTjek at du har scannet varer fra den korrekte lokation.');
+        return;
       }
-      itemsByLocation[location].push(item);
-    });
+    }
     
     // Get session counter from main app
     const storageKey = 'køkkenlager_data';
@@ -911,14 +921,14 @@ function finishSession(){
     currentSessionCounter++;
     const sessionCounter = currentSessionCounter;
     
-    // Create ONE report with all items (not one per location)
+    // Create ONE report with all items
     const details = [];
     let grandTotal = 0;
     
-    // Process all items and group by location for scope
+    // Process all items and track locations
     const allLocations = new Set();
     
-    items.forEach(item => {
+    filteredItems.forEach(item => {
       const v = item.vare;
       const antal = Number(item.count) || 0;
       if (antal <= 0) return; // Skip items with zero count
@@ -950,8 +960,17 @@ function finishSession(){
     // Generate unique report name: OPTA-000004 format
     const reportName = `OPTA-${String(sessionCounter).padStart(6, '0')}`;
     
-    // Determine scope (all locations or single location)
-    const scope = allLocations.size === 1 ? Array.from(allLocations)[0] : Array.from(allLocations).join(', ');
+    // Determine scope based on selected location or actual locations found
+    let scope = '';
+    if (selectedLocation && selectedLocation !== '') {
+      scope = selectedLocation; // Use selected location
+    } else if (allLocations.size === 1) {
+      scope = Array.from(allLocations)[0]; // Single location found
+    } else if (allLocations.size > 1) {
+      scope = 'Alle lokationer'; // Multiple locations
+    } else {
+      scope = 'Ikke angivet';
+    }
     
     // Create ONE report with all items
     const report = {
@@ -1038,16 +1057,21 @@ function finishSession(){
       throw saveErr;
     }
     
-    const totalItems = items.reduce((sum, item) => sum + item.count, 0);
-    const uniqueItems = items.length;
+    const totalItems = filteredItems.reduce((sum, item) => sum + item.count, 0);
+    const uniqueItems = filteredItems.length;
     const locationsCount = allLocations.size;
     
-    updateStatus(`✅ Rapport oprettet! ${reportName} - ${uniqueItems} unikke varer, ${totalItems} total antal i ${locationsCount} lokation(er)`, 'success');
+    const locationInfo = selectedLocation && selectedLocation !== '' 
+      ? ` for lokation: ${selectedLocation}` 
+      : ` i ${locationsCount} lokation(er)`;
+    
+    updateStatus(`✅ Rapport oprettet! ${reportName} - ${uniqueItems} unikke varer, ${totalItems} total antal${locationInfo}`, 'success');
     
     console.log('✅ Report saved successfully:', reportName, 'with', details.length, 'items, total:', grandTotal);
     
-    // Clear scanned items
+    // Clear scanned items and reset location
     scannedItems = {};
+    selectedLocation = ''; // Reset location for next session
     updateStats();
     renderList();
     
@@ -1079,7 +1103,11 @@ function finishSession(){
       }
     }
     
-    alert(`✅ Optælling afsluttet!\n\n📋 Rapport: ${reportName}\n📊 ${uniqueItems} unikke varer, ${totalItems} total antal\n📍 ${locationsCount} lokation(er)\n💰 Total værdi: ${grandTotal.toFixed(2)} kr.${saveStatus}${exportInfo}`);
+    const locationText = selectedLocation && selectedLocation !== '' 
+      ? `📍 Lokation: ${selectedLocation}` 
+      : `📍 ${locationsCount} lokation(er)`;
+    
+    alert(`✅ Optælling afsluttet!\n\n📋 Rapport: ${reportName}\n📊 ${uniqueItems} unikke varer, ${totalItems} total antal\n${locationText}\n💰 Total værdi: ${grandTotal.toFixed(2)} kr.${saveStatus}${exportInfo}`);
     
   } catch(err){
     console.error('Fejl ved oprettelse af rapport:', err);
@@ -1281,81 +1309,7 @@ function exportReports(){
   }
 }
 
-// Show installation ID for tracking
-function showInstallationId(){
-  try {
-    const storageKey = 'køkkenlager_data';
-    const dataStr = localStorage.getItem(storageKey);
-    
-    if (!dataStr) {
-      // Generate ID if no data exists
-      const newId = 'SCANNER-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-      const newData = {
-        installationId: newId,
-        scannerInstallationId: newId,
-        reports: [],
-        sessionCounter: 0
-      };
-      localStorage.setItem(storageKey, JSON.stringify(newData));
-      
-      alert('🔑 Installation ID:\n\n' + newId + '\n\n✅ ID genereret og gemt!');
-      return;
-    }
-    
-    const data = JSON.parse(dataStr);
-    const scannerInstallationId = data.installationId || data.scannerInstallationId || 'Ikke genereret endnu';
-    const mainInstallationId = data.mainInstallationId || 'Ikke fundet';
-    const reportCount = data.reports ? data.reports.filter(r => r.handling && r.handling.startsWith('OPTA-')).length : 0;
-    const sessionCounter = data.sessionCounter || 0;
-    
-    let info = '🔑 Installation Information:\n\n';
-    info += '📱 Scanner Installation ID:\n' + scannerInstallationId + '\n\n';
-    
-    if (mainInstallationId && mainInstallationId !== 'Ikke fundet') {
-      info += '💻 Hovedprogram ID:\n' + mainInstallationId + '\n\n';
-      
-      // Extract numeric parts for comparison
-      const scannerIdNum = scannerInstallationId.replace(/[^0-9]/g, '');
-      const mainIdNum = mainInstallationId.replace(/[^0-9]/g, '');
-      
-      if (scannerIdNum === mainIdNum || scannerInstallationId.includes(mainIdNum) || scannerInstallationId.includes(mainInstallationId.replace('INST-', ''))) {
-        info += '✅ ID\'erne matcher!\n\n';
-      } else {
-        info += '⚠️ ID\'erne matcher ikke.\n\n';
-        info += '💡 Tip: For at synkronisere automatisk:\n';
-        info += '1. I hovedprogrammet: "Mobil tilgang" → "📱 Synkroniser Varelager til Scanner"\n';
-        info += '2. Scan QR-koden eller import fil i scanner-appen\n';
-        info += '3. ID\'erne synkroniseres automatisk!\n\n';
-        
-        if (confirm(info + 'Vil du synkronisere ID nu ved at importere varelager data?')) {
-          // Guide user to import varelager
-          alert('📋 Sådan synkroniserer du ID:\n\n1. I hovedprogrammet:\n   "Opsætning" → "Mobil tilgang"\n   "📱 Synkroniser Varelager til Scanner"\n   Klik "📱 Generer QR-kode"\n\n2. I scanner-appen:\n   Klik "📥 Scan QR-kode"\n   Scan QR-koden fra hovedprogrammet\n\n3. ID\'erne synkroniseres automatisk!');
-        }
-        return;
-      }
-    }
-    
-    info += '📊 Status:\n';
-    info += '• Rapporter: ' + reportCount + '\n';
-    info += '• Session Counter: ' + sessionCounter + '\n';
-    info += '• Varelager: ' + (data.masterVarelager ? data.masterVarelager.length : 0) + ' varer\n\n';
-    info += '💡 Tip: Brug dette ID til at identificere scanner-appen i hovedprogrammet.';
-    
-    alert(info);
-    
-    // Copy to clipboard if possible
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(scannerInstallationId).then(() => {
-        console.log('Installation ID copied to clipboard');
-      }).catch(() => {
-        console.log('Could not copy to clipboard');
-      });
-    }
-  } catch(err) {
-    console.error('Error showing installation ID:', err);
-    alert('❌ Fejl: ' + err.message);
-  }
-}
+// showInstallationId function removed - not needed
 
 // Wait for DOM and library to load
 document.addEventListener('DOMContentLoaded', function() {
