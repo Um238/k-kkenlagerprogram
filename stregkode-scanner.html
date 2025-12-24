@@ -412,7 +412,12 @@ function showQuantityDialog(barcode){
   const quantityInput = document.getElementById('quantityInput');
   
   // Find item to show name
-  const item = allItems.find(v => v.id === barcode);
+  // Try to find item - match on both id and stregkode
+  const item = allItems.find(v => 
+    v.id === barcode || 
+    v.stregkode === barcode ||
+    (v.stregkode && String(v.stregkode).trim() === String(barcode).trim())
+  );
   if (item) {
     codeDisplay.textContent = item.navn + ' (' + barcode + ')';
   } else {
@@ -464,8 +469,12 @@ function cancelQuantityInput(){
 }
 
 function handleScannedBarcode(barcode, quantity = 1){
-  // Try to find item in varelager
-  const item = allItems.find(v => v.id === barcode);
+  // Try to find item in varelager - match on both id and stregkode
+  const item = allItems.find(v => 
+    v.id === barcode || 
+    v.stregkode === barcode ||
+    (v.stregkode && String(v.stregkode).trim() === String(barcode).trim())
+  );
   
   if (!item) {
     // Item not found - still add it but with limited info
@@ -954,9 +963,15 @@ function finishSession(){
       if (antal <= 0) return; // Skip items with zero count
       
       // Try to get fresh data from allItems if available (in case varelager was updated)
+      // Match on both id and stregkode to find the item
       let freshItem = null;
       if (v.id) {
-        freshItem = allItems.find(i => i.id === v.id);
+        freshItem = allItems.find(i => 
+          i.id === v.id || 
+          (i.stregkode && i.stregkode === v.id) ||
+          (v.stregkode && i.stregkode === v.stregkode) ||
+          (v.id && i.id === v.id)
+        );
       }
       
       // Use fresh data if available, otherwise use stored data
@@ -1498,16 +1513,17 @@ async function fetchVarelagerFromServer(){
     
     // Validate that all items have required fields
     const validatedItems = importedData.masterVarelager.map(item => {
-      // Ensure all required fields are present
+      // Ensure all required fields are present, including stregkode
       return {
         id: item.id || '',
         navn: item.navn || 'Ukendt vare',
         placering: item.placering || 'Ikke angivet',
         maaleenhed: item.maaleenhed || 'stk',
-        pris: item.pris || 0,
+        pris: item.pris !== undefined ? Number(item.pris) : 0,
         reolNr: item.reolNr !== undefined ? item.reolNr : null,
         hylleNr: item.hylleNr !== undefined ? item.hylleNr : null,
-        raekkefoelge: item.raekkefoelge || null
+        raekkefoelge: item.raekkefoelge !== undefined ? item.raekkefoelge : null,
+        stregkode: item.stregkode || item.id || '' // Include stregkode - use id as fallback
       };
     });
     
