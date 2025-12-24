@@ -4814,13 +4814,13 @@ async function generateReportPDF(r, forView = false){
   // Calculate column positions based on header text widths - exactly match header width
   doc.setFont('helvetica','bold'); doc.setFontSize(9);
   const headerPadding = 4; // Padding between columns
-  // Calculate exact header widths
-  const headerVarenavnWidth = doc.getTextWidth('Varenavn');
+  // Calculate exact header widths - give more space to varenavn
+  const headerVarenavnWidth = Math.max(doc.getTextWidth('Varenavn'), 50); // Minimum 50mm for varenavn
   const headerReolWidth = doc.getTextWidth('Reol');
   const headerHylleWidth = doc.getTextWidth('Hylle');
   const headerAntalWidth = doc.getTextWidth('Antal optalt varer');
-  const headerPrisWidth = doc.getTextWidth('Pris');
-  const headerLinjetotalWidth = doc.getTextWidth('Linjetotal');
+  const headerPrisWidth = Math.max(doc.getTextWidth('Pris'), doc.getTextWidth('999.99 kr.')); // Ensure space for price with "kr."
+  const headerLinjetotalWidth = Math.max(doc.getTextWidth('Linjetotal'), doc.getTextWidth('999.99 kr.')); // Ensure space for total with "kr."
   
   // Column start positions (left edge of each column) - start at same X as title
   const colVarenavn = titleStartX; // Start at same position as title (margin+2)
@@ -4918,15 +4918,20 @@ async function generateReportPDF(r, forView = false){
             }
             doc.rect(tableLeft, y-2, tableWidth, 4, 'F');
             
-            // Varenavn - truncate to match header width exactly
+            // Varenavn - try to show full name, wrap if necessary
             doc.setFont('helvetica','normal'); doc.setFontSize(9);
-            const vareTekst = String(it.navn || '');
+            const vareTekst = String(it.navn || 'Ukendt vare');
+            // Try to show full name - only truncate if absolutely necessary
             let displayVareTekst = vareTekst;
-            if(doc.getTextWidth(displayVareTekst) > headerVarenavnWidth){
-              while(doc.getTextWidth(displayVareTekst + '...') > headerVarenavnWidth && displayVareTekst.length > 0){
+            const maxWidth = headerVarenavnWidth;
+            if(doc.getTextWidth(displayVareTekst) > maxWidth){
+              // Only truncate if name is really long - try to preserve as much as possible
+              while(doc.getTextWidth(displayVareTekst + '...') > maxWidth && displayVareTekst.length > 10){
                 displayVareTekst = displayVareTekst.slice(0, -1);
               }
-              displayVareTekst += '...';
+              if(displayVareTekst.length < vareTekst.length){
+                displayVareTekst += '...';
+              }
             }
             doc.text(displayVareTekst, colVarenavn, y+1);
             
