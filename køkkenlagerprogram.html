@@ -924,6 +924,7 @@ a:hover{color:#45a049;text-decoration:none}
             </div>
             <div class="settings-option-action">
               <button onclick="exportAllBackup()" style="background:#dc3545; color:white; font-weight:700; padding:12px 24px; font-size:16px;">💾 Download Komplet Backup</button>
+              <button onclick="uploadBackupToServer()" style="background:#17a2b8; color:white; font-weight:700; padding:12px 24px; font-size:16px; margin-left:8px;">☁️ Upload Backup til Server</button>
             </div>
           </div>
           <div class="settings-option" style="border:2px solid #28a745; padding:15px; border-radius:8px; background:#f0fff4; margin-bottom:20px;">
@@ -931,9 +932,11 @@ a:hover{color:#45a049;text-decoration:none}
               <h3 style="color:#28a745; margin-top:0;">📤 Gendan Komplet Backup</h3>
               <p>Gendan ALT data fra en komplet backup fil. Brug dette hvis du har slettet browser cache eller mistet data.</p>
               <p class="small" style="color:#666; margin-top:5px;">💡 Vælg den backup fil du downloadede tidligere (køkkenlager-komplet-backup-YYYY-MM-DD.json)</p>
+              <p class="small" style="color:#17a2b8; margin-top:5px;">☁️ Eller hent backup direkte fra serveren (anbefalet!)</p>
             </div>
             <div class="settings-option-action">
-              <button onclick="document.getElementById('backupFileInput')?.click()" style="background:#28a745; color:white; font-weight:700; padding:12px 24px; font-size:16px;">📤 Gendan fra Backup</button>
+              <button onclick="document.getElementById('backupFileInput')?.click()" style="background:#28a745; color:white; font-weight:700; padding:12px 24px; font-size:16px;">📤 Gendan fra Fil</button>
+              <button onclick="fetchBackupFromServer()" style="background:#17a2b8; color:white; font-weight:700; padding:12px 24px; font-size:16px; margin-left:8px;">☁️ Hent fra Server</button>
               <input type="file" id="backupFileInput" accept=".json" style="display:none;" onchange="if(this.files[0]) importAllBackupFromFile(this.files[0])" />
             </div>
           </div>
@@ -6804,6 +6807,293 @@ function exportAllBackup(){
   } catch(err) {
     console.error('Error exporting complete backup:', err);
     alert('❌ Fejl ved eksport: ' + err.message);
+  }
+}
+
+/* Upload backup to server (GitHub Gist) */
+async function uploadBackupToServer(){
+  try {
+    // First create the backup data
+    const installationId = getInstallationId();
+    
+    const completeBackup = {
+      version: '2.0',
+      exportedAt: Date.now(),
+      exportedBy: localStorage.getItem('user_name') || 'Unknown',
+      installationId: installationId,
+      masterVarelager: masterVarelager || [],
+      lagerData: lagerData || {},
+      lagerLokationer: lagerLokationer || ['Køl','Frost','Tørevare','Grønt'],
+      leverandorer: leverandorer || [],
+      reports: reports || [],
+      archivedReports: archivedReports || [],
+      archivePeriod: archivePeriod || 0,
+      sessionCounter: sessionCounter || 0,
+      activeSession: activeSession || null,
+      passwordHash: localStorage.getItem(PASSWORD_KEY),
+      recoveryEmail: localStorage.getItem(RECOVERY_EMAIL_KEY),
+      recoveryEmailHash: localStorage.getItem(RECOVERY_EMAIL_HASH_KEY),
+      userName: localStorage.getItem('user_name'),
+      license: localStorage.getItem('app_license'),
+      githubToken: localStorage.getItem('github_gist_token') || null
+    };
+    
+    // Check if there's any data to export
+    const hasData = completeBackup.masterVarelager.length > 0 || 
+                    completeBackup.reports.length > 0 ||
+                    completeBackup.passwordHash ||
+                    completeBackup.license;
+    
+    if (!hasData) {
+      alert('⚠️ Ingen data at uploade.\n\nOpret først nogle varer eller rapporter.');
+      return;
+    }
+    
+    // Get GitHub token
+    let githubToken = localStorage.getItem('github_gist_token');
+    
+    if (!githubToken) {
+      const token = prompt('🔑 Indtast GitHub Personal Access Token:\n\n' +
+        '1. Gå til: https://github.com/settings/tokens\n' +
+        '2. Klik "Generate new token (classic)"\n' +
+        '3. Vælg "gist" scope\n' +
+        '4. Kopiér token og indtast her\n\n' +
+        '💡 Token gemmes lokalt og bruges til fremtidige uploads.');
+      
+      if (!token || !token.trim()) {
+        alert('❌ Ingen token indtastet. Upload annulleret.');
+        return;
+      }
+      
+      githubToken = token.trim();
+      localStorage.setItem('github_gist_token', githubToken);
+    }
+    
+    // Check for existing backup gist to update
+    let existingGistId = null;
+    try {
+      const gistsResponse = await fetch('https://api.github.com/gists', {
+        headers: {
+          'Authorization': `token ${githubToken}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+      
+      if (gistsResponse.ok) {
+        const allGists = await gistsResponse.json();
+        const backupGists = allGists.filter(gist => 
+          gist.description && gist.description.includes('Køkkenlager Komplet Backup')
+        );
+        
+        if (backupGists.length > 0) {
+          backupGists.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          existingGistId = backupGists[0].id;
+          console.log('Found existing backup gist to update:', existingGistId);
+        }
+      }
+    } catch (err) {
+      console.warn('Could not check for existing gists:', err);
+    }
+    
+    // Show loading
+    alert('⏳ Uploader backup til server...\n\nDette kan tage et øjeblik.');
+    
+    // Prepare gist data
+    const dateStr = new Date().toISOString().split('T')[0];
+    const gistData = {
+      description: `Køkkenlager Komplet Backup - ${dateStr} - ${completeBackup.masterVarelager.length} varer, ${completeBackup.reports.length} rapporter`,
+      public: false, // Private gist
+      files: {}
+    };
+    
+    // If updating existing gist, get the filename
+    if (existingGistId) {
+      try {
+        const existingGistResponse = await fetch(`https://api.github.com/gists/${existingGistId}`, {
+          headers: {
+            'Authorization': `token ${githubToken}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+        
+        if (existingGistResponse.ok) {
+          const existingGist = await existingGistResponse.json();
+          const existingFiles = Object.keys(existingGist.files || {});
+          if (existingFiles.length > 0) {
+            gistData.files[existingFiles[0]] = {
+              content: JSON.stringify(completeBackup, null, 2)
+            };
+          } else {
+            gistData.files[`køkkenlager-komplet-backup-${dateStr}.json`] = {
+              content: JSON.stringify(completeBackup, null, 2)
+            };
+          }
+        }
+      } catch (err) {
+        gistData.files[`køkkenlager-komplet-backup-${dateStr}.json`] = {
+          content: JSON.stringify(completeBackup, null, 2)
+        };
+      }
+    } else {
+      gistData.files[`køkkenlager-komplet-backup-${dateStr}.json`] = {
+        content: JSON.stringify(completeBackup, null, 2)
+      };
+    }
+    
+    // Upload or update
+    const url = existingGistId 
+      ? `https://api.github.com/gists/${existingGistId}` 
+      : 'https://api.github.com/gists';
+    const method = existingGistId ? 'PATCH' : 'POST';
+    
+    const response = await fetch(url, {
+      method: method,
+      headers: {
+        'Authorization': `token ${githubToken}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.github.v3+json'
+      },
+      body: JSON.stringify(gistData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const gist = await response.json();
+    const gistUrl = gist.html_url;
+    const gistId = gist.id;
+    
+    const updateText = existingGistId ? 'opdateret' : 'uploadet';
+    alert(`✅ Backup ${updateText} til server!\n\n` +
+      `📦 Data uploadet:\n` +
+      `• ${completeBackup.masterVarelager.length} varer\n` +
+      `• ${completeBackup.reports.length} rapporter\n` +
+      `• Login og licens data\n\n` +
+      `🔗 Gist ID: ${gistId.substring(0, 20)}...\n\n` +
+      `💡 Du kan nu hente denne backup fra serveren når som helst!\n\n` +
+      `⚠️ VIGTIGT: Gem Gist ID'et hvis du vil hente backup'en senere.`);
+    
+  } catch(err) {
+    console.error('Error uploading backup:', err);
+    if (err.message.includes('401') || err.message.includes('Bad credentials')) {
+      localStorage.removeItem('github_gist_token');
+      alert('❌ Ugyldig GitHub token.\n\nToken er blevet slettet. Prøv igen og indtast en ny token.');
+    } else {
+      alert('❌ Fejl ved upload: ' + err.message + '\n\nTjek din internetforbindelse og GitHub token.');
+    }
+  }
+}
+
+/* Fetch backup from server (GitHub Gist) */
+async function fetchBackupFromServer(){
+  try {
+    // Get GitHub token
+    let githubToken = localStorage.getItem('github_gist_token');
+    
+    if (!githubToken) {
+      const token = prompt('🔑 Indtast GitHub Personal Access Token:\n\n' +
+        '1. Gå til: https://github.com/settings/tokens\n' +
+        '2. Klik "Generate new token (classic)"\n' +
+        '3. Vælg "gist" scope\n' +
+        '4. Kopiér token og indtast her\n\n' +
+        '💡 Token gemmes lokalt og bruges til fremtidige downloads.');
+      
+      if (!token || !token.trim()) {
+        alert('❌ Ingen token indtastet. Hentning annulleret.');
+        return;
+      }
+      
+      githubToken = token.trim();
+      localStorage.setItem('github_gist_token', githubToken);
+    }
+    
+    // Fetch all user's gists
+    const response = await fetch('https://api.github.com/gists', {
+      headers: {
+        'Authorization': `token ${githubToken}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('github_gist_token');
+        throw new Error('Ugyldig GitHub token. Token er blevet slettet. Prøv igen og indtast en ny token.');
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const gists = await response.json();
+    
+    // Filter for backup gists
+    const backupGists = gists.filter(gist => 
+      gist.description && gist.description.includes('Køkkenlager Komplet Backup')
+    );
+    
+    if (backupGists.length === 0) {
+      alert('⚠️ Ingen backup fundet på serveren.\n\nUpload først en backup ved at klikke "☁️ Upload Backup til Server".');
+      return;
+    }
+    
+    // Sort by date (newest first)
+    backupGists.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    
+    // Automatically use the most recent backup
+    const mostRecentBackup = backupGists[0];
+    
+    // Confirm before restoring
+    const date = new Date(mostRecentBackup.created_at).toLocaleString('da-DK');
+    const confirmRestore = confirm(`📥 Hent seneste backup fra serveren?\n\n` +
+      `📅 Dato: ${date}\n` +
+      `📝 Beskrivelse: ${mostRecentBackup.description}\n\n` +
+      `⚠️ VIGTIGT: Dette vil erstatte ALLE nuværende data!\n\n` +
+      `Vil du fortsætte?`);
+    
+    if (!confirmRestore) {
+      return;
+    }
+    
+    // Fetch the backup content
+    const gistResponse = await fetch(`https://api.github.com/gists/${mostRecentBackup.id}`, {
+      headers: {
+        'Authorization': `token ${githubToken}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+    
+    if (!gistResponse.ok) {
+      throw new Error(`HTTP ${gistResponse.status}: ${gistResponse.statusText}`);
+    }
+    
+    const gist = await gistResponse.json();
+    
+    // Find the JSON file
+    const files = Object.values(gist.files);
+    const jsonFile = files.find(f => f.filename.endsWith('.json'));
+    
+    if (!jsonFile) {
+      throw new Error('Ingen JSON fil fundet i backup gist');
+    }
+    
+    // Parse and restore
+    const backupData = JSON.parse(jsonFile.content);
+    
+    // Use the existing import function
+    const blob = new Blob([jsonFile.content], { type: 'application/json' });
+    const file = new File([blob], jsonFile.filename, { type: 'application/json' });
+    
+    importAllBackupFromFile(file);
+    
+  } catch(err) {
+    console.error('Error fetching backup:', err);
+    if (err.message.includes('401') || err.message.includes('Bad credentials')) {
+      localStorage.removeItem('github_gist_token');
+      alert('❌ Ugyldig GitHub token.\n\nToken er blevet slettet. Prøv igen og indtast en ny token.');
+    } else {
+      alert('❌ Fejl ved hentning: ' + err.message + '\n\nTjek din internetforbindelse og GitHub token.');
+    }
   }
 }
 
