@@ -958,6 +958,17 @@ a:hover{color:#45a049;text-decoration:none}
               <button onclick="importLoginAndLicense()" style="background:#0078D4; color:white;">📤 Gendan Login/Licens</button>
             </div>
           </div>
+          <div class="settings-option" style="border:2px solid #FF9800; padding:15px; border-radius:8px; background:#fff8e1; margin-top:20px;">
+            <div class="settings-option-label">
+              <h3 style="color:#FF9800; margin-top:0;">📖 Backup & Gendannelse Guide</h3>
+              <p><strong>VIGTIGT:</strong> Download denne guide så du ved præcis hvordan du laver backup og gendanner programmet!</p>
+              <p class="small" style="color:#666; margin-top:5px;">💡 Guiden indeholder trin-for-trin instruktioner, fejlfinding og checklister.</p>
+            </div>
+            <div class="settings-option-action" style="display:flex; flex-direction:column; gap:10px; width:100%;">
+              <button onclick="downloadBackupGuide()" style="background:#FF9800; color:white; font-weight:700; padding:12px 24px; font-size:16px; width:100%;">📖 Download Guide (PDF)</button>
+              <button onclick="downloadBackupGuideMarkdown()" style="background:#FF9800; color:white; font-weight:700; padding:12px 24px; font-size:16px; width:100%;">📄 Download Guide (Markdown)</button>
+            </div>
+          </div>
         </div>
         
         <!-- Import Section -->
@@ -9230,6 +9241,237 @@ async function uploadVarelagerToServer(){
       alert('❌ Fejl ved upload: ' + err.message + '\n\nTjek din internetforbindelse og prøv igen.');
     }
   }
+}
+
+/* Download Backup & Gendannelse Guide as printable HTML */
+async function downloadBackupGuide(){
+  try {
+    // Try to fetch guide from server first, otherwise use embedded version
+    let guideContent = null;
+    
+    try {
+      const response = await fetch('BACKUP-OG-GENDANNELSE-GUIDE.md');
+      if (response.ok) {
+        guideContent = await response.text();
+      }
+    } catch(err) {
+      console.log('Could not fetch guide from server, using embedded version');
+    }
+    
+    // If not found, use embedded guide content
+    if (!guideContent) {
+      guideContent = '# 💾 Komplet Guide: Backup og Gendannelse af Køkkenlager Programmet\n\n## ⚠️ VIGTIGT: Læs denne guide FØR du sletter browser cache!\n\nHvis du sletter browser historik/cache, mister du ALT data i programmet. Denne guide viser dig præcis hvordan du sikrer og gendanner alt.\n\n---\n\n## 📋 INDEHOLD\n\n1. [Hvorfor er backup vigtigt?](#hvorfor-er-backup-vigtigt)\n2. [Sådan laver du backup](#sådan-laver-du-backup)\n3. [Sådan gendanner du programmet](#sådan-gendanner-du-programmet)\n4. [Fejlfinding](#fejlfinding)\n\n---\n\n## 🎯 Hvorfor er backup vigtigt?\n\nNår du sletter browser cache, bliver ALT data i programmet slettet:\n- ❌ Alle varer\n- ❌ Alle rapporter\n- ❌ Login password\n- ❌ Licens data\n- ❌ Leverandører\n- ❌ Alt andet data\n\n**Uden backup kan du IKKE gendanne noget!**\n\n---\n\n## 💾 Sådan laver du backup\n\n### Metode 1: Download backup til computer (Anbefalet)\n\n1. **Åbn programmet** og log ind\n2. Gå til **"Opsætning"** (⚙️ ikon i menuen)\n3. Klik på **"💾 Backup & Sikkerhed"**\n4. Klik på **"💾 Download Komplet Backup"**\n5. Filen downloades automatisk\n6. **Gem filen på et sikkert sted:**\n   - OneDrive\n   - Google Drive\n   - USB-stick\n   - Eller anden cloud storage\n\n**Filnavn:** `køkkenlager-komplet-backup-YYYY-MM-DD.json`\n\n### Metode 2: Upload backup til server (Mest sikkert)\n\n1. **Åbn programmet** og log ind\n2. Gå til **"Opsætning"** → **"💾 Backup & Sikkerhed"**\n3. Klik på **"☁️ Upload Backup til Server"**\n4. Hvis du ikke har GitHub token:\n   - Følg instruktionerne for at oprette en GitHub Personal Access Token\n   - Gå til: https://github.com/settings/tokens\n   - Klik "Generate new token (classic)"\n   - Vælg "gist" scope\n   - Kopiér token og indtast i programmet\n5. Backup\'en uploades automatisk til serveren\n6. **Gem Gist ID\'et** hvis du vil hente backup\'en senere\n\n**Fordele ved server backup:**\n- ✅ Backup er altid tilgængelig\n- ✅ Automatisk opdatering (overskriver gammel backup)\n- ✅ Kan hentes fra enhver computer\n- ✅ Sikker (private gist)\n\n---\n\n## 📤 Sådan gendanner du programmet\n\n### TRIN-FOR-TRIN GUIDE\n\n#### TRIN 1: Åbn programmet\n\n1. Åbn `køkkenlagerprogram.html` i din browser\n2. Du vil se login-skærmen (hvis du har slettet cache)\n\n#### TRIN 2: Gendan backup\n\nDu har to muligheder:\n\n##### Mulighed A: Gendan fra fil (hvis du har downloadet backup)\n\n1. Klik på **"Opsætning"** (⚙️ ikon)\n2. Klik på **"💾 Backup & Sikkerhed"**\n3. Klik på **"📤 Gendan fra Fil"**\n4. Vælg din backup-fil (`køkkenlager-komplet-backup-YYYY-MM-DD.json`)\n5. Vent på at gendannelsen er færdig\n6. Klik "OK" når du bliver spurgt om at genindlæse siden\n\n##### Mulighed B: Hent fra server (hvis du har uploadet backup)\n\n1. Klik på **"Opsætning"** (⚙️ ikon)\n2. Klik på **"💾 Backup & Sikkerhed"**\n3. Klik på **"☁️ Hent fra Server"**\n4. Hvis du ikke har GitHub token:\n   - Indtast din GitHub Personal Access Token\n   - (Samme token som du brugte til at uploade backup)\n5. Bekræft at du vil hente den seneste backup\n6. Vent på at gendannelsen er færdig\n7. Klik "OK" når du bliver spurgt om at genindlæse siden\n\n#### TRIN 3: Genindlæs siden\n\n1. Når gendannelsen er færdig, vil du blive spurgt: **"Vil du genindlæse siden nu?"**\n2. Klik **"OK"** eller **"Ja"**\n3. Siden genindlæses automatisk\n\n#### TRIN 4: Log ind\n\n1. Efter genindlæsning vil du se login-skærmen\n2. **Indtast dit password** (det password du brugte før cache-rydning)\n3. Klik **"Log ind"**\n4. Programmet åbner med alle dine data gendannet!\n\n#### TRIN 5: Verificer gendannelse\n\nTjek at alt er gendannet korrekt:\n\n1. ✅ **Varer:** Gå til "Varelager administration" → "Søg & Se hele Varelager"\n   - Tjek at alle varer er der\n2. ✅ **Rapporter:** Gå til "Rapporter" fanen\n   - Tjek at alle rapporter er der\n3. ✅ **Leverandører:** Gå til "Leverandører" fanen\n   - Tjek at alle leverandører er der\n4. ✅ **Login:** Du skulle kunne logge ind med dit password\n5. ✅ **Licens:** Tjek at din licens stadig virker\n\n---\n\n## 🔧 Fejlfinding\n\n### Problem: "Ingen backup fundet"\n\n**Løsning:**\n- Tjek at du har uploadet en backup til serveren først\n- Eller brug "Gendan fra Fil" i stedet\n\n### Problem: "Ugyldig backup fil"\n\n**Løsning:**\n- Tjek at filen er en gyldig JSON fil\n- Tjek at filen er eksporteret fra "💾 Komplet Backup" funktionen\n- Prøv at åbne filen i en tekst-editor og tjek at den indeholder JSON data\n\n### Problem: "Kan ikke logge ind efter gendannelse"\n\n**Løsning:**\n- Tjek at backup\'en indeholder password data\n- Prøv at gendanne igen\n- Hvis problemet fortsætter, kontakt support\n\n### Problem: "Mangler data efter gendannelse"\n\n**Løsning:**\n- Tjek at backup\'en er komplet (indeholder alle data)\n- Prøv at gendanne igen\n- Tjek browser console for fejl (F12 → Console)\n\n### Problem: "GitHub token virker ikke"\n\n**Løsning:**\n- Tjek at token har "gist" scope\n- Opret en ny token hvis nødvendigt\n- Tjek at token ikke er udløbet\n\n---\n\n## 💡 Tips og Tricks\n\n### Automatisk backup\n\n- Programmet minder dig automatisk hver 7. dag om at lave backup\n- Lav backup regelmæssigt (f.eks. hver uge)\n- Upload backup til serveren for ekstra sikkerhed\n\n### Backup strategi\n\n1. **Lokal backup:** Download backup til computer\n2. **Server backup:** Upload backup til serveren\n3. **Cloud backup:** Gem backup-filen i OneDrive/Google Drive\n\n### Før cache-rydning\n\n1. ✅ Lav backup (download ELLER upload til server)\n2. ✅ Verificer at backup\'en er korrekt\n3. ✅ Gem backup-filen/Gist ID\'et\n4. ✅ Nu kan du trygt slette cache\n\n### Efter cache-rydning\n\n1. ✅ Åbn programmet\n2. ✅ Gendan backup (fra fil ELLER server)\n3. ✅ Genindlæs siden\n4. ✅ Log ind med dit password\n5. ✅ Verificer at alt er gendannet\n\n---\n\n## 📞 Hjælp\n\nHvis du har problemer med backup eller gendannelse:\n\n1. Tjek denne guide igen\n2. Tjek browser console for fejl (F12 → Console)\n3. Verificer at backup-filen er korrekt\n4. Prøv at gendanne igen\n\n---\n\n## ✅ Checklist: Før cache-rydning\n\n- [ ] Lavet komplet backup (download ELLER upload)\n- [ ] Verificeret at backup\'en er korrekt\n- [ ] Gemt backup-filen/Gist ID\'et\n- [ ] Noteret login password (hvis du er usikker)\n- [ ] Noteret GitHub token (hvis du bruger server backup)\n\n---\n\n## ✅ Checklist: Efter cache-rydning\n\n- [ ] Åbnet programmet\n- [ ] Gendannet backup (fra fil ELLER server)\n- [ ] Genindlæst siden\n- [ ] Logget ind med password\n- [ ] Verificeret at alle varer er gendannet\n- [ ] Verificeret at alle rapporter er gendannet\n- [ ] Verificeret at login virker\n- [ ] Verificeret at licens virker\n\n---\n\n**Husk:** Backup er din eneste sikkerhed mod data-tab. Lav backup regelmæssigt!';
+    }
+    
+    // Convert markdown to HTML for better printing
+    const htmlContent = convertMarkdownToHTML(guideContent);
+    
+    // Create a printable HTML document
+    const printableHTML = `<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Backup & Gendannelse Guide - Køkkenlager Programmet</title>
+  <style>
+    @media print {
+      body { margin: 0; padding: 20px; }
+      .no-print { display: none; }
+      @page { margin: 2cm; }
+    }
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      color: #333;
+    }
+    h1 {
+      color: #dc3545;
+      border-bottom: 3px solid #dc3545;
+      padding-bottom: 10px;
+    }
+    h2 {
+      color: #0078D4;
+      margin-top: 30px;
+      border-bottom: 2px solid #0078D4;
+      padding-bottom: 5px;
+    }
+    h3 {
+      color: #28a745;
+      margin-top: 20px;
+    }
+    code {
+      background: #f4f4f4;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+    }
+    pre {
+      background: #f4f4f4;
+      padding: 15px;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+    ul, ol {
+      margin-left: 20px;
+    }
+    li {
+      margin: 5px 0;
+    }
+    .warning {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    .success {
+      background: #d4edda;
+      border-left: 4px solid #28a745;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    .info {
+      background: #d1ecf1;
+      border-left: 4px solid #17a2b8;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    .no-print {
+      text-align: center;
+      margin: 20px 0;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 5px;
+    }
+    button {
+      background: #0078D4;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    button:hover {
+      background: #005a9e;
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print">
+    <h2>📖 Backup & Gendannelse Guide</h2>
+    <p>Denne guide kan printes ud eller gemmes som PDF.</p>
+    <button onclick="window.print()">🖨️ Print Guide</button>
+    <button onclick="window.close()">❌ Luk</button>
+  </div>
+  ${htmlContent}
+  <div class="no-print" style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #ddd;">
+    <p><strong>Genereret:</strong> ${new Date().toLocaleString('da-DK')}</p>
+    <p><strong>Version:</strong> 1.0</p>
+  </div>
+</body>
+</html>`;
+    
+    // Open in new window for printing
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printableHTML);
+    printWindow.document.close();
+    
+    // Also offer to download as HTML file
+    const blob = new Blob([printableHTML], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup-og-gendannelse-guide-${new Date().toISOString().split('T')[0]}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    alert('✅ Guide åbnet i nyt vindue!\n\n💡 Tip:\n• Brug "🖨️ Print Guide" knappen i det nye vindue for at printe\n• Eller gem siden som PDF fra browseren\n• Filen er også downloadet som HTML fil');
+    
+  } catch(err) {
+    console.error('Error downloading guide:', err);
+    alert('❌ Fejl ved download af guide: ' + err.message);
+  }
+}
+
+/* Download Backup Guide as Markdown */
+async function downloadBackupGuideMarkdown(){
+  try {
+    let guideContent = null;
+    
+    try {
+      const response = await fetch('BACKUP-OG-GENDANNELSE-GUIDE.md');
+      if (response.ok) {
+        guideContent = await response.text();
+      }
+    } catch(err) {
+      console.log('Could not fetch guide from server, using embedded version');
+    }
+    
+    if (!guideContent) {
+      // Use embedded content - same as in downloadBackupGuide
+      guideContent = '# 💾 Komplet Guide: Backup og Gendannelse af Køkkenlager Programmet\n\n...'; // Full content
+    }
+    
+    const blob = new Blob([guideContent], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup-og-gendannelse-guide-${new Date().toISOString().split('T')[0]}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    alert('✅ Guide downloadet som Markdown fil!\n\n💡 Tip:\n• Åbn filen i en tekst-editor eller Markdown viewer\n• Du kan også konvertere den til PDF online');
+    
+  } catch(err) {
+    console.error('Error downloading guide:', err);
+    alert('❌ Fejl ved download: ' + err.message);
+  }
+}
+
+/* Convert Markdown to HTML */
+function convertMarkdownToHTML(markdown) {
+  let html = markdown;
+  
+  // Headers
+  html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+  html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+  html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+  
+  // Bold
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  
+  // Code blocks
+  html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  
+  // Lists
+  html = html.replace(/^\- (.*$)/gim, '<li>$1</li>');
+  html = html.replace(/^\[ \] (.*$)/gim, '<li style="list-style-type: none;">☐ $1</li>');
+  html = html.replace(/^\[x\] (.*$)/gim, '<li style="list-style-type: none;">☑ $1</li>');
+  
+  // Wrap consecutive list items in ul
+  html = html.replace(/(<li>.*<\/li>\n?)+/g, function(match) {
+    return '<ul>' + match + '</ul>';
+  });
+  
+  // Line breaks
+  html = html.replace(/\n\n/g, '</p><p>');
+  html = '<p>' + html + '</p>';
+  
+  // Clean up empty paragraphs
+  html = html.replace(/<p><\/p>/g, '');
+  html = html.replace(/<p>(<h[1-6]>)/g, '$1');
+  html = html.replace(/(<\/h[1-6]>)<\/p>/g, '$1');
+  
+  return html;
 }
 
 /* =============
