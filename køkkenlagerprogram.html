@@ -1299,6 +1299,17 @@ a:hover{color:#45a049;text-decoration:none}
   </div>
 </div>
 
+<!-- Server reports modal -->
+<div id="serverReportsModal" class="modal-backdrop hidden" aria-hidden="true" onclick="if(event.target.id === 'serverReportsModal') hideServerReportsModal()">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:700px;" onclick="event.stopPropagation()">
+    <h3>☁️ Rapporter på Server</h3>
+    <div id="serverReportsModalContent"></div>
+    <div class="actions">
+      <button class="secondary" onclick="hideServerReportsModal()">Luk</button>
+    </div>
+  </div>
+</div>
+
 <!-- =========================
      [EXTERNAL LIBRARIES]
      ========================= -->
@@ -2283,7 +2294,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     }
     
     // Skjul alle modals ved opstart
-    ['startModal','finishModal','importModal','scannerModal','phoneLinkModal'].forEach(id=>{
+    ['startModal','finishModal','importModal','scannerModal','phoneLinkModal','serverReportsModal'].forEach(id=>{
       const el = $(id);
       if(!el) {
         console.warn(`Modal med id "${id}" ikke fundet`);
@@ -7605,73 +7616,203 @@ async function fetchReportsFromServer(){
       localStorage.setItem('github_gist_token', githubToken);
     }
     
-    // Option 1: Get Gist ID from user
-    const gistId = prompt('📋 Indtast Gist ID fra scanner-appen:\n\n' +
-      '💡 Gist ID får du når du uploader rapporter i scanner-appen.\n' +
-      '💡 Eller indtast "mine" for at hente alle dine gists.\n\n' +
-      'Gist ID:');
+    // Show loading
+    showServerReportsModal('loading');
     
-    if (!gistId || !gistId.trim()) {
-      alert('❌ Ingen Gist ID indtastet. Hentning annulleret.');
+    // Fetch all user's gists
+    const response = await fetch('https://api.github.com/gists', {
+      headers: {
+        'Authorization': `token ${githubToken}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('github_gist_token');
+        hideServerReportsModal();
+        throw new Error('Ugyldig GitHub token. Token er blevet slettet. Prøv igen og indtast en ny token.');
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const gists = await response.json();
+    
+    // Filter for scanner reports and get details
+    const scannerGists = [];
+    for (const gist of gists) {
+      if (gist.description && gist.description.includes('Scanner rapporter')) {
+        // Try to get report count from description
+        const reportCount = gist.description.match(/(\d+)\s+rapport/)?.[1] || '?';
+        
+        // Try to get report names from gist files
+        let reportNames = [];
+        try {
+          const files = Object.values(gist.files);
+          if (files.length > 0 && files[0].content) {
+            const content = JSON.parse(files[0].content);
+            if (content.reports && Array.isArray(content.reports)) {
+              reportNames = content.reports.map(r => r.handling || 'Ukendt').slice(0, 3); // First 3 report names
+            }
+          }
+        } catch(e) {
+          // Ignore errors parsing content
+        }
+        
+        scannerGists.push({
+          id: gist.id,
+          description: gist.description,
+          createdAt: gist.created_at,
+          updatedAt: gist.updated_at,
+          reportCount: reportCount,
+          reportNames: reportNames,
+          url: gist.html_url
+        });
+      }
+    }
+    
+    // Sort by date (newest first)
+    scannerGists.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    if (scannerGists.length === 0) {
+      hideServerReportsModal();
+      alert('⚠️ Ingen scanner rapporter fundet i dine gists.\n\nUpload rapporter fra scanner-appen først.');
       return;
     }
     
-    if (gistId.trim().toLowerCase() === 'mine') {
-      // Fetch all user's gists
-      const response = await fetch('https://api.github.com/gists', {
-        headers: {
-          'Authorization': `token ${githubToken}`,
-          'Accept': 'application/vnd.github.v3+json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const gists = await response.json();
-      
-      // Filter for scanner reports
-      const scannerGists = gists.filter(g => 
-        g.description && g.description.includes('Scanner rapporter')
-      );
-      
-      if (scannerGists.length === 0) {
-        alert('⚠️ Ingen scanner rapporter fundet i dine gists.');
-        return;
-      }
-      
-      // Show list and let user choose
-      const gistList = scannerGists.map((g, i) => 
-        `${i + 1}. ${g.description} (${new Date(g.created_at).toLocaleDateString('da-DK')})`
-      ).join('\n');
-      
-      const choice = prompt(`Fundet ${scannerGists.length} scanner gist(s):\n\n${gistList}\n\nIndtast nummer (1-${scannerGists.length}):`);
-      const index = parseInt(choice) - 1;
-      
-      if (isNaN(index) || index < 0 || index >= scannerGists.length) {
-        alert('❌ Ugyldigt valg.');
-        return;
-      }
-      
-      // Fetch the selected gist
-      await fetchAndImportGist(scannerGists[index].id, githubToken);
-    } else {
-      // Fetch specific gist
-      await fetchAndImportGist(gistId.trim(), githubToken);
-    }
+    // Show list in modal
+    showServerReportsModal('list', scannerGists, githubToken);
     
   } catch(err) {
     console.error('Fejl ved hentning fra server:', err);
+    hideServerReportsModal();
     
-    if (err.message.includes('401') || err.message.includes('Bad credentials')) {
-      localStorage.removeItem('github_gist_token');
-      alert('❌ Ugyldig GitHub token.\n\nToken er blevet slettet. Prøv igen og indtast en ny token.');
+    if (err.message.includes('401') || err.message.includes('Bad credentials') || err.message.includes('Ugyldig')) {
+      alert('❌ ' + err.message);
     } else if (err.message.includes('404')) {
       alert('❌ Gist ikke fundet.\n\nTjek at Gist ID er korrekt.');
     } else {
       alert('❌ Fejl ved hentning: ' + err.message + '\n\nTjek din internetforbindelse og prøv igen.');
     }
+  }
+}
+
+/* Show server reports modal */
+function showServerReportsModal(mode, gists = [], githubToken = '') {
+  const modalEl = document.getElementById('serverReportsModal');
+  const contentEl = document.getElementById('serverReportsModalContent');
+  
+  if (!modalEl || !contentEl) {
+    console.error('Server reports modal not found');
+    return;
+  }
+  
+  if (mode === 'loading') {
+    contentEl.innerHTML = '<p style="text-align:center; padding:40px;">🔄 Henter rapporter fra serveren...</p>';
+    modalEl.classList.remove('hidden');
+    modalEl.style.display = 'flex';
+    modalEl.setAttribute('aria-hidden', 'false');
+    return;
+  }
+  
+  if (mode === 'list') {
+    if (gists.length === 0) {
+      contentEl.innerHTML = '<p style="text-align:center; padding:40px; color:#666;">⚠️ Ingen rapporter fundet.</p>';
+      modalEl.classList.remove('hidden');
+      return;
+    }
+    
+    const listHTML = `
+      <p style="margin-bottom:15px; color:#666;">Fundet <strong>${gists.length}</strong> uploadet rapport(er). Vælg en for at hente:</p>
+      <div style="max-height:400px; overflow-y:auto; border:1px solid #ddd; border-radius:8px; padding:10px;">
+        ${gists.map((gist, index) => {
+          const date = new Date(gist.createdAt);
+          const dateStr = date.toLocaleDateString('da-DK', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          
+          const reportNamesText = gist.reportNames && gist.reportNames.length > 0 
+            ? `<div style="margin-top:6px; font-size:12px; color:#555;">Rapporter: ${gist.reportNames.map(n => n.replace(/'/g, "\\'")).join(', ')}${parseInt(gist.reportCount) > 3 ? '...' : ''}</div>`
+            : '';
+          
+          // Store token in data attribute to avoid escaping issues
+          return `
+            <div style="padding:15px; margin:8px 0; background:#f8f9fa; border-radius:6px; border-left:4px solid #17a2b8; cursor:pointer; transition:background 0.2s;" 
+                 data-gist-id="${gist.id}"
+                 onclick="selectServerReportFromElement(this)"
+                 onmouseover="this.style.background='#e9ecef'" 
+                 onmouseout="this.style.background='#f8f9fa'">
+              <div style="display:flex; justify-content:space-between; align-items:start;">
+                <div style="flex:1;">
+                  <strong style="color:#333; font-size:16px; display:block; margin-bottom:6px;">📋 Upload ${index + 1}</strong>
+                  <div style="margin-top:6px; font-size:13px; color:#666;">
+                    📊 ${gist.reportCount} rapport(er) • 📅 ${dateStr}
+                  </div>
+                  ${reportNamesText}
+                  <div style="margin-top:6px; font-size:11px; color:#999; font-family:monospace;">
+                    🔗 ${gist.id.substring(0, 24)}...
+                  </div>
+                </div>
+                <button style="background:#17a2b8; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:600; margin-left:15px; white-space:nowrap;"
+                        onclick="event.stopPropagation(); selectServerReportFromElement(this.closest('[data-gist-id]'))">
+                  📥 Hent
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+      <p style="margin-top:15px; font-size:12px; color:#666;">
+        💡 Tip: Klik på en rapport for at hente den, eller klik "Hent" knappen.
+      </p>
+    `;
+    
+    contentEl.innerHTML = listHTML;
+    modalEl.classList.remove('hidden');
+    modalEl.style.display = 'flex';
+    modalEl.setAttribute('aria-hidden', 'false');
+  }
+}
+
+/* Hide server reports modal */
+function hideServerReportsModal() {
+  const modal = document.getElementById('serverReportsModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+  }
+}
+
+/* Select and fetch a server report from element */
+async function selectServerReportFromElement(element) {
+  const gistId = element.getAttribute('data-gist-id');
+  const githubToken = localStorage.getItem('github_gist_token');
+  
+  if (!gistId || !githubToken) {
+    alert('❌ Fejl: Manglende Gist ID eller token.');
+    return;
+  }
+  
+  await selectServerReport(gistId, githubToken);
+}
+
+/* Select and fetch a server report */
+async function selectServerReport(gistId, githubToken) {
+  try {
+    hideServerReportsModal();
+    showServerReportsModal('loading');
+    
+    await fetchAndImportGist(gistId, githubToken);
+    
+    hideServerReportsModal();
+  } catch(err) {
+    hideServerReportsModal();
+    throw err;
   }
 }
 
