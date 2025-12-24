@@ -916,31 +916,43 @@ a:hover{color:#45a049;text-decoration:none}
         
         <!-- Backup Section -->
         <div id="settings-backup" class="settings-section">
-          <div class="settings-option">
+          <div class="settings-option" style="border:2px solid #dc3545; padding:15px; border-radius:8px; background:#fff5f5; margin-bottom:20px;">
             <div class="settings-option-label">
-              <h3>💾 Backup JSON</h3>
-              <p>Download en komplet backup af al din data i JSON format. Brug til sikkerhedskopi eller overførsel.</p>
+              <h3 style="color:#dc3545; margin-top:0;">💾 Komplet Backup (ALLE DATA) - ANBEFALET</h3>
+              <p><strong>VIGTIGT:</strong> Download en komplet backup af ALT data inkl. login, licens, varer, rapporter, leverandører. Brug denne hvis du sletter browser cache!</p>
+              <p class="small" style="color:#dc3545; margin-top:5px; font-weight:600;">⚠️ Uden denne backup kan du IKKE gendanne systemet efter cache-rydning!</p>
             </div>
             <div class="settings-option-action">
-              <button onclick="exportAllBackup()">Download Backup</button>
+              <button onclick="exportAllBackup()" style="background:#dc3545; color:white; font-weight:700; padding:12px 24px; font-size:16px;">💾 Download Komplet Backup</button>
+            </div>
+          </div>
+          <div class="settings-option" style="border:2px solid #28a745; padding:15px; border-radius:8px; background:#f0fff4; margin-bottom:20px;">
+            <div class="settings-option-label">
+              <h3 style="color:#28a745; margin-top:0;">📤 Gendan Komplet Backup</h3>
+              <p>Gendan ALT data fra en komplet backup fil. Brug dette hvis du har slettet browser cache eller mistet data.</p>
+              <p class="small" style="color:#666; margin-top:5px;">💡 Vælg den backup fil du downloadede tidligere (køkkenlager-komplet-backup-YYYY-MM-DD.json)</p>
+            </div>
+            <div class="settings-option-action">
+              <button onclick="document.getElementById('backupFileInput')?.click()" style="background:#28a745; color:white; font-weight:700; padding:12px 24px; font-size:16px;">📤 Gendan fra Backup</button>
+              <input type="file" id="backupFileInput" accept=".json" style="display:none;" onchange="if(this.files[0]) importAllBackupFromFile(this.files[0])" />
             </div>
           </div>
           <div class="settings-option">
             <div class="settings-option-label">
-              <h3>🔐 Backup Login & Licens</h3>
-              <p>Download backup af login og licens data. VIGTIGT: Gem denne fil sikkert! Uden den kan du ikke logge ind igen hvis cache slettes.</p>
+              <h3>🔐 Backup Login & Licens (Kun login/licens)</h3>
+              <p>Download kun login og licens data. Mindre backup end komplet backup.</p>
             </div>
             <div class="settings-option-action">
-              <button onclick="exportLoginAndLicense()" style="background:#dc3545; color:white;">📥 Download Login/Licens</button>
+              <button onclick="exportLoginAndLicense()" style="background:#0078D4; color:white;">📥 Download Login/Licens</button>
             </div>
           </div>
           <div class="settings-option">
             <div class="settings-option-label">
               <h3>📤 Gendan Login & Licens</h3>
-              <p>Gendan login og licens data fra en tidligere backup. Brug dette hvis du har slettet browser cache.</p>
+              <p>Gendan kun login og licens data fra en tidligere backup.</p>
             </div>
             <div class="settings-option-action">
-              <button onclick="importLoginAndLicense()" style="background:#28a745; color:white;">📤 Gendan Login/Licens</button>
+              <button onclick="importLoginAndLicense()" style="background:#0078D4; color:white;">📤 Gendan Login/Licens</button>
             </div>
           </div>
         </div>
@@ -2320,6 +2332,33 @@ function initializeApp(){
   setTimeout(() => {
     // Prøv at indlæse gemte data
     const hasData = loadAllData();
+    
+    // Check for backup reminder
+    const lastBackupReminder = localStorage.getItem('last_backup_reminder');
+    const now = Date.now();
+    const oneWeek = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+    
+    // Show backup reminder if no backup has been made in the last week
+    if (!lastBackupReminder || (now - parseInt(lastBackupReminder)) > oneWeek) {
+      const hasData = masterVarelager.length > 0 || reports.length > 0;
+      if (hasData) {
+        setTimeout(() => {
+          const reminder = confirm('💾 BACKUP PÅMINDELSE\n\n' +
+            'Det er mere end en uge siden sidste backup påmindelse.\n\n' +
+            '⚠️ VIGTIGT: Hvis du sletter browser cache, mister du ALT data!\n\n' +
+            'Vil du lave en backup nu?\n\n' +
+            '(Klik "Annuller" for at blive mindet igen om 7 dage)');
+          
+          if (reminder) {
+            exportAllBackup();
+            localStorage.setItem('last_backup_reminder', now.toString());
+          } else {
+            // Set reminder for 7 days from now
+            localStorage.setItem('last_backup_reminder', now.toString());
+          }
+        }, 2000); // Wait 2 seconds after page load
+      }
+    }
     
     // Ved ny installation: Start ALTID med tomt lager (ingen demo data)
     const isNewInstallation = typeof PRE_GENERATED_INSTALLATION_ID !== 'undefined' && 
@@ -6686,9 +6725,233 @@ function processImportText(text, importType = 'add'){
   alert(msg);
 }
 
-/* Backup / restore */
-function exportAllBackup(){ const payload={ masterVarelager, lagerData, lagerLokationer, leverandorer, reports, sessionCounter }; downloadFile(JSON.stringify(payload,null,2),'lager_backup.json','application/json'); }
-function importAllBackupFromFile(file){ const r = new FileReader(); r.onload = e => { try{ const obj = JSON.parse(e.target.result); masterVarelager = obj.masterVarelager || []; lagerData = obj.lagerData || {}; lagerLokationer = obj.lagerLokationer || ['Køl','Frost','Tørevare','Grønt']; reports = obj.reports || []; leverandorer = obj.leverandorer || []; sessionCounter = obj.sessionCounter || 0; updateAllSelects(); renderMasterTable(); renderLagerOpsaetning(); renderLagerTable(); renderReports(); updateLogPreview(); alert('Backup importeret'); }catch(err){ alert('Fejl ved import: '+err.message); } }; r.readAsText(file); }
+/* Complete backup - saves EVERYTHING including login/license */
+function exportAllBackup(){
+  try {
+    const installationId = getInstallationId();
+    
+    // Create complete backup with ALL data
+    const completeBackup = {
+      version: '2.0', // Version 2.0 = complete backup with login/license
+      exportedAt: Date.now(),
+      exportedBy: localStorage.getItem('user_name') || 'Unknown',
+      
+      // Installation ID
+      installationId: installationId,
+      
+      // All program data
+      masterVarelager: masterVarelager || [],
+      lagerData: lagerData || {},
+      lagerLokationer: lagerLokationer || ['Køl','Frost','Tørevare','Grønt'],
+      leverandorer: leverandorer || [],
+      reports: reports || [],
+      archivedReports: archivedReports || [],
+      archivePeriod: archivePeriod || 0,
+      sessionCounter: sessionCounter || 0,
+      activeSession: activeSession || null,
+      
+      // Login and license data (CRITICAL for restoration)
+      passwordHash: localStorage.getItem(PASSWORD_KEY),
+      recoveryEmail: localStorage.getItem(RECOVERY_EMAIL_KEY),
+      recoveryEmailHash: localStorage.getItem(RECOVERY_EMAIL_HASH_KEY),
+      userName: localStorage.getItem('user_name'),
+      license: localStorage.getItem('app_license'),
+      
+      // GitHub token (optional, for server sync)
+      githubToken: localStorage.getItem('github_gist_token') || null
+    };
+    
+    // Check if there's any data to export
+    const hasData = completeBackup.masterVarelager.length > 0 || 
+                    completeBackup.reports.length > 0 ||
+                    completeBackup.passwordHash ||
+                    completeBackup.license;
+    
+    if (!hasData) {
+      alert('⚠️ Ingen data at eksportere.\n\nOpret først nogle varer eller rapporter.');
+      return;
+    }
+    
+    const dataStr = JSON.stringify(completeBackup, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const dateStr = new Date().toISOString().split('T')[0];
+    a.download = `køkkenlager-komplet-backup-${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    // Show detailed success message
+    let msg = '✅ KOMPLET BACKUP EKSporteret!\n\n';
+    msg += `📦 Data inkluderet:\n`;
+    msg += `• ${completeBackup.masterVarelager.length} varer\n`;
+    msg += `• ${completeBackup.reports.length} rapporter\n`;
+    msg += `• ${completeBackup.leverandorer.length} leverandører\n`;
+    if (completeBackup.passwordHash) msg += `• Login password\n`;
+    if (completeBackup.license) msg += `• Licens data\n`;
+    msg += `• Installation ID\n\n`;
+    msg += `⚠️ VIGTIGT:\n`;
+    msg += `• Gem denne fil på et SIKKERT sted\n`;
+    msg += `• Uden denne fil kan du IKKE gendanne systemet hvis cache slettes\n`;
+    msg += `• Del IKKE denne fil med andre\n`;
+    msg += `• Filnavn: køkkenlager-komplet-backup-${dateStr}.json\n\n`;
+    msg += `💡 Tip: Gem filen i cloud storage (OneDrive, Google Drive, etc.)`;
+    
+    alert(msg);
+  } catch(err) {
+    console.error('Error exporting complete backup:', err);
+    alert('❌ Fejl ved eksport: ' + err.message);
+  }
+}
+
+/* Complete restore - restores EVERYTHING from backup */
+function importAllBackupFromFile(file){
+  const r = new FileReader();
+  r.onload = function(e) {
+    try {
+      const backupData = JSON.parse(e.target.result);
+      
+      // Validate backup file
+      if (!backupData.version) {
+        alert('⚠️ Filen ser ikke ud til at være en gyldig backup fil.\n\nFilen skal være eksporteret fra "💾 Backup JSON" funktionen.');
+        return;
+      }
+      
+      let restored = [];
+      let warnings = [];
+      
+      // Restore program data
+      if (backupData.masterVarelager) {
+        masterVarelager = backupData.masterVarelager;
+        restored.push(`${masterVarelager.length} varer`);
+      }
+      
+      if (backupData.lagerData) {
+        lagerData = backupData.lagerData;
+        restored.push('Lager data');
+      }
+      
+      if (backupData.lagerLokationer) {
+        lagerLokationer = backupData.lagerLokationer;
+        restored.push('Lager lokationer');
+      }
+      
+      if (backupData.leverandorer) {
+        leverandorer = backupData.leverandorer;
+        restored.push(`${leverandorer.length} leverandører`);
+      }
+      
+      if (backupData.reports) {
+        reports = backupData.reports;
+        restored.push(`${reports.length} rapporter`);
+      }
+      
+      if (backupData.archivedReports) {
+        archivedReports = backupData.archivedReports;
+        restored.push(`${archivedReports.length} arkiverede rapporter`);
+      }
+      
+      if (backupData.archivePeriod !== undefined) {
+        archivePeriod = backupData.archivePeriod;
+      }
+      
+      if (backupData.sessionCounter !== undefined) {
+        sessionCounter = backupData.sessionCounter;
+      }
+      
+      if (backupData.activeSession) {
+        activeSession = backupData.activeSession;
+      }
+      
+      // Restore login and license data (CRITICAL)
+      if (backupData.passwordHash) {
+        localStorage.setItem(PASSWORD_KEY, backupData.passwordHash);
+        restored.push('Login password');
+      } else {
+        warnings.push('Ingen login password i backup');
+      }
+      
+      if (backupData.recoveryEmail) {
+        localStorage.setItem(RECOVERY_EMAIL_KEY, backupData.recoveryEmail);
+        restored.push('Recovery email');
+      }
+      
+      if (backupData.recoveryEmailHash) {
+        localStorage.setItem(RECOVERY_EMAIL_HASH_KEY, backupData.recoveryEmailHash);
+      }
+      
+      if (backupData.userName) {
+        localStorage.setItem('user_name', backupData.userName);
+        restored.push('Bruger navn');
+      }
+      
+      if (backupData.license) {
+        try {
+          localStorage.setItem('app_license', backupData.license);
+          restored.push('Licens data');
+        } catch(e) {
+          warnings.push('Kunne ikke gendanne licens data: ' + e.message);
+        }
+      } else {
+        warnings.push('Ingen licens data i backup');
+      }
+      
+      // Restore installation ID
+      if (backupData.installationId) {
+        const currentId = getInstallationId();
+        if (backupData.installationId !== currentId) {
+          // Store the imported ID
+          localStorage.setItem('backup_installation_id', backupData.installationId);
+          restored.push('Installation ID (gemt som backup)');
+        } else {
+          restored.push('Installation ID (matcher)');
+        }
+      }
+      
+      // Restore GitHub token (optional)
+      if (backupData.githubToken) {
+        localStorage.setItem('github_gist_token', backupData.githubToken);
+        restored.push('GitHub token');
+      }
+      
+      // Save all restored data
+      saveAllData();
+      
+      // Update UI
+      updateAllSelects();
+      renderMasterTable();
+      renderLagerOpsaetning();
+      renderLagerTable();
+      renderReports();
+      updateLogPreview();
+      
+      // Show success message
+      let msg = '✅ BACKUP GENDANNET!\n\n';
+      msg += `Gendannet:\n${restored.map(r => '• ' + r).join('\n')}\n`;
+      
+      if (warnings.length > 0) {
+        msg += `\n⚠️ Advarsler:\n${warnings.map(w => '• ' + w).join('\n')}\n`;
+      }
+      
+      msg += `\n💡 Tip: Genindlæs siden for at sikre alt virker korrekt.`;
+      
+      alert(msg);
+      
+      // Ask to reload
+      if (confirm('Vil du genindlæse siden nu for at anvende alle ændringerne?')) {
+        location.reload();
+      }
+      
+    } catch(err) {
+      console.error('Error importing backup:', err);
+      alert('❌ Fejl ved import: ' + err.message + '\n\nTjek at filen er en gyldig backup fil.');
+    }
+  };
+  r.readAsText(file);
+}
 
 /* Check for manual counting data automatically and refresh reports */
 function checkForManualCountingData(){
