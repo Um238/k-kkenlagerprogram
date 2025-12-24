@@ -1336,7 +1336,7 @@ a:hover{color:#45a049;text-decoration:none}
      ========================= -->
 <!-- jsPDF (for PDF generation) -->
 <!-- Pre-genereret installations-ID (hvis tilgængelig) -->
-<script src="installation_id.js" onerror="console.log('installation_id.js ikke fundet - genererer ID ved første opstart')"></script>
+<!-- installation_id.js er valgfri - hvis den ikke findes, genereres ID automatisk -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <!-- JsBarcode (for labels) -->
@@ -9246,7 +9246,7 @@ async function uploadVarelagerToServer(){
 /* Download Backup & Gendannelse Guide as printable HTML */
 async function downloadBackupGuide(){
   try {
-    // Try to fetch guide from server first, otherwise use embedded version
+    // Try to fetch guide from server
     let guideContent = null;
     
     try {
@@ -9255,12 +9255,14 @@ async function downloadBackupGuide(){
         guideContent = await response.text();
       }
     } catch(err) {
-      console.log('Could not fetch guide from server, using embedded version');
+      console.log('Could not fetch guide from server');
     }
     
-    // If not found, use embedded guide content
+    // If not found, redirect to the markdown file download instead
     if (!guideContent) {
-      guideContent = '# 💾 Komplet Guide: Backup og Gendannelse af Køkkenlager Programmet\n\n## ⚠️ VIGTIGT: Læs denne guide FØR du sletter browser cache!\n\nHvis du sletter browser historik/cache, mister du ALT data i programmet. Denne guide viser dig præcis hvordan du sikrer og gendanner alt.\n\n---\n\n## 📋 INDEHOLD\n\n1. [Hvorfor er backup vigtigt?](#hvorfor-er-backup-vigtigt)\n2. [Sådan laver du backup](#sådan-laver-du-backup)\n3. [Sådan gendanner du programmet](#sådan-gendanner-du-programmet)\n4. [Fejlfinding](#fejlfinding)\n\n---\n\n## 🎯 Hvorfor er backup vigtigt?\n\nNår du sletter browser cache, bliver ALT data i programmet slettet:\n- ❌ Alle varer\n- ❌ Alle rapporter\n- ❌ Login password\n- ❌ Licens data\n- ❌ Leverandører\n- ❌ Alt andet data\n\n**Uden backup kan du IKKE gendanne noget!**\n\n---\n\n## 💾 Sådan laver du backup\n\n### Metode 1: Download backup til computer (Anbefalet)\n\n1. **Åbn programmet** og log ind\n2. Gå til **"Opsætning"** (⚙️ ikon i menuen)\n3. Klik på **"💾 Backup & Sikkerhed"**\n4. Klik på **"💾 Download Komplet Backup"**\n5. Filen downloades automatisk\n6. **Gem filen på et sikkert sted:**\n   - OneDrive\n   - Google Drive\n   - USB-stick\n   - Eller anden cloud storage\n\n**Filnavn:** `køkkenlager-komplet-backup-YYYY-MM-DD.json`\n\n### Metode 2: Upload backup til server (Mest sikkert)\n\n1. **Åbn programmet** og log ind\n2. Gå til **"Opsætning"** → **"💾 Backup & Sikkerhed"**\n3. Klik på **"☁️ Upload Backup til Server"**\n4. Hvis du ikke har GitHub token:\n   - Følg instruktionerne for at oprette en GitHub Personal Access Token\n   - Gå til: https://github.com/settings/tokens\n   - Klik "Generate new token (classic)"\n   - Vælg "gist" scope\n   - Kopiér token og indtast i programmet\n5. Backup\'en uploades automatisk til serveren\n6. **Gem Gist ID\'et** hvis du vil hente backup\'en senere\n\n**Fordele ved server backup:**\n- ✅ Backup er altid tilgængelig\n- ✅ Automatisk opdatering (overskriver gammel backup)\n- ✅ Kan hentes fra enhver computer\n- ✅ Sikker (private gist)\n\n---\n\n## 📤 Sådan gendanner du programmet\n\n### TRIN-FOR-TRIN GUIDE\n\n#### TRIN 1: Åbn programmet\n\n1. Åbn `køkkenlagerprogram.html` i din browser\n2. Du vil se login-skærmen (hvis du har slettet cache)\n\n#### TRIN 2: Gendan backup\n\nDu har to muligheder:\n\n##### Mulighed A: Gendan fra fil (hvis du har downloadet backup)\n\n1. Klik på **"Opsætning"** (⚙️ ikon)\n2. Klik på **"💾 Backup & Sikkerhed"**\n3. Klik på **"📤 Gendan fra Fil"**\n4. Vælg din backup-fil (`køkkenlager-komplet-backup-YYYY-MM-DD.json`)\n5. Vent på at gendannelsen er færdig\n6. Klik "OK" når du bliver spurgt om at genindlæse siden\n\n##### Mulighed B: Hent fra server (hvis du har uploadet backup)\n\n1. Klik på **"Opsætning"** (⚙️ ikon)\n2. Klik på **"💾 Backup & Sikkerhed"**\n3. Klik på **"☁️ Hent fra Server"**\n4. Hvis du ikke har GitHub token:\n   - Indtast din GitHub Personal Access Token\n   - (Samme token som du brugte til at uploade backup)\n5. Bekræft at du vil hente den seneste backup\n6. Vent på at gendannelsen er færdig\n7. Klik "OK" når du bliver spurgt om at genindlæse siden\n\n#### TRIN 3: Genindlæs siden\n\n1. Når gendannelsen er færdig, vil du blive spurgt: **"Vil du genindlæse siden nu?"**\n2. Klik **"OK"** eller **"Ja"**\n3. Siden genindlæses automatisk\n\n#### TRIN 4: Log ind\n\n1. Efter genindlæsning vil du se login-skærmen\n2. **Indtast dit password** (det password du brugte før cache-rydning)\n3. Klik **"Log ind"**\n4. Programmet åbner med alle dine data gendannet!\n\n#### TRIN 5: Verificer gendannelse\n\nTjek at alt er gendannet korrekt:\n\n1. ✅ **Varer:** Gå til "Varelager administration" → "Søg & Se hele Varelager"\n   - Tjek at alle varer er der\n2. ✅ **Rapporter:** Gå til "Rapporter" fanen\n   - Tjek at alle rapporter er der\n3. ✅ **Leverandører:** Gå til "Leverandører" fanen\n   - Tjek at alle leverandører er der\n4. ✅ **Login:** Du skulle kunne logge ind med dit password\n5. ✅ **Licens:** Tjek at din licens stadig virker\n\n---\n\n## 🔧 Fejlfinding\n\n### Problem: "Ingen backup fundet"\n\n**Løsning:**\n- Tjek at du har uploadet en backup til serveren først\n- Eller brug "Gendan fra Fil" i stedet\n\n### Problem: "Ugyldig backup fil"\n\n**Løsning:**\n- Tjek at filen er en gyldig JSON fil\n- Tjek at filen er eksporteret fra "💾 Komplet Backup" funktionen\n- Prøv at åbne filen i en tekst-editor og tjek at den indeholder JSON data\n\n### Problem: "Kan ikke logge ind efter gendannelse"\n\n**Løsning:**\n- Tjek at backup\'en indeholder password data\n- Prøv at gendanne igen\n- Hvis problemet fortsætter, kontakt support\n\n### Problem: "Mangler data efter gendannelse"\n\n**Løsning:**\n- Tjek at backup\'en er komplet (indeholder alle data)\n- Prøv at gendanne igen\n- Tjek browser console for fejl (F12 → Console)\n\n### Problem: "GitHub token virker ikke"\n\n**Løsning:**\n- Tjek at token har "gist" scope\n- Opret en ny token hvis nødvendigt\n- Tjek at token ikke er udløbet\n\n---\n\n## 💡 Tips og Tricks\n\n### Automatisk backup\n\n- Programmet minder dig automatisk hver 7. dag om at lave backup\n- Lav backup regelmæssigt (f.eks. hver uge)\n- Upload backup til serveren for ekstra sikkerhed\n\n### Backup strategi\n\n1. **Lokal backup:** Download backup til computer\n2. **Server backup:** Upload backup til serveren\n3. **Cloud backup:** Gem backup-filen i OneDrive/Google Drive\n\n### Før cache-rydning\n\n1. ✅ Lav backup (download ELLER upload til server)\n2. ✅ Verificer at backup\'en er korrekt\n3. ✅ Gem backup-filen/Gist ID\'et\n4. ✅ Nu kan du trygt slette cache\n\n### Efter cache-rydning\n\n1. ✅ Åbn programmet\n2. ✅ Gendan backup (fra fil ELLER server)\n3. ✅ Genindlæs siden\n4. ✅ Log ind med dit password\n5. ✅ Verificer at alt er gendannet\n\n---\n\n## 📞 Hjælp\n\nHvis du har problemer med backup eller gendannelse:\n\n1. Tjek denne guide igen\n2. Tjek browser console for fejl (F12 → Console)\n3. Verificer at backup-filen er korrekt\n4. Prøv at gendanne igen\n\n---\n\n## ✅ Checklist: Før cache-rydning\n\n- [ ] Lavet komplet backup (download ELLER upload)\n- [ ] Verificeret at backup\'en er korrekt\n- [ ] Gemt backup-filen/Gist ID\'et\n- [ ] Noteret login password (hvis du er usikker)\n- [ ] Noteret GitHub token (hvis du bruger server backup)\n\n---\n\n## ✅ Checklist: Efter cache-rydning\n\n- [ ] Åbnet programmet\n- [ ] Gendannet backup (fra fil ELLER server)\n- [ ] Genindlæst siden\n- [ ] Logget ind med password\n- [ ] Verificeret at alle varer er gendannet\n- [ ] Verificeret at alle rapporter er gendannet\n- [ ] Verificeret at login virker\n- [ ] Verificeret at licens virker\n\n---\n\n**Husk:** Backup er din eneste sikkerhed mod data-tab. Lav backup regelmæssigt!';
+      alert('⚠️ Guide filen ikke fundet lokalt.\n\nPrøver at downloade Markdown versionen i stedet...');
+      downloadBackupGuideMarkdown();
+      return;
     }
     
     // Convert markdown to HTML for better printing
@@ -9414,8 +9416,8 @@ async function downloadBackupGuideMarkdown(){
     }
     
     if (!guideContent) {
-      // Use embedded content - same as in downloadBackupGuide
-      guideContent = '# 💾 Komplet Guide: Backup og Gendannelse af Køkkenlager Programmet\n\n...'; // Full content
+      alert('⚠️ Guide filen ikke fundet.\n\nFilen BACKUP-OG-GENDANNELSE-GUIDE.md skal ligge i samme mappe som programmet.\n\nDu kan også åbne guiden direkte hvis den er uploadet til GitHub.');
+      return;
     }
     
     const blob = new Blob([guideContent], { type: 'text/markdown' });
