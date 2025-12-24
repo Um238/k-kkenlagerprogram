@@ -642,6 +642,7 @@ a:hover{color:#45a049;text-decoration:none}
                 <option value="12">Efter 12 måneder</option>
               </select>
               <button onclick="checkAndArchiveReports()" class="secondary">📦 Arkiver nu (baseret på indstilling)</button>
+              <button onclick="fetchReportsFromServer()" style="background:#17a2b8; color:white; margin-left:8px;">☁️ Hent fra Server</button>
               <span id="archiveStatus" class="small" style="color:#666;"></span>
             </div>
           </div>
@@ -968,15 +969,6 @@ a:hover{color:#45a049;text-decoration:none}
             </div>
             <div class="settings-option-action">
               <button onclick="syncReportsFromScanner()" style="background:#4CAF50; color:white;">🔄 Synkroniser Nu</button>
-            </div>
-          </div>
-          <div class="settings-option">
-            <div class="settings-option-label">
-              <h3>☁️ Hent Rapporter fra Server</h3>
-              <p>Hent rapporter fra serveren (GitHub Gist) som er uploadet fra scanner-appen.</p>
-            </div>
-            <div class="settings-option-action">
-              <button onclick="fetchReportsFromServer()" style="background:#17a2b8; color:white;">☁️ Hent fra Server</button>
             </div>
           </div>
           <div class="settings-option">
