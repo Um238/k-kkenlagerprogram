@@ -81,7 +81,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
   </div>
   <div class="actions">
     <button class="button secondary" onclick="clearAll()" style="font-size:14px; padding:12px 18px; border-radius:8px; font-weight:600;">🗑 Ryd alt</button>
-    <button class="button secondary" onclick="scanVarelagerQR()" style="font-size:14px; padding:12px 18px; background:#4CAF50; color:white; border-radius:8px; font-weight:600; box-shadow:0 2px 4px rgba(0,0,0,0.2);">📥 Scan QR-kode</button>
     <button class="button secondary" onclick="fetchVarelagerFromServer()" style="font-size:14px; padding:12px 18px; background:#17a2b8; color:white; border-radius:8px; font-weight:600; box-shadow:0 2px 4px rgba(0,0,0,0.2);">☁️ Hent varelager fra server</button>
     <button class="button secondary" onclick="uploadReportsToServer()" style="font-size:14px; padding:12px 18px; background:#28a745; color:white; border-radius:8px; font-weight:600; box-shadow:0 2px 4px rgba(0,0,0,0.2);">☁️ Upload til server</button>
     <button class="button" onclick="finishSession()" style="font-size:16px; padding:14px 24px; border-radius:8px; font-weight:700; box-shadow:0 3px 6px rgba(0,0,0,0.3);">✅ Afslut optælling</button>
@@ -944,37 +943,54 @@ function finishSession(){
       const antal = Number(item.count) || 0;
       if (antal <= 0) return; // Skip items with zero count
       
-      // Ensure all required fields are present
-      const pris = Number(v.pris) || 0;
+      // Try to get fresh data from allItems if available (in case varelager was updated)
+      let freshItem = null;
+      if (v.id) {
+        freshItem = allItems.find(i => i.id === v.id);
+      }
+      
+      // Use fresh data if available, otherwise use stored data
+      const itemData = freshItem || v;
+      
+      // Ensure all required fields are present - get from fresh item or stored item
+      const navn = itemData.navn || v.navn || 'Ukendt vare';
+      const pris = Number(itemData.pris || v.pris || 0);
       const linjetotal = antal * pris; // Calculate line total: price * quantity
       grandTotal += linjetotal;
       
-      const placering = v.placering || 'Ikke angivet';
+      const placering = itemData.placering || v.placering || 'Ikke angivet';
       allLocations.add(placering);
       
-      // Create detail item with ALL required fields
+      // Get reol and hylle from fresh item or stored item
+      const reolNr = itemData.reolNr !== undefined ? itemData.reolNr : (v.reolNr !== undefined ? v.reolNr : null);
+      const hylleNr = itemData.hylleNr !== undefined ? itemData.hylleNr : (v.hylleNr !== undefined ? v.hylleNr : null);
+      
+      // Create detail item with ALL required fields - ALWAYS include all fields
       const detailItem = {
-        vareId: v.id || item.vare?.id || 'ukendt',
-        navn: v.navn || 'Ukendt vare',
-        maaleenhed: v.maaleenhed || 'stk',
-        pris: pris, // Price per unit
-        antal: antal, // Quantity scanned
-        linjetotal: linjetotal, // Calculated: pris * antal
+        vareId: itemData.id || v.id || 'ukendt',
+        navn: navn, // Always include name
+        maaleenhed: itemData.maaleenhed || v.maaleenhed || 'stk',
+        pris: pris, // Price per unit - always include
+        antal: antal, // Quantity scanned - always include
+        linjetotal: linjetotal, // Calculated: pris * antal - always include
         placering: placering,
-        reolNr: v.reolNr || null, // Always include, even if null
-        hylleNr: v.hylleNr || null // Always include, even if null
+        reolNr: reolNr, // Always include, even if null
+        hylleNr: hylleNr // Always include, even if null
       };
       
       details.push(detailItem);
       
       // Debug log to verify data
       console.log('Detail item created:', {
+        vareId: detailItem.vareId,
         navn: detailItem.navn,
         reolNr: detailItem.reolNr,
         hylleNr: detailItem.hylleNr,
         antal: detailItem.antal,
         pris: detailItem.pris,
-        linjetotal: detailItem.linjetotal
+        linjetotal: detailItem.linjetotal,
+        placering: detailItem.placering,
+        freshItemFound: !!freshItem
       });
     });
     

@@ -4918,9 +4918,22 @@ async function generateReportPDF(r, forView = false){
             }
             doc.rect(tableLeft, y-2, tableWidth, 4, 'F');
             
-            // Varenavn - try to show full name, wrap if necessary
+            // Varenavn - try to get from detail item first, then from masterVarelager if missing
             doc.setFont('helvetica','normal'); doc.setFontSize(9);
-            const vareTekst = String(it.navn || 'Ukendt vare');
+            let vareTekst = String(it.navn || '');
+            // If navn is missing or empty, try to get from masterVarelager
+            if(!vareTekst || vareTekst === '' || vareTekst === 'Ukendt vare'){
+              if(it.vareId){
+                const v = masterVarelager.find(m => m.id === it.vareId);
+                if(v && v.navn){
+                  vareTekst = String(v.navn);
+                }
+              }
+            }
+            // Fallback to 'Ukendt vare' if still empty
+            if(!vareTekst || vareTekst === ''){
+              vareTekst = 'Ukendt vare';
+            }
             // Try to show full name - only truncate if absolutely necessary
             let displayVareTekst = vareTekst;
             const maxWidth = headerVarenavnWidth;
@@ -4935,13 +4948,13 @@ async function generateReportPDF(r, forView = false){
             }
             doc.text(displayVareTekst, colVarenavn, y+1);
             
-            // Reol - truncate to match header width exactly
+            // Reol - always try to get from detail item first, then from masterVarelager
             let reolTekst = '-';
-            if(it.reolNr){
+            if(it.reolNr !== null && it.reolNr !== undefined && it.reolNr !== ''){
               reolTekst = String(it.reolNr);
             } else if(it.vareId){
               const v = masterVarelager.find(m => m.id === it.vareId);
-              if(v && v.reolNr){
+              if(v && (v.reolNr !== null && v.reolNr !== undefined && v.reolNr !== '')){
                 reolTekst = String(v.reolNr);
               }
             }
@@ -4952,13 +4965,13 @@ async function generateReportPDF(r, forView = false){
             }
             doc.text(reolTekst, colReol, y+1);
             
-            // Hylle - truncate to match header width exactly
+            // Hylle - always try to get from detail item first, then from masterVarelager
             let hylleTekst = '-';
-            if(it.hylleNr){
+            if(it.hylleNr !== null && it.hylleNr !== undefined && it.hylleNr !== ''){
               hylleTekst = String(it.hylleNr);
             } else if(it.vareId){
               const v = masterVarelager.find(m => m.id === it.vareId);
-              if(v && v.hylleNr){
+              if(v && (v.hylleNr !== null && v.hylleNr !== undefined && v.hylleNr !== '')){
                 hylleTekst = String(v.hylleNr);
               }
             }
@@ -4979,8 +4992,17 @@ async function generateReportPDF(r, forView = false){
             }
             doc.text(displayAntal, colAntal, y+1);
             
-            // Pris - truncate to match header width exactly
-            const prisText = (it.pris||0).toFixed(2)+' kr.';
+            // Pris - always try to get from detail item first, then from masterVarelager if missing
+            let prisValue = it.pris;
+            if(!prisValue || prisValue === 0){
+              if(it.vareId){
+                const v = masterVarelager.find(m => m.id === it.vareId);
+                if(v && v.pris){
+                  prisValue = v.pris;
+                }
+              }
+            }
+            const prisText = (prisValue || 0).toFixed(2) + ' kr.';
             let displayPris = prisText;
             if(doc.getTextWidth(displayPris) > headerPrisWidth){
               while(doc.getTextWidth(displayPris) > headerPrisWidth && displayPris.length > 0){
