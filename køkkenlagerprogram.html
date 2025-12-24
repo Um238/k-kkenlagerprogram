@@ -966,7 +966,7 @@ a:hover{color:#45a049;text-decoration:none}
             </div>
             <div class="settings-option-action" style="display:flex; flex-direction:column; gap:10px; width:100%; margin-left:0;">
               <button onclick="window.open('BACKUP-OG-GENDANNELSE-GUIDE.md', '_blank')" style="background:#FF9800; color:white; font-weight:700; padding:12px 24px; font-size:16px; width:100%;">📖 Åbn Guide</button>
-              <a href="BACKUP-OG-GENDANNELSE-GUIDE.md" download style="background:#FF9800; color:white; font-weight:700; padding:12px 24px; font-size:16px; width:100%; text-align:center; text-decoration:none; border-radius:6px; display:block;">📄 Download Guide</a>
+              <button onclick="downloadBackupGuide()" style="background:#FF9800; color:white; font-weight:700; padding:12px 24px; font-size:16px; width:100%;">📄 Download Guide</button>
             </div>
           </div>
         </div>
@@ -6885,7 +6885,7 @@ async function uploadBackupToServer(){
     try {
       const gistsResponse = await fetch('https://api.github.com/gists', {
         headers: {
-          'Authorization': `token ${githubToken}`,
+          'Authorization': `Bearer ${githubToken}`,
           'Accept': 'application/vnd.github.v3+json'
         }
       });
@@ -6906,9 +6906,6 @@ async function uploadBackupToServer(){
       console.warn('Could not check for existing gists:', err);
     }
     
-    // Show loading
-    alert('⏳ Uploader backup til server...\n\nDette kan tage et øjeblik.');
-    
     // Prepare gist data
     const dateStr = new Date().toISOString().split('T')[0];
     const gistData = {
@@ -6917,12 +6914,19 @@ async function uploadBackupToServer(){
       files: {}
     };
     
+    // Show loading message
+    const loadingMsg = document.createElement('div');
+    loadingMsg.id = 'backupUploadLoading';
+    loadingMsg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:10000;text-align:center;';
+    loadingMsg.innerHTML = '<p style="margin:0;font-size:16px;">⏳ Uploader backup til server...</p><p style="margin:10px 0 0 0;font-size:12px;color:#666;">Dette kan tage et øjeblik</p>';
+    document.body.appendChild(loadingMsg);
+    
     // If updating existing gist, get the filename
     if (existingGistId) {
       try {
         const existingGistResponse = await fetch(`https://api.github.com/gists/${existingGistId}`, {
           headers: {
-            'Authorization': `token ${githubToken}`,
+            'Authorization': `Bearer ${githubToken}`,
             'Accept': 'application/vnd.github.v3+json'
           }
         });
@@ -6960,7 +6964,7 @@ async function uploadBackupToServer(){
     const response = await fetch(url, {
       method: method,
       headers: {
-        'Authorization': `token ${githubToken}`,
+        'Authorization': `Bearer ${githubToken}`,
         'Content-Type': 'application/json',
         'Accept': 'application/vnd.github.v3+json'
       },
@@ -6968,8 +6972,15 @@ async function uploadBackupToServer(){
     });
     
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      const errorText = await response.text();
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { message: errorText || `HTTP ${response.status}: ${response.statusText}` };
+      }
+      console.error('GitHub API error:', response.status, errorData);
+      throw new Error(errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`);
     }
     
     const gist = await response.json();
@@ -6977,6 +6988,13 @@ async function uploadBackupToServer(){
     const gistId = gist.id;
     
     const updateText = existingGistId ? 'opdateret' : 'uploadet';
+    
+    // Remove loading message
+    const loadingElement = document.getElementById('backupUploadLoading');
+    if (loadingElement) {
+      loadingElement.remove();
+    }
+    
     alert(`✅ Backup ${updateText} til server!\n\n` +
       `📦 Data uploadet:\n` +
       `• ${completeBackup.masterVarelager.length} varer\n` +
@@ -6988,6 +7006,13 @@ async function uploadBackupToServer(){
     
   } catch(err) {
     console.error('Error uploading backup:', err);
+    
+    // Remove loading message on error
+    const loadingElement = document.getElementById('backupUploadLoading');
+    if (loadingElement) {
+      loadingElement.remove();
+    }
+    
     if (err.message.includes('401') || err.message.includes('Bad credentials')) {
       localStorage.removeItem('github_gist_token');
       alert('❌ Ugyldig GitHub token.\n\nToken er blevet slettet. Prøv igen og indtast en ny token.');
@@ -7315,6 +7340,41 @@ function checkForManualCountingData(){
 }
 
 /* Import manual counting data from manuel-optaelling.html */
+/* Download Backup Guide */
+function downloadBackupGuide(){
+  try {
+    // Try to fetch the file
+    fetch('BACKUP-OG-GENDANNELSE-GUIDE.md')
+      .then(response => {
+        if(!response.ok) {
+          throw new Error('Filen blev ikke fundet');
+        }
+        return response.text();
+      })
+      .then(markdown => {
+        // Create a blob and download
+        const blob = new Blob([markdown], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'BACKUP-OG-GENDANNELSE-GUIDE.md';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        alert('✅ Guide downloadet!\n\n📄 Filen er gemt i din Downloads-mappe.\n\n💡 Du kan nu åbne filen med en tekst-editor eller Markdown-viewer.');
+      })
+      .catch(err => {
+        console.error('Error downloading guide:', err);
+        alert('❌ Kunne ikke downloade guiden.\n\nFejl: ' + err.message + '\n\nPrøv at:\n1. Tjek om filen BACKUP-OG-GENDANNELSE-GUIDE.md findes i samme mappe\n2. Genindlæs siden (Ctrl+F5)');
+      });
+  } catch(err) {
+    console.error('Error in downloadBackupGuide:', err);
+    alert('❌ Fejl ved download: ' + err.message);
+  }
+}
+
 /* Download Manuel Optælling file directly */
 function downloadManuelOptaeling(){
   try {
