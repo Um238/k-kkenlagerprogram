@@ -479,7 +479,9 @@ function handleScannedBarcode(barcode, quantity = 1){
           navn: 'Ukendt vare (' + barcode + ')',
           placering: 'Ikke angivet',
           maaleenhed: 'stk',
-          pris: 0
+          pris: 0,
+          reolNr: null, // Explicitly set to null
+          hylleNr: null // Explicitly set to null
         },
         count: 0
       };
@@ -934,28 +936,38 @@ function finishSession(){
       const antal = Number(item.count) || 0;
       if (antal <= 0) return; // Skip items with zero count
       
+      // Ensure all required fields are present
       const pris = Number(v.pris) || 0;
-      const linjetotal = antal * pris;
+      const linjetotal = antal * pris; // Calculate line total: price * quantity
       grandTotal += linjetotal;
       
       const placering = v.placering || 'Ikke angivet';
       allLocations.add(placering);
       
+      // Create detail item with ALL required fields
       const detailItem = {
-        vareId: v.id,
-        navn: v.navn || 'Ukendt',
+        vareId: v.id || item.vare?.id || 'ukendt',
+        navn: v.navn || 'Ukendt vare',
         maaleenhed: v.maaleenhed || 'stk',
-        pris: pris,
-        antal: antal,
-        linjetotal: linjetotal,
-        placering: placering
+        pris: pris, // Price per unit
+        antal: antal, // Quantity scanned
+        linjetotal: linjetotal, // Calculated: pris * antal
+        placering: placering,
+        reolNr: v.reolNr || null, // Always include, even if null
+        hylleNr: v.hylleNr || null // Always include, even if null
       };
       
-      // Add reol and hylle if they exist
-      if (v.reolNr) detailItem.reolNr = v.reolNr;
-      if (v.hylleNr) detailItem.hylleNr = v.hylleNr;
-      
       details.push(detailItem);
+      
+      // Debug log to verify data
+      console.log('Detail item created:', {
+        navn: detailItem.navn,
+        reolNr: detailItem.reolNr,
+        hylleNr: detailItem.hylleNr,
+        antal: detailItem.antal,
+        pris: detailItem.pris,
+        linjetotal: detailItem.linjetotal
+      });
     });
     
     // Generate unique report name: OPTA-000004 format
