@@ -7747,8 +7747,27 @@ async function fetchReportsFromServer(){
       return;
     }
     
-    // Show list in modal
-    showServerReportsModal('list', scannerGists, githubToken);
+    // Automatically fetch the most recent report (since only one counting session at a time)
+    const mostRecentGist = scannerGists[0];
+    
+    // Check if it's already imported
+    if (mostRecentGist.alreadyImported && mostRecentGist.importedCount === mostRecentGist.reportCount) {
+      hideServerReportsModal();
+      alert('✅ Den seneste rapport er allerede importeret!\n\n📋 Rapport: ' + mostRecentGist.reportNames);
+      return;
+    }
+    
+    // Automatically import the most recent report
+    try {
+      await selectServerReport(mostRecentGist.id, githubToken);
+      hideServerReportsModal();
+      
+      const reportName = mostRecentGist.reportNames || 'Ukendt';
+      alert(`✅ Seneste rapport hentet!\n\n📋 Rapport: ${reportName}\n\n💡 Rapporten er nu tilgængelig under "Rapporter" fanen.`);
+    } catch(err) {
+      hideServerReportsModal();
+      throw err;
+    }
     
   } catch(err) {
     console.error('Fejl ved hentning fra server:', err);

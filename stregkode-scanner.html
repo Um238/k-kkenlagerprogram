@@ -1245,7 +1245,7 @@ async function uploadReportsToServer(){
       return;
     }
     
-    // Filter only scanner reports
+    // Filter only scanner reports and get the MOST RECENT one only
     const scannerReports = data.reports.filter(r => 
       r.handling && (r.handling.startsWith('OPTA-') || r.handling.startsWith('Stregkode scanner'))
     );
@@ -1254,6 +1254,13 @@ async function uploadReportsToServer(){
       alert('⚠️ Ingen scanner rapporter at uploade.\n\nAfslut en optælling først.');
       return;
     }
+    
+    // Sort by timestamp (newest first) and only upload the MOST RECENT report
+    scannerReports.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    const mostRecentReport = scannerReports[0];
+    
+    // Only upload the most recent report (since you can only have one counting session at a time)
+    const reportsToUpload = [mostRecentReport];
     
     // Get GitHub token from localStorage or prompt
     let githubToken = localStorage.getItem('github_gist_token');
@@ -1276,9 +1283,9 @@ async function uploadReportsToServer(){
       localStorage.setItem('github_gist_token', githubToken);
     }
     
-    // Create export data
+    // Create export data - only include the most recent report
     const exportData = {
-      reports: scannerReports,
+      reports: reportsToUpload,
       sessionCounter: data.sessionCounter || 0,
       exportedAt: Date.now(),
       version: '1.0',
@@ -1287,21 +1294,89 @@ async function uploadReportsToServer(){
     };
     
     // Show loading
-    updateStatus('Uploader rapporter til server...', 'scanning');
+    updateStatus('Uploader seneste rapport til server...', 'scanning');
     
-    // Upload to GitHub Gist
-    const gistData = {
-      description: `Scanner rapporter - ${scannerReports.length} rapport(er) - ${new Date().toLocaleString('da-DK')}`,
-      public: false, // Private gist
-      files: {
-        [`scanner-reports-${Date.now()}.json`]: {
-          content: JSON.stringify(exportData, null, 2)
+    // First, try to find existing scanner reports gist to update it
+    let existingGistId = null;
+    try {
+      const gistsResponse = await fetch('https://api.github.com/gists', {
+        headers: {
+          'Authorization': `token ${githubToken}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+      
+      if (gistsResponse.ok) {
+        const allGists = await gistsResponse.json();
+        // Find the most recent scanner reports gist
+        const scannerGists = allGists.filter(gist => 
+          gist.description && gist.description.includes('Scanner rapporter')
+        );
+        
+        if (scannerGists.length > 0) {
+          // Sort by date (newest first) and use the newest one
+          scannerGists.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          existingGistId = scannerGists[0].id;
+          console.log('Found existing scanner reports gist to update:', existingGistId);
         }
       }
+    } catch (err) {
+      console.warn('Could not check for existing gists, will create new one:', err);
+    }
+    
+    // Prepare gist data
+    const gistData = {
+      description: `Scanner rapporter - ${reportsToUpload.length} rapport - ${new Date().toLocaleString('da-DK')}`,
+      public: false, // Private gist
+      files: {}
     };
     
-    const response = await fetch('https://api.github.com/gists', {
-      method: 'POST',
+    // If updating existing gist, get the filename from the existing gist
+    if (existingGistId) {
+      try {
+        const existingGistResponse = await fetch(`https://api.github.com/gists/${existingGistId}`, {
+          headers: {
+            'Authorization': `token ${githubToken}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+        
+        if (existingGistResponse.ok) {
+          const existingGist = await existingGistResponse.json();
+          const existingFiles = Object.keys(existingGist.files || {});
+          if (existingFiles.length > 0) {
+            // Use the same filename as the existing gist
+            gistData.files[existingFiles[0]] = {
+              content: JSON.stringify(exportData, null, 2)
+            };
+          } else {
+            // Fallback to new filename
+            gistData.files[`scanner-reports.json`] = {
+              content: JSON.stringify(exportData, null, 2)
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('Could not get existing gist details, using new filename:', err);
+        gistData.files[`scanner-reports.json`] = {
+          content: JSON.stringify(exportData, null, 2)
+        };
+      }
+    } else {
+      // New gist - use timestamp filename
+      gistData.files[`scanner-reports-${Date.now()}.json`] = {
+        content: JSON.stringify(exportData, null, 2)
+      };
+    }
+    
+    // Upload or update GitHub Gist
+    const url = existingGistId 
+      ? `https://api.github.com/gists/${existingGistId}` 
+      : 'https://api.github.com/gists';
+    const method = existingGistId ? 'PATCH' : 'POST';
+    
+    const response = await fetch(url, {
+      method: method,
       headers: {
         'Authorization': `token ${githubToken}`,
         'Content-Type': 'application/json',
@@ -1325,20 +1400,20 @@ async function uploadReportsToServer(){
       id: gistId,
       url: gistUrl,
       uploadedAt: Date.now(),
-      reportCount: scannerReports.length
+      reportCount: reportsToUpload.length
     });
     localStorage.setItem(storageKey, JSON.stringify(data));
     
-    const reportNames = scannerReports.map(r => r.handling || 'Ukendt').join(', ');
+    const reportName = mostRecentReport.handling || 'Ukendt';
     
-    updateStatus(`✅ ${scannerReports.length} rapport(er) uploadet til server!`, 'success');
+    updateStatus(`✅ Seneste rapport uploadet til server!`, 'success');
     
-    alert(`✅ Rapporter uploadet!\n\n📋 Rapporter: ${reportNames}\n\n` +
+    const updateText = existingGistId ? 'opdateret' : 'uploadet';
+    alert(`✅ Seneste rapport ${updateText}!\n\n📋 Rapport: ${reportName}\n\n` +
       `🔗 Gist URL: ${gistUrl}\n\n` +
       `💡 I hovedprogrammet:\n` +
-      `1. Gå til "Opsætning" → "Import data"\n` +
-      `2. Klik "☁️ Hent fra server"\n` +
-      `3. Rapporterne hentes automatisk!\n\n` +
+      `1. Gå til "Rapporter" → "☁️ Hent fra Server"\n` +
+      `2. Den seneste rapport hentes automatisk!\n\n` +
       `🔑 Gist ID: ${gistId.substring(0, 20)}...`);
     
   } catch(err) {
@@ -1479,28 +1554,15 @@ async function fetchVarelagerFromServer(){
       return;
     }
     
-    // Sort by date (newest first)
+    // Sort by date (newest first) and automatically use the newest
     varelagerGists.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     
-    // If multiple, let user choose, otherwise use the newest
+    // Always use the newest varelager - no need to ask user
     let selectedGist = varelagerGists[0];
     
+    // If there are multiple old versions, inform user but use newest
     if (varelagerGists.length > 1) {
-      const gistList = varelagerGists.map((gist, idx) => {
-        const date = new Date(gist.created_at).toLocaleString('da-DK');
-        const files = Object.keys(gist.files || {});
-        const fileCount = files.length;
-        return `${idx + 1}. ${date} (${fileCount} fil(er))`;
-      }).join('\n');
-      
-      const choice = prompt(`📋 Fundet ${varelagerGists.length} varelager skabelon(er):\n\n${gistList}\n\nIndtast nummer (1-${varelagerGists.length}) for at vælge, eller tryk OK for at bruge den nyeste:`);
-      
-      if (choice && choice.trim()) {
-        const num = parseInt(choice.trim());
-        if (num >= 1 && num <= varelagerGists.length) {
-          selectedGist = varelagerGists[num - 1];
-        }
-      }
+      console.log(`Found ${varelagerGists.length} varelager versions, using newest from ${new Date(selectedGist.created_at).toLocaleString('da-DK')}`);
     }
     
     // Fetch the selected gist content
