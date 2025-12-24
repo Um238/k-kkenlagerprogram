@@ -821,13 +821,15 @@ a:hover{color:#45a049;text-decoration:none}
         
         <!-- View All Items Section -->
         <div id="master-section-view" class="settings-section">
-          <h3 style="margin-top:0; margin-bottom:16px;">Søg & Se hele Varelager</h3>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="margin:0;">Søg & Se hele Varelager</h3>
+            <button onclick="uploadVarelagerToServer()" style="background:#28a745; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:600; white-space:nowrap; font-size:14px; box-shadow:0 2px 4px rgba(0,0,0,0.2);">☁️ Upload Varelager til Server</button>
+          </div>
           <div style="display:flex; gap:12px; align-items:center; justify-content:flex-end; flex-wrap:wrap; margin-bottom:12px;">
             <label class="small">Søg vare:</label>
             <input type="text" id="masterSearchInput" placeholder="Søg efter varenavn..." style="width:200px; padding:6px; border:1px solid #ddd; border-radius:4px;" oninput="renderMasterTable()" />
             <label class="small">Filtrer placering:</label>
             <select id="filterPlacement" style="width:auto; min-width:120px; max-width:250px;" onchange="renderMasterTable()"><option value="">Alle</option></select>
-            <button onclick="uploadVarelagerToServer()" style="background:#28a745; color:white; padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-weight:600; white-space:nowrap;">☁️ Upload Varelager til Server</button>
             <span class="small" id="masterTableInfo" style="color:#666;"></span>
           </div>
 
