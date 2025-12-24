@@ -470,11 +470,25 @@ function cancelQuantityInput(){
 
 function handleScannedBarcode(barcode, quantity = 1){
   // Try to find item in varelager - match on both id and stregkode
-  const item = allItems.find(v => 
-    v.id === barcode || 
-    v.stregkode === barcode ||
-    (v.stregkode && String(v.stregkode).trim() === String(barcode).trim())
-  );
+  // Also try case-insensitive matching and partial matching
+  const barcodeStr = String(barcode).trim();
+  const item = allItems.find(v => {
+    const vId = String(v.id || '').trim();
+    const vStregkode = String(v.stregkode || '').trim();
+    
+    // Exact matches
+    if (vId === barcodeStr || vStregkode === barcodeStr) return true;
+    
+    // Case-insensitive matches
+    if (vId.toLowerCase() === barcodeStr.toLowerCase() || 
+        vStregkode.toLowerCase() === barcodeStr.toLowerCase()) return true;
+    
+    // Also check if barcode is part of id or stregkode (for partial matches)
+    if (vId.includes(barcodeStr) || vStregkode.includes(barcodeStr)) return true;
+    if (barcodeStr.includes(vId) || barcodeStr.includes(vStregkode)) return true;
+    
+    return false;
+  });
   
   if (!item) {
     // Item not found - still add it but with limited info
@@ -963,32 +977,68 @@ function finishSession(){
       if (antal <= 0) return; // Skip items with zero count
       
       // Try to get fresh data from allItems if available (in case varelager was updated)
-      // Match on both id and stregkode to find the item
+      // Match on both id and stregkode to find the item - use improved matching
       let freshItem = null;
       if (v.id) {
-        freshItem = allItems.find(i => 
-          i.id === v.id || 
-          (i.stregkode && i.stregkode === v.id) ||
-          (v.stregkode && i.stregkode === v.stregkode) ||
-          (v.id && i.id === v.id)
-        );
+        const vIdStr = String(v.id).trim();
+        const vStregkodeStr = String(v.stregkode || '').trim();
+        
+        freshItem = allItems.find(i => {
+          const iIdStr = String(i.id || '').trim();
+          const iStregkodeStr = String(i.stregkode || '').trim();
+          
+          // Exact matches
+          if (iIdStr === vIdStr || iStregkodeStr === vIdStr) return true;
+          if (iIdStr === vStregkodeStr || iStregkodeStr === vStregkodeStr) return true;
+          
+          // Case-insensitive matches
+          if (iIdStr.toLowerCase() === vIdStr.toLowerCase() || 
+              iStregkodeStr.toLowerCase() === vIdStr.toLowerCase()) return true;
+          if (iIdStr.toLowerCase() === vStregkodeStr.toLowerCase() || 
+              iStregkodeStr.toLowerCase() === vStregkodeStr.toLowerCase()) return true;
+          
+          return false;
+        });
+      }
+      
+      // If still not found, try to find by the scanned barcode (which might be stored in v.id)
+      if (!freshItem && v.id) {
+        const scannedBarcode = String(v.id).trim();
+        freshItem = allItems.find(i => {
+          const iIdStr = String(i.id || '').trim();
+          const iStregkodeStr = String(i.stregkode || '').trim();
+          
+          // Try all combinations
+          if (iIdStr === scannedBarcode || iStregkodeStr === scannedBarcode) return true;
+          if (iIdStr.toLowerCase() === scannedBarcode.toLowerCase() || 
+              iStregkodeStr.toLowerCase() === scannedBarcode.toLowerCase()) return true;
+          if (iIdStr.includes(scannedBarcode) || iStregkodeStr.includes(scannedBarcode)) return true;
+          if (scannedBarcode.includes(iIdStr) || scannedBarcode.includes(iStregkodeStr)) return true;
+          
+          return false;
+        });
       }
       
       // Use fresh data if available, otherwise use stored data
       const itemData = freshItem || v;
       
-      // Ensure all required fields are present - get from fresh item or stored item
-      const navn = itemData.navn || v.navn || 'Ukendt vare';
-      const pris = Number(itemData.pris || v.pris || 0);
+      // Ensure all required fields are present - ALWAYS get from fresh item if found
+      // If fresh item found, use it completely, otherwise use stored data
+      const navn = freshItem ? (freshItem.navn || 'Ukendt vare') : (itemData.navn || v.navn || 'Ukendt vare');
+      const pris = freshItem ? Number(freshItem.pris || 0) : Number(itemData.pris || v.pris || 0);
       const linjetotal = antal * pris; // Calculate line total: price * quantity
       grandTotal += linjetotal;
       
-      const placering = itemData.placering || v.placering || 'Ikke angivet';
+      const placering = freshItem ? (freshItem.placering || 'Ikke angivet') : (itemData.placering || v.placering || 'Ikke angivet');
       allLocations.add(placering);
       
-      // Get reol and hylle from fresh item or stored item
-      const reolNr = itemData.reolNr !== undefined ? itemData.reolNr : (v.reolNr !== undefined ? v.reolNr : null);
-      const hylleNr = itemData.hylleNr !== undefined ? itemData.hylleNr : (v.hylleNr !== undefined ? v.hylleNr : null);
+      // Get reol and hylle - prioritize fresh item data
+      const reolNr = freshItem 
+        ? (freshItem.reolNr !== undefined && freshItem.reolNr !== null && freshItem.reolNr !== '' ? freshItem.reolNr : null)
+        : (itemData.reolNr !== undefined ? itemData.reolNr : (v.reolNr !== undefined ? v.reolNr : null));
+      const hylleNr = freshItem 
+        ? (freshItem.hylleNr !== undefined && freshItem.hylleNr !== null && freshItem.hylleNr !== '' ? freshItem.hylleNr : null)
+        : (itemData.hylleNr !== undefined ? itemData.hylleNr : (v.hylleNr !== undefined ? v.hylleNr : null));
       
       // Create detail item with ALL required fields - ALWAYS include all fields
       const detailItem = {

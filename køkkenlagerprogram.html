@@ -8528,19 +8528,87 @@ async function uploadVarelagerToServer(){
       statusEl.style.color = '#0078D4';
     }
     
-    // Upload to GitHub Gist
-    const gistData = {
-      description: `Varelager skabelon - ${masterVarelager.length} varer - ${new Date().toLocaleString('da-DK')}`,
-      public: false, // Private gist
-      files: {
-        [`varelager-${Date.now()}.json`]: {
-          content: JSON.stringify(varelagerData, null, 2)
+    // First, try to find existing varelager gist to update it
+    let existingGistId = null;
+    try {
+      const gistsResponse = await fetch('https://api.github.com/gists', {
+        headers: {
+          'Authorization': `token ${githubToken}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+      
+      if (gistsResponse.ok) {
+        const allGists = await gistsResponse.json();
+        // Find the most recent varelager gist
+        const varelagerGists = allGists.filter(gist => 
+          gist.description && gist.description.includes('Varelager skabelon')
+        );
+        
+        if (varelagerGists.length > 0) {
+          // Sort by date (newest first) and use the newest one
+          varelagerGists.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          existingGistId = varelagerGists[0].id;
+          console.log('Found existing varelager gist to update:', existingGistId);
         }
       }
+    } catch (err) {
+      console.warn('Could not check for existing gists, will create new one:', err);
+    }
+    
+    // Prepare gist data
+    const gistData = {
+      description: `Varelager skabelon - ${validatedVarelager.length} varer - ${new Date().toLocaleString('da-DK')}`,
+      public: false, // Private gist
+      files: {}
     };
     
-    const response = await fetch('https://api.github.com/gists', {
-      method: 'POST',
+    // If updating existing gist, get the filename from the existing gist
+    if (existingGistId) {
+      try {
+        const existingGistResponse = await fetch(`https://api.github.com/gists/${existingGistId}`, {
+          headers: {
+            'Authorization': `token ${githubToken}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+        
+        if (existingGistResponse.ok) {
+          const existingGist = await existingGistResponse.json();
+          const existingFiles = Object.keys(existingGist.files || {});
+          if (existingFiles.length > 0) {
+            // Use the same filename as the existing gist
+            gistData.files[existingFiles[0]] = {
+              content: JSON.stringify(varelagerData, null, 2)
+            };
+          } else {
+            // Fallback to new filename
+            gistData.files[`varelager.json`] = {
+              content: JSON.stringify(varelagerData, null, 2)
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('Could not get existing gist details, using new filename:', err);
+        gistData.files[`varelager.json`] = {
+          content: JSON.stringify(varelagerData, null, 2)
+        };
+      }
+    } else {
+      // New gist - use timestamp filename
+      gistData.files[`varelager-${Date.now()}.json`] = {
+        content: JSON.stringify(varelagerData, null, 2)
+      };
+    }
+    
+    // Upload or update GitHub Gist
+    const url = existingGistId 
+      ? `https://api.github.com/gists/${existingGistId}` 
+      : 'https://api.github.com/gists';
+    const method = existingGistId ? 'PATCH' : 'POST';
+    
+    const response = await fetch(url, {
+      method: method,
       headers: {
         'Authorization': `token ${githubToken}`,
         'Content-Type': 'application/json',
