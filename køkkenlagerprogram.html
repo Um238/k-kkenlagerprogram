@@ -934,9 +934,9 @@ a:hover{color:#45a049;text-decoration:none}
               <p class="small" style="color:#666; margin-top:5px;">💡 Vælg den backup fil du downloadede tidligere (køkkenlager-komplet-backup-YYYY-MM-DD.json)</p>
               <p class="small" style="color:#17a2b8; margin-top:5px;">☁️ Eller hent backup direkte fra serveren (anbefalet!)</p>
             </div>
-            <div class="settings-option-action">
-              <button onclick="document.getElementById('backupFileInput')?.click()" style="background:#28a745; color:white; font-weight:700; padding:12px 24px; font-size:16px;">📤 Gendan fra Fil</button>
-              <button onclick="fetchBackupFromServer()" style="background:#17a2b8; color:white; font-weight:700; padding:12px 24px; font-size:16px; margin-left:8px;">☁️ Hent fra Server</button>
+            <div class="settings-option-action" style="display:flex; flex-direction:column; gap:10px; width:100%;">
+              <button onclick="document.getElementById('backupFileInput')?.click()" style="background:#28a745; color:white; font-weight:700; padding:12px 24px; font-size:16px; width:100%;">📤 Gendan fra Fil</button>
+              <button onclick="fetchBackupFromServer()" style="background:#17a2b8; color:white; font-weight:700; padding:12px 24px; font-size:16px; width:100%;">☁️ Hent fra Server</button>
               <input type="file" id="backupFileInput" accept=".json" style="display:none;" onchange="if(this.files[0]) importAllBackupFromFile(this.files[0])" />
             </div>
           </div>
