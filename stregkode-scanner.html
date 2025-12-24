@@ -468,11 +468,57 @@ function cancelQuantityInput(){
   }
 }
 
+// Normalize barcode string - remove special characters and normalize
+function normalizeBarcode(str) {
+  if (!str) return '';
+  // Convert to string, trim, and normalize
+  let normalized = String(str).trim();
+  // Remove common problematic characters that might be misread
+  normalized = normalized.replace(/[~$#\\\/]/g, '');
+  // Normalize similar-looking characters
+  normalized = normalized.replace(/[0O]/g, '0'); // Normalize O to 0
+  normalized = normalized.replace(/[1Il]/g, '1'); // Normalize I and l to 1
+  return normalized.toLowerCase();
+}
+
+// Calculate similarity between two strings (simple Levenshtein-like)
+function calculateSimilarity(str1, str2) {
+  if (!str1 || !str2) return 0;
+  const s1 = normalizeBarcode(str1);
+  const s2 = normalizeBarcode(str2);
+  
+  if (s1 === s2) return 1.0;
+  
+  // Check if one contains the other (partial match)
+  if (s1.includes(s2) || s2.includes(s1)) return 0.8;
+  
+  // Calculate character overlap
+  const longer = s1.length > s2.length ? s1 : s2;
+  const shorter = s1.length > s2.length ? s2 : s1;
+  
+  if (longer.length === 0) return 1.0;
+  
+  // Count matching characters in order
+  let matches = 0;
+  let shortIndex = 0;
+  for (let i = 0; i < longer.length && shortIndex < shorter.length; i++) {
+    if (longer[i] === shorter[shortIndex]) {
+      matches++;
+      shortIndex++;
+    }
+  }
+  
+  return matches / longer.length;
+}
+
 function handleScannedBarcode(barcode, quantity = 1){
   // Try to find item in varelager - match on both id and stregkode
-  // Also try case-insensitive matching and partial matching
+  // Also try case-insensitive matching, partial matching, and fuzzy matching
   const barcodeStr = String(barcode).trim();
-  const item = allItems.find(v => {
+  const barcodeNormalized = normalizeBarcode(barcode);
+  
+  // First try exact and case-insensitive matches
+  let item = allItems.find(v => {
     const vId = String(v.id || '').trim();
     const vStregkode = String(v.stregkode || '').trim();
     
@@ -483,15 +529,75 @@ function handleScannedBarcode(barcode, quantity = 1){
     if (vId.toLowerCase() === barcodeStr.toLowerCase() || 
         vStregkode.toLowerCase() === barcodeStr.toLowerCase()) return true;
     
-    // Also check if barcode is part of id or stregkode (for partial matches)
-    if (vId.includes(barcodeStr) || vStregkode.includes(barcodeStr)) return true;
-    if (barcodeStr.includes(vId) || barcodeStr.includes(vStregkode)) return true;
+    // Normalized matches (handles special characters)
+    const vIdNorm = normalizeBarcode(vId);
+    const vStregkodeNorm = normalizeBarcode(vStregkode);
+    if (vIdNorm === barcodeNormalized || vStregkodeNorm === barcodeNormalized) return true;
+    
+    // Partial matches (one contains the other)
+    if (vIdNorm.includes(barcodeNormalized) || barcodeNormalized.includes(vIdNorm)) return true;
+    if (vStregkodeNorm.includes(barcodeNormalized) || barcodeNormalized.includes(vStregkodeNorm)) return true;
     
     return false;
   });
   
+  // If not found, try fuzzy matching (similarity-based)
+  if (!item && barcodeNormalized.length >= 5) { // Only fuzzy match if barcode is reasonably long
+    let bestMatch = null;
+    let bestSimilarity = 0.6; // Minimum similarity threshold
+    
+    for (const v of allItems) {
+      const vId = String(v.id || '').trim();
+      const vStregkode = String(v.stregkode || '').trim();
+      
+      const similarity1 = calculateSimilarity(barcodeStr, vId);
+      const similarity2 = calculateSimilarity(barcodeStr, vStregkode);
+      const maxSimilarity = Math.max(similarity1, similarity2);
+      
+      if (maxSimilarity > bestSimilarity) {
+        bestSimilarity = maxSimilarity;
+        bestMatch = v;
+      }
+    }
+    
+    if (bestMatch) {
+      console.log(`Fuzzy match found: "${barcodeStr}" matched "${bestMatch.id}" or "${bestMatch.stregkode}" with similarity ${(bestSimilarity * 100).toFixed(1)}%`);
+      item = bestMatch;
+    }
+  }
+  
   if (!item) {
-    // Item not found - still add it but with limited info
+    // Item not found - try to find similar items for debugging
+    const similarItems = [];
+    const barcodeNormalized = normalizeBarcode(barcode);
+    
+    // Find items with similar IDs or stregkoder
+    for (const v of allItems) {
+      const vId = String(v.id || '').trim();
+      const vStregkode = String(v.stregkode || '').trim();
+      const vIdNorm = normalizeBarcode(vId);
+      const vStregkodeNorm = normalizeBarcode(vStregkode);
+      
+      // Check if any part matches (at least 5 characters)
+      if (barcodeNormalized.length >= 5) {
+        if (vIdNorm.includes(barcodeNormalized.substring(0, 5)) || 
+            barcodeNormalized.includes(vIdNorm.substring(0, Math.min(5, vIdNorm.length))) ||
+            vStregkodeNorm.includes(barcodeNormalized.substring(0, 5)) || 
+            barcodeNormalized.includes(vStregkodeNorm.substring(0, Math.min(5, vStregkodeNorm.length)))) {
+          similarItems.push({ id: vId, stregkode: vStregkode, navn: v.navn });
+        }
+      }
+    }
+    
+    // Log for debugging
+    console.warn('Item not found:', {
+      scanned: barcode,
+      normalized: barcodeNormalized,
+      similarItems: similarItems.slice(0, 5), // Show first 5 similar items
+      totalItems: allItems.length
+    });
+    
+    // Still add it but with limited info
     if (!scannedItems[barcode]) {
       scannedItems[barcode] = {
         vare: {
@@ -508,7 +614,20 @@ function handleScannedBarcode(barcode, quantity = 1){
     }
     
     scannedItems[barcode].count += quantity;
-    updateStatus('⚠️ Vare ikke fundet: ' + barcode + '\n(Tilføjet: ' + quantity + ')', 'error');
+    
+    // Show more helpful error message
+    let errorMsg = '⚠️ Vare ikke fundet: ' + barcode + '\n(Tilføjet: ' + quantity + ')';
+    if (similarItems.length > 0) {
+      errorMsg += '\n\n💡 Fundet lignende varer:\n';
+      similarItems.slice(0, 3).forEach(s => {
+        errorMsg += `- ${s.navn} (ID: ${s.id}${s.stregkode ? ', Stregkode: ' + s.stregkode : ''})\n`;
+      });
+      errorMsg += '\nTjek om stregkoden er korrekt læst.';
+    } else {
+      errorMsg += '\n\n💡 Tjek:\n1. Er stregkoden korrekt læst?\n2. Findes varen i varelageret?\n3. Er stregkoden tilføjet til varen?';
+    }
+    
+    updateStatus(errorMsg, 'error');
     
     updateStats();
     renderList();
