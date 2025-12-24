@@ -80,10 +80,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
     <div class="empty">Ingen varer scannet endnu</div>
   </div>
   <div class="actions">
-    <button class="button secondary" onclick="clearAll()" style="font-size:14px; padding:12px 18px; border-radius:8px; font-weight:600;">🗑 Ryd alt</button>
-    <button class="button secondary" onclick="fetchVarelagerFromServer()" style="font-size:14px; padding:12px 18px; background:#17a2b8; color:white; border-radius:8px; font-weight:600; box-shadow:0 2px 4px rgba(0,0,0,0.2);">☁️ Hent varelager fra server</button>
-    <button class="button secondary" onclick="uploadReportsToServer()" style="font-size:14px; padding:12px 18px; background:#28a745; color:white; border-radius:8px; font-weight:600; box-shadow:0 2px 4px rgba(0,0,0,0.2);">☁️ Upload til server</button>
-    <button class="button" onclick="finishSession()" style="font-size:16px; padding:14px 24px; border-radius:8px; font-weight:700; box-shadow:0 3px 6px rgba(0,0,0,0.3);">✅ Afslut optælling</button>
+    <button class="button secondary" onclick="clearAll()" style="font-size:13px; padding:10px 16px; border-radius:6px; font-weight:600;">🗑 Ryd alt</button>
+    <button class="button secondary" onclick="fetchVarelagerFromServer()" style="font-size:13px; padding:10px 16px; background:#17a2b8; color:white; border-radius:6px; font-weight:600; box-shadow:0 2px 4px rgba(0,0,0,0.2);">☁️ Hent varelager</button>
+    <button class="button secondary" onclick="uploadReportsToServer()" style="font-size:13px; padding:10px 16px; background:#28a745; color:white; border-radius:6px; font-weight:600; box-shadow:0 2px 4px rgba(0,0,0,0.2);">☁️ Upload rapporter</button>
+    <button class="button" onclick="finishSession()" style="font-size:15px; padding:12px 20px; border-radius:6px; font-weight:700; box-shadow:0 3px 6px rgba(0,0,0,0.3);">✅ Afslut optælling</button>
   </div>
 </div>
 
@@ -498,20 +498,30 @@ function handleScannedBarcode(barcode, quantity = 1){
   }
   
   // Item found - add normally
-  // Ensure all fields are present from varelager
+  // Ensure all fields are present from varelager - explicitly get all fields
   if (!scannedItems[barcode]) {
     scannedItems[barcode] = {
       vare: {
-        id: item.id,
+        id: item.id || barcode,
         navn: item.navn || 'Ukendt vare',
         placering: item.placering || 'Ikke angivet',
         maaleenhed: item.maaleenhed || 'stk',
-        pris: item.pris || 0,
-        reolNr: item.reolNr || null,
-        hylleNr: item.hylleNr || null
+        pris: item.pris !== undefined ? Number(item.pris) : 0,
+        reolNr: item.reolNr !== undefined && item.reolNr !== null && item.reolNr !== '' ? item.reolNr : null,
+        hylleNr: item.hylleNr !== undefined && item.hylleNr !== null && item.hylleNr !== '' ? item.hylleNr : null
       },
       count: 0
     };
+    
+    // Debug log to verify all fields are captured
+    console.log('Item scanned and stored:', {
+      id: scannedItems[barcode].vare.id,
+      navn: scannedItems[barcode].vare.navn,
+      reolNr: scannedItems[barcode].vare.reolNr,
+      hylleNr: scannedItems[barcode].vare.hylleNr,
+      pris: scannedItems[barcode].vare.pris,
+      placering: scannedItems[barcode].vare.placering
+    });
   }
   
   scannedItems[barcode].count += quantity;
@@ -1486,28 +1496,64 @@ async function fetchVarelagerFromServer(){
       });
     }
     
-    // Save merged data
+    // Validate that all items have required fields
+    const validatedItems = importedData.masterVarelager.map(item => {
+      // Ensure all required fields are present
+      return {
+        id: item.id || '',
+        navn: item.navn || 'Ukendt vare',
+        placering: item.placering || 'Ikke angivet',
+        maaleenhed: item.maaleenhed || 'stk',
+        pris: item.pris || 0,
+        reolNr: item.reolNr !== undefined ? item.reolNr : null,
+        hylleNr: item.hylleNr !== undefined ? item.hylleNr : null,
+        raekkefoelge: item.raekkefoelge || null
+      };
+    });
+    
+    // Save merged data with validated items
+    existingData.masterVarelager = validatedItems;
     localStorage.setItem(storageKey, JSON.stringify(existingData));
     
     // Reload items
-    allItems = importedData.masterVarelager;
+    allItems = validatedItems;
     availableLocations = importedData.lagerLokationer || [];
     if (availableLocations.length === 0 && allItems.length > 0) {
       const uniqueLocs = [...new Set(allItems.map(item => item.placering).filter(p => p))];
       availableLocations = uniqueLocs;
     }
     
+    // Debug: Check sample items to verify all fields
+    if (allItems.length > 0) {
+      const sampleItem = allItems[0];
+      console.log('Sample item from server:', {
+        id: sampleItem.id,
+        navn: sampleItem.navn,
+        reolNr: sampleItem.reolNr,
+        hylleNr: sampleItem.hylleNr,
+        pris: sampleItem.pris,
+        placering: sampleItem.placering
+      });
+    }
+    
     const locationInfo = availableLocations.length > 0 
       ? '\n📍 Placeringer: ' + availableLocations.join(', ')
       : '';
+    
+    const itemsWithReol = allItems.filter(item => item.reolNr !== null && item.reolNr !== undefined).length;
+    const itemsWithHylle = allItems.filter(item => item.hylleNr !== null && item.hylleNr !== undefined).length;
     
     updateStatus(`✅ Varelager hentet fra server! ${allItems.length} varer${locationInfo}`, 'success');
     
     alert(`✅ Varelager hentet fra server!\n\n` +
       `📦 ${allItems.length} varer er nu tilgængelige.${locationInfo}\n\n` +
+      `📊 Validering:\n` +
+      `• Varer med reol: ${itemsWithReol}\n` +
+      `• Varer med hylle: ${itemsWithHylle}\n\n` +
       `💡 Du kan nu starte optælling!`);
     
     console.log('Varelager fetched from server:', allItems.length, 'items');
+    console.log('Items with reolNr:', itemsWithReol, 'Items with hylleNr:', itemsWithHylle);
     
   } catch(err) {
     console.error('Fejl ved hentning:', err);

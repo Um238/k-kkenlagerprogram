@@ -8479,18 +8479,47 @@ async function uploadVarelagerToServer(){
       localStorage.setItem('github_gist_token', githubToken);
     }
     
-    // Prepare varelager data for export
+    // Prepare varelager data for export - ensure all fields are included
     const mainInstallationId = getInstallationId();
+    
+    // Validate and ensure all items have all required fields
+    const validatedVarelager = masterVarelager.map(item => {
+      return {
+        id: item.id || '',
+        navn: item.navn || 'Ukendt vare',
+        placering: item.placering || 'Ikke angivet',
+        maaleenhed: item.maaleenhed || 'stk',
+        pris: item.pris !== undefined ? Number(item.pris) : 0,
+        reolNr: item.reolNr !== undefined ? item.reolNr : null,
+        hylleNr: item.hylleNr !== undefined ? item.hylleNr : null,
+        raekkefoelge: item.raekkefoelge !== undefined ? item.raekkefoelge : null,
+        stregkode: item.stregkode || item.id || ''
+      };
+    });
+    
     const varelagerData = {
-      masterVarelager: masterVarelager,
+      masterVarelager: validatedVarelager,
       lagerLokationer: lagerLokationer || [],
       mainInstallationId: mainInstallationId || null,
       exportedAt: Date.now(),
       version: '1.0',
       source: 'køkkenlagerprogram',
-      itemCount: masterVarelager.length,
+      itemCount: validatedVarelager.length,
       locationCount: (lagerLokationer || []).length
     };
+    
+    // Debug: Log sample item to verify all fields
+    if (validatedVarelager.length > 0) {
+      const sample = validatedVarelager[0];
+      console.log('Sample item being uploaded:', {
+        id: sample.id,
+        navn: sample.navn,
+        reolNr: sample.reolNr,
+        hylleNr: sample.hylleNr,
+        pris: sample.pris,
+        placering: sample.placering
+      });
+    }
     
     // Show loading
     const statusEl = document.getElementById('masterTableInfo');
