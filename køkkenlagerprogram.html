@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta name="theme-color" content="#0078D4" />
 <meta name="description" content="Lager optælling system til køkken og lager - Scan stregkoder, administrer varelager og generer rapporter" />
-<title>Lager optælling — Færdig version</title>
+<title>Lager optælling — Færdig version v4.0</title>
 <link rel="manifest" href="manifest.json" />
 <!-- QR code library for varelager sync (with fallback) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -474,7 +474,7 @@ a:hover{color:#45a049;text-decoration:none}
 
   <div style="flex:1;">
     <h1 id="firmaNavn" contenteditable="true">Indsæt dit firmanavn her</h1>
-    <p id="tagline">Lager optælling – Professionel lageroptælling</p>
+    <p id="tagline">Lager optælling – Professionel lageroptælling <span style="font-size:12px; color:rgba(255,255,255,0.8);">v4.0</span></p>
   </div>
 
   <div class="header-controls">
@@ -493,7 +493,6 @@ a:hover{color:#45a049;text-decoration:none}
   <span class="menu-item" data-target="labels" onclick="navClick(event)">🏷️ Labels</span>
   <span class="menu-item" data-target="leverandor" onclick="navClick(event)">🚚 Leverandører</span>
   <span class="menu-item" data-target="master" onclick="navClick(event)">📋 Varelager administration</span>
-  <span class="menu-item" data-target="scanner" onclick="navClick(event)">📱 Stregkode Scanner</span>
   <span class="menu-item" data-target="systemOpsaetning" onclick="navClick(event)">⚙️ Opsætning</span>
 </nav>
 
@@ -517,12 +516,6 @@ a:hover{color:#45a049;text-decoration:none}
     <div style="margin-top:14px; display:flex; gap:18px; align-items:flex-start; flex-wrap:wrap;">
       <div style="flex:1; min-width:340px;">
 
-        <div class="section-row" style="margin-top:8px;">
-          <button onclick="startScanner()" id="scannerBtn" style="background:#0078D4; color:white;">📷 Start scanner (Kamera)</button>
-          <button onclick="showManualBarcodeInput()" style="background:#2196F3; color:white;">✏️ Indtast Stregkode Manuel</button>
-          <button class="secondary" onclick="stopScanner()" id="stopScannerBtn" style="display:none;">⏹️ Stop scanner</button>
-          <span class="small">Brug kamera scanner eller indtast stregkode manuelt. Manuel metode virker på alle enheder!</span>
-        </div>
 
         <div style="margin-top:10px;">
           <button onclick="openStartModal()">▶️ Start ny optælling</button>
@@ -855,20 +848,6 @@ a:hover{color:#45a049;text-decoration:none}
     </div>
   </section>
 
-  <!-- [HTML 3.7] STREGKODE SCANNER (Integreret) -->
-  <section id="scanner" class="page hidden">
-    <div style="max-width:1200px; margin:0 auto;">
-      <h2>📱 Stregkode Scanner</h2>
-      <p style="color:#666; margin-bottom:20px;">Scan stregkoder direkte i hovedprogrammet. Data synkroniseres automatisk.</p>
-      
-      <div id="scannerContainer" style="background:#fff; border-radius:8px; padding:20px; border:1px solid #e6e6e6;">
-        <!-- Scanner indhold indlæses her -->
-        <div id="scannerContent">
-          <p style="text-align:center; color:#666; padding:40px;">Scanner indlæses...</p>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <!-- [HTML 3.8] SYSTEM OPSÆTNING -->
   <section id="systemOpsaetning" class="page hidden">
@@ -7364,10 +7343,10 @@ function checkForManualCountingData(){
 }
 
 /* Import manual counting data from manuel-optaelling.html */
-/* Download Backup Guide */
+/* Download Backup Guide as HTML (can be printed to PDF) */
 function downloadBackupGuide(){
   try {
-    // Try to fetch the file
+    // Try to fetch the markdown file
     fetch('BACKUP-OG-GENDANNELSE-GUIDE.md')
       .then(response => {
         if(!response.ok) {
@@ -7376,18 +7355,70 @@ function downloadBackupGuide(){
         return response.text();
       })
       .then(markdown => {
+        // Convert markdown to HTML
+        let html = markdown
+          // Headers
+          .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+          .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+          .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+          // Bold
+          .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+          // Lists
+          .replace(/^- (.*$)/gim, '<li>$1</li>')
+          // Links
+          .replace(/\[([^\]]+)\]\(([^\)]+)\)/gim, '<a href="$2">$1</a>')
+          // Code blocks
+          .replace(/```([^`]+)```/gim, '<pre><code>$1</code></pre>')
+          // Inline code
+          .replace(/`([^`]+)`/gim, '<code>$1</code>')
+          // Line breaks
+          .replace(/\n\n/gim, '</p><p>')
+          .replace(/\n/gim, '<br>');
+        
+        // Wrap in HTML document
+        const fullHtml = `<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backup og Gendannelse Guide</title>
+<style>
+body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; }
+h1 { color: #333; border-bottom: 3px solid #FF9800; padding-bottom: 10px; }
+h2 { color: #555; margin-top: 30px; border-bottom: 2px solid #ddd; padding-bottom: 5px; }
+h3 { color: #666; margin-top: 20px; }
+ul { margin-left: 20px; }
+li { margin: 5px 0; }
+code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+pre { background: #f4f4f4; padding: 15px; border-radius: 5px; overflow-x: auto; }
+a { color: #0078D4; text-decoration: none; }
+a:hover { text-decoration: underline; }
+strong { color: #333; }
+@media print {
+  body { margin: 0; padding: 15px; }
+  h1 { page-break-after: avoid; }
+  h2 { page-break-after: avoid; }
+}
+</style>
+</head>
+<body>
+<h1>💾 Komplet Guide: Backup og Gendannelse af Køkkenlager Programmet</h1>
+<p>${html}</p>
+</body>
+</html>`;
+        
         // Create a blob and download
-        const blob = new Blob([markdown], { type: 'text/markdown' });
+        const blob = new Blob([fullHtml], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'BACKUP-OG-GENDANNELSE-GUIDE.md';
+        link.download = 'BACKUP-OG-GENDANNELSE-GUIDE.html';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         
-        alert('✅ Guide downloadet!\n\n📄 Filen er gemt i din Downloads-mappe.\n\n💡 Du kan nu åbne filen med en tekst-editor eller Markdown-viewer.');
+        alert('✅ Guide downloadet!\n\n📄 Filen er gemt i din Downloads-mappe.\n\n💡 For at lave PDF:\n1. Åbn filen i din browser\n2. Tryk Ctrl+P (eller Cmd+P på Mac)\n3. Vælg "Gem som PDF" som destination\n4. Klik "Gem"\n\n💡 Filen kan også åbnes direkte i browseren.');
       })
       .catch(err => {
         console.error('Error downloading guide:', err);
