@@ -7013,12 +7013,23 @@ async function uploadBackupToServer(){
       loadingElement.remove();
     }
     
-    if (err.message.includes('401') || err.message.includes('Bad credentials')) {
-      localStorage.removeItem('github_gist_token');
-      alert('❌ Ugyldig GitHub token.\n\nToken er blevet slettet. Prøv igen og indtast en ny token.');
-    } else {
-      alert('❌ Fejl ved upload: ' + err.message + '\n\nTjek din internetforbindelse og GitHub token.');
+    // Check for network errors
+    if (err.name === 'TypeError' && err.message.includes('fetch')) {
+      alert('❌ Fejl ved upload: Ingen internetforbindelse.\n\nTjek din internetforbindelse og prøv igen.');
+      return;
     }
+    
+    // Check for invalid token
+    if (err.message.includes('401') || err.message.includes('Bad credentials') || err.message.includes('Unauthorized')) {
+      localStorage.removeItem('github_gist_token');
+      alert('❌ Ugyldig GitHub token.\n\nToken er blevet slettet. Prøv igen og indtast en ny token.\n\n' +
+        '💡 Gå til: https://github.com/settings/tokens\n' +
+        '💡 Opret et nyt token med "gist" scope.');
+      return;
+    }
+    
+    // Generic error
+    alert('❌ Fejl ved upload: ' + err.message + '\n\nTjek din internetforbindelse og GitHub token.');
   }
 }
 
@@ -7048,7 +7059,7 @@ async function fetchBackupFromServer(){
     // Fetch all user's gists
     const response = await fetch('https://api.github.com/gists', {
       headers: {
-        'Authorization': `token ${githubToken}`,
+        'Authorization': `Bearer ${githubToken}`,
         'Accept': 'application/vnd.github.v3+json'
       }
     });
@@ -7094,7 +7105,7 @@ async function fetchBackupFromServer(){
     // Fetch the backup content
     const gistResponse = await fetch(`https://api.github.com/gists/${mostRecentBackup.id}`, {
       headers: {
-        'Authorization': `token ${githubToken}`,
+        'Authorization': `Bearer ${githubToken}`,
         'Accept': 'application/vnd.github.v3+json'
       }
     });
@@ -7124,12 +7135,24 @@ async function fetchBackupFromServer(){
     
   } catch(err) {
     console.error('Error fetching backup:', err);
-    if (err.message.includes('401') || err.message.includes('Bad credentials')) {
-      localStorage.removeItem('github_gist_token');
-      alert('❌ Ugyldig GitHub token.\n\nToken er blevet slettet. Prøv igen og indtast en ny token.');
-    } else {
-      alert('❌ Fejl ved hentning: ' + err.message + '\n\nTjek din internetforbindelse og GitHub token.');
+    
+    // Check for network errors
+    if (err.name === 'TypeError' && err.message.includes('fetch')) {
+      alert('❌ Fejl ved hentning: Ingen internetforbindelse.\n\nTjek din internetforbindelse og prøv igen.');
+      return;
     }
+    
+    // Check for invalid token
+    if (err.message.includes('401') || err.message.includes('Bad credentials') || err.message.includes('Unauthorized')) {
+      localStorage.removeItem('github_gist_token');
+      alert('❌ Ugyldig GitHub token.\n\nToken er blevet slettet. Prøv igen og indtast en ny token.\n\n' +
+        '💡 Gå til: https://github.com/settings/tokens\n' +
+        '💡 Opret et nyt token med "gist" scope.');
+      return;
+    }
+    
+    // Generic error
+    alert('❌ Fejl ved hentning: ' + err.message + '\n\nTjek din internetforbindelse og GitHub token.');
   }
 }
 
@@ -8282,7 +8305,7 @@ async function fetchReportsFromServer(){
     // Fetch all user's gists
     const response = await fetch('https://api.github.com/gists', {
       headers: {
-        'Authorization': `token ${githubToken}`,
+        'Authorization': `Bearer ${githubToken}`,
         'Accept': 'application/vnd.github.v3+json'
       }
     });
@@ -8397,13 +8420,29 @@ async function fetchReportsFromServer(){
     console.error('Fejl ved hentning fra server:', err);
     hideServerReportsModal();
     
-    if (err.message.includes('401') || err.message.includes('Bad credentials') || err.message.includes('Ugyldig')) {
-      alert('❌ ' + err.message);
-    } else if (err.message.includes('404')) {
-      alert('❌ Gist ikke fundet.\n\nTjek at Gist ID er korrekt.');
-    } else {
-      alert('❌ Fejl ved hentning: ' + err.message + '\n\nTjek din internetforbindelse og prøv igen.');
+    // Check for network errors
+    if (err.name === 'TypeError' && err.message.includes('fetch')) {
+      alert('❌ Fejl ved hentning: Ingen internetforbindelse.\n\nTjek din internetforbindelse og prøv igen.');
+      return;
     }
+    
+    // Check for invalid token
+    if (err.message.includes('401') || err.message.includes('Bad credentials') || err.message.includes('Ugyldig') || err.message.includes('Unauthorized')) {
+      localStorage.removeItem('github_gist_token');
+      alert('❌ Ugyldig GitHub token.\n\nToken er blevet slettet. Prøv igen og indtast en ny token.\n\n' +
+        '💡 Gå til: https://github.com/settings/tokens\n' +
+        '💡 Opret et nyt token med "gist" scope.');
+      return;
+    }
+    
+    // Check for not found
+    if (err.message.includes('404')) {
+      alert('❌ Gist ikke fundet.\n\nTjek at Gist ID er korrekt.');
+      return;
+    }
+    
+    // Generic error
+    alert('❌ Fejl ved hentning: ' + err.message + '\n\nTjek din internetforbindelse og prøv igen.');
   }
 }
 
@@ -8562,13 +8601,26 @@ async function fetchAndImportGist(gistId, githubToken) {
   try {
     const response = await fetch(`https://api.github.com/gists/${gistId}`, {
       headers: {
-        'Authorization': `token ${githubToken}`,
+        'Authorization': `Bearer ${githubToken}`,
         'Accept': 'application/vnd.github.v3+json'
       }
     });
     
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      const errorText = await response.text();
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { message: errorText || `HTTP ${response.status}: ${response.statusText}` };
+      }
+      
+      if (response.status === 401) {
+        localStorage.removeItem('github_gist_token');
+        throw new Error('Ugyldig GitHub token. Token er blevet slettet. Prøv igen og indtast en ny token.');
+      }
+      
+      throw new Error(errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`);
     }
     
     const gist = await response.json();
@@ -9176,7 +9228,7 @@ async function uploadVarelagerToServer(){
     try {
       const gistsResponse = await fetch('https://api.github.com/gists', {
         headers: {
-          'Authorization': `token ${githubToken}`,
+          'Authorization': `Bearer ${githubToken}`,
           'Accept': 'application/vnd.github.v3+json'
         }
       });
@@ -9211,7 +9263,7 @@ async function uploadVarelagerToServer(){
       try {
         const existingGistResponse = await fetch(`https://api.github.com/gists/${existingGistId}`, {
           headers: {
-            'Authorization': `token ${githubToken}`,
+            'Authorization': `Bearer ${githubToken}`,
             'Accept': 'application/vnd.github.v3+json'
           }
         });
@@ -9253,7 +9305,7 @@ async function uploadVarelagerToServer(){
     const response = await fetch(url, {
       method: method,
       headers: {
-        'Authorization': `token ${githubToken}`,
+        'Authorization': `Bearer ${githubToken}`,
         'Content-Type': 'application/json',
         'Accept': 'application/vnd.github.v3+json'
       },
@@ -9294,12 +9346,23 @@ async function uploadVarelagerToServer(){
       statusEl.style.color = '#dc3545';
     }
     
-    if (err.message.includes('401') || err.message.includes('Bad credentials')) {
-      localStorage.removeItem('github_gist_token');
-      alert('❌ Ugyldig GitHub token.\n\nToken er blevet slettet. Prøv igen og indtast en ny token.');
-    } else {
-      alert('❌ Fejl ved upload: ' + err.message + '\n\nTjek din internetforbindelse og prøv igen.');
+    // Check for network errors
+    if (err.name === 'TypeError' && err.message.includes('fetch')) {
+      alert('❌ Fejl ved upload: Ingen internetforbindelse.\n\nTjek din internetforbindelse og prøv igen.');
+      return;
     }
+    
+    // Check for invalid token
+    if (err.message.includes('401') || err.message.includes('Bad credentials') || err.message.includes('Unauthorized')) {
+      localStorage.removeItem('github_gist_token');
+      alert('❌ Ugyldig GitHub token.\n\nToken er blevet slettet. Prøv igen og indtast en ny token.\n\n' +
+        '💡 Gå til: https://github.com/settings/tokens\n' +
+        '💡 Opret et nyt token med "gist" scope.');
+      return;
+    }
+    
+    // Generic error
+    alert('❌ Fejl ved upload: ' + err.message + '\n\nTjek din internetforbindelse og prøv igen.');
   }
 }
 
