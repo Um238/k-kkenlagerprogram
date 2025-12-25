@@ -5525,222 +5525,401 @@ function downloadExcelTemplate(){
     // Create a new workbook
     const wb = XLSX.utils.book_new();
     
-    // Helper function to generate 100 items per location, evenly distributed across shelves
-    function generer100Varer(placering, baseVarer) {
+    // Helper function to categorize items
+    function kategoriserVare(navn) {
+      const navnLower = navn.toLowerCase();
+      // Fisk
+      if(navnLower.includes('laks') || navnLower.includes('torsk') || navnLower.includes('sej') || 
+         navnLower.includes('rødspætte') || navnLower.includes('krebs') || navnLower.includes('musling') ||
+         navnLower.includes('østers') || navnLower.includes('hummer') || navnLower.includes('krabbe') ||
+         navnLower.includes('reje') || navnLower.includes('makrel') || navnLower.includes('ørred') ||
+         navnLower.includes('sardine') || navnLower.includes('tun') || navnLower.includes('sashimi') ||
+         navnLower.includes('kaviar') || navnLower.includes('tobiko') || navnLower.includes('masago') ||
+         navnLower.includes('uni') || navnLower.includes('blæksprutte') || navnLower.includes('languster') ||
+         navnLower.includes('kammusling') || navnLower.includes('pighud') || navnLower.includes('søpindsvin') ||
+         navnLower.includes('søstjerne')) return 'fisk';
+      // Fjerkræ
+      if(navnLower.includes('kylling') || navnLower.includes('høne') || navnLower.includes('and') ||
+         navnLower.includes('gås') || navnLower.includes('kalkun')) return 'fjerkræ';
+      // Oksekød
+      if(navnLower.includes('oksekød') || navnLower.includes('okse') || navnLower.includes('bøf') ||
+         navnLower.includes('steg') && !navnLower.includes('frosne')) return 'oksekød';
+      // Svinekød
+      if(navnLower.includes('svinekød') || navnLower.includes('svin') || navnLower.includes('skinke') ||
+         navnLower.includes('bacon') || navnLower.includes('pølse') || navnLower.includes('medister') ||
+         navnLower.includes('frikadelle') || navnLower.includes('hamburgerryg') || navnLower.includes('wienere') ||
+         navnLower.includes('salami') || navnLower.includes('pepperoni') || navnLower.includes('chorizo') ||
+         navnLower.includes('rullepølse') || navnLower.includes('leverpostej')) return 'svinekød';
+      // Kalv/Lam
+      if(navnLower.includes('kalv') || navnLower.includes('lam') || navnLower.includes('lammekød')) return 'kalv_lam';
+      // Frugter
+      if(navnLower.includes('jordbær') || navnLower.includes('blåbær') || navnLower.includes('hindbær') ||
+         navnLower.includes('æble') || navnLower.includes('pære') || navnLower.includes('banan') ||
+         navnLower.includes('appelsin') || navnLower.includes('citron') || navnLower.includes('lime') ||
+         navnLower.includes('druer') || navnLower.includes('melon') || navnLower.includes('vandmelon')) return 'frugt';
+      // Salater
+      if(navnLower.includes('salat') || navnLower.includes('spinat') || navnLower.includes('rucola') ||
+         navnLower.includes('iceberg') || navnLower.includes('romaine') || navnLower.includes('mizuna') ||
+         navnLower.includes('tatsoi') || navnLower.includes('komatsuna') || navnLower.includes('choy sum') ||
+         navnLower.includes('bok choy') || navnLower.includes('kinesisk kål') || navnLower.includes('savoykål') ||
+         navnLower.includes('grønkål') || navnLower.includes('kålrabi') || navnLower.includes('mangold') ||
+         navnLower.includes('rødbede blade') || navnLower.includes('karse') || navnLower.includes('børneradise')) return 'salat';
+      // Grønsager
+      if(navnLower.includes('gulerød') || navnLower.includes('selleri') || navnLower.includes('broccoli') ||
+         navnLower.includes('blomkål') || navnLower.includes('rosenkål') || navnLower.includes('asparges') ||
+         navnLower.includes('zucchini') || navnLower.includes('aubergine') || navnLower.includes('squash') ||
+         navnLower.includes('kartofel') || navnLower.includes('rødbed') || navnLower.includes('radise') ||
+         navnLower.includes('kål') || navnLower.includes('pastinak') || navnLower.includes('palerod') ||
+         navnLower.includes('knoldselleri') || navnLower.includes('agurk') || navnLower.includes('tomater') ||
+         navnLower.includes('peberfrugt') || navnLower.includes('chili') || navnLower.includes('løg') ||
+         navnLower.includes('porre') || navnLower.includes('hvidløg')) return 'grønsag';
+      // Bær (frosne)
+      if(navnLower.includes('frosne') && (navnLower.includes('jordbær') || navnLower.includes('blåbær') ||
+         navnLower.includes('hindbær') || navnLower.includes('bær'))) return 'bær';
+      // Is
+      if(navnLower.includes('is') || navnLower.includes('ispind') || navnLower.includes('sorbet') ||
+         navnLower.includes('gelato')) return 'is';
+      // Mejeri
+      if(navnLower.includes('mælk') || navnLower.includes('fløde') || navnLower.includes('yoghurt') ||
+         navnLower.includes('skyr') || navnLower.includes('kvark') || navnLower.includes('rømme') ||
+         navnLower.includes('creme fraiche') || navnLower.includes('kærnemælk') || navnLower.includes('buttermilk') ||
+         navnLower.includes('ost') || navnLower.includes('mozzarella') || navnLower.includes('feta') ||
+         navnLower.includes('cheddar') || navnLower.includes('gouda') || navnLower.includes('brie') ||
+         navnLower.includes('camembert') || navnLower.includes('hytteost') || navnLower.includes('philadelphia') ||
+         navnLower.includes('smør') || navnLower.includes('æg')) return 'mejeri';
+      // Krydderier/Urter
+      if(navnLower.includes('koriander') || navnLower.includes('basilikum') || navnLower.includes('persille') ||
+         navnLower.includes('dild') || navnLower.includes('timian') || navnLower.includes('rosmarin') ||
+         navnLower.includes('oregano') || navnLower.includes('mynte') || navnLower.includes('citronmelisse') ||
+         navnLower.includes('lavendel') || navnLower.includes('salvie') || navnLower.includes('estragon') ||
+         navnLower.includes('laurbær') || navnLower.includes('kanel') || navnLower.includes('peber') ||
+         navnLower.includes('ingefær') || navnLower.includes('hvidløg')) return 'krydderi';
+      return 'andet';
+    }
+    
+    // Helper function to generate items organized by category
+    function genererKategoriseredeVarer(placering, kategorier) {
       const resultat = [];
-      let vareIndex = 0;
+      let totalVarer = 0;
       
-      // Expand base items to 100 by duplicating and varying
-      const expandedVarer = [];
-      while(expandedVarer.length < 100) {
-        baseVarer.forEach((vare, idx) => {
-          if(expandedVarer.length < 100) {
-            // Create variation by adding number or type
-            let navn = vare[0];
-            if(expandedVarer.length > baseVarer.length) {
-              const num = Math.floor(expandedVarer.length / baseVarer.length) + 1;
-              navn = `${vare[0]} ${num > 1 ? num : ''}`.trim();
+      // Process each category
+      Object.keys(kategorier).forEach((kategori, katIndex) => {
+        const kategoriData = kategorier[kategori];
+        const varer = kategoriData.varer || [];
+        const reolStart = kategoriData.reolStart || 1;
+        const reolSlut = kategoriData.reolSlut || reolStart;
+        const hylderPerReol = kategoriData.hylderPerReol || 5;
+        const varerPerHylle = kategoriData.varerPerHylle || 5;
+        
+        let vareIndex = 0;
+        let raekkefoelge = 1;
+        
+        // Expand varer to fill category
+        const expandedVarer = [];
+        const targetCount = (reolSlut - reolStart + 1) * hylderPerReol * varerPerHylle;
+        while(expandedVarer.length < targetCount && expandedVarer.length < 100) {
+          varer.forEach((vare, idx) => {
+            if(expandedVarer.length < targetCount) {
+              let navn = vare[0];
+              if(expandedVarer.length >= varer.length) {
+                const num = Math.floor(expandedVarer.length / varer.length) + 1;
+                navn = `${vare[0]} ${num > 1 ? num : ''}`.trim();
+              }
+              expandedVarer.push([navn, vare[1], vare[2]]);
             }
-            expandedVarer.push([navn, vare[1], vare[2], placering]);
-          }
-        });
-      }
-      
-      // Distribute across 4 reoler with 5 hylder each = 20 hylder total
-      // 100 varer / 20 hylder = 5 varer per hylle
-      for(let reol = 1; reol <= 4; reol++) {
-        for(let hylle = 1; hylle <= 5; hylle++) {
-          for(let raekkefoelge = 1; raekkefoelge <= 5; raekkefoelge++) {
-            if(vareIndex < expandedVarer.length) {
-              const vare = expandedVarer[vareIndex];
-              resultat.push({
-                Navn: vare[0],
-                Måleenhed: vare[1],
-                Pris: parseFloat(vare[2]),
-                Placering: vare[3],
-                Reol: String(reol),
-                Hylle: String(hylle),
-                Rækkefølge: String(raekkefoelge)
-              });
-              vareIndex++;
+          });
+        }
+        
+        // Distribute across reoler and hylder
+        for(let reol = reolStart; reol <= reolSlut; reol++) {
+          for(let hylle = 1; hylle <= hylderPerReol; hylle++) {
+            for(let i = 0; i < varerPerHylle; i++) {
+              if(vareIndex < expandedVarer.length && totalVarer < 100) {
+                const vare = expandedVarer[vareIndex];
+                resultat.push({
+                  Navn: vare[0],
+                  Måleenhed: vare[1],
+                  Pris: parseFloat(vare[2]),
+                  Placering: placering,
+                  Reol: String(reol),
+                  Hylle: String(hylle),
+                  Rækkefølge: String(raekkefoelge)
+                });
+                vareIndex++;
+                totalVarer++;
+                raekkefoelge++;
+              }
             }
           }
         }
-      }
+      });
       
       return resultat;
     }
     
-    // Base items for each location (will be expanded to 100)
-    const koelBase = [
-      ['Mælk', 'L', '12.50'], ['Æg', 'stk', '25.00'], ['Juice', 'L', '18.00'],
-      ['Yoghurt', 'stk', '8.50'], ['Smør', 'stk', '15.00'], ['Ost', 'kg', '85.00'],
-      ['Fløde', 'L', '22.00'], ['Koldskål', 'L', '16.00'], ['Skyr', 'stk', '9.00'],
-      ['Kvark', 'stk', '7.50'], ['Rømme', 'L', '20.00'], ['Creme fraiche', 'L', '24.00'],
-      ['Kærnemælk', 'L', '10.00'], ['Buttermilk', 'L', '11.00'], ['Mozzarella', 'stk', '28.00'],
-      ['Feta', 'stk', '32.00'], ['Cheddar', 'kg', '95.00'], ['Gouda', 'kg', '88.00'],
-      ['Brie', 'stk', '45.00'], ['Camembert', 'stk', '42.00'], ['Hytteost', 'stk', '12.00'],
-      ['Philadelphia', 'stk', '18.00'], ['Røget laks', 'kg', '180.00'], ['Røget ørred', 'kg', '165.00'],
-      ['Gravad laks', 'kg', '195.00'], ['Røget makrel', 'stk', '15.00'], ['Hummer', 'stk', '125.00'],
-      ['Rejer', 'kg', '220.00'], ['Krabber', 'kg', '185.00'], ['Hummus', 'stk', '22.00'],
-      ['Tzatziki', 'stk', '19.00'], ['Aioli', 'stk', '16.00'], ['Remoulade', 'stk', '14.00'],
-      ['Mayonnaise', 'stk', '12.00'], ['Ketchup', 'stk', '8.00'], ['Sennep', 'stk', '9.00'],
-      ['Rødbeder', 'stk', '11.00'], ['Agurk', 'stk', '6.00'], ['Tomater', 'kg', '35.00'],
-      ['Salat', 'stk', '12.00'], ['Kylling', 'kg', '75.00'], ['Oksekød', 'kg', '125.00'],
-      ['Svinekød', 'kg', '85.00'], ['Hakket oksekød', 'kg', '95.00'], ['Hakket svinekød', 'kg', '65.00'],
-      ['Kyllingebryst', 'kg', '110.00'], ['Kyllingelår', 'kg', '55.00'], ['Kyllingevinger', 'kg', '45.00'],
-      ['Laks', 'kg', '145.00'], ['Torsk', 'kg', '95.00'], ['Sej', 'kg', '85.00'],
-      ['Rødspætte', 'kg', '75.00'], ['Krebs', 'kg', '195.00'], ['Muslinger', 'kg', '65.00'],
-      ['Blåmuslinger', 'kg', '45.00'], ['Østers', 'stk', '25.00'], ['Skinke', 'kg', '125.00'],
-      ['Bacon', 'kg', '95.00'], ['Pølser', 'kg', '65.00'], ['Wienere', 'kg', '55.00'],
-      ['Medister', 'kg', '75.00'], ['Frikadeller', 'kg', '85.00'], ['Hamburgerryg', 'kg', '95.00'],
-      ['Kogt skinke', 'kg', '115.00'], ['Røget skinke', 'kg', '105.00'], ['Parma skinke', 'kg', '195.00'],
-      ['Serrano skinke', 'kg', '185.00'], ['Salami', 'kg', '125.00'], ['Pepperoni', 'kg', '135.00'],
-      ['Chorizo', 'kg', '145.00'], ['Pølse på dåse', 'stk', '18.00'], ['Rullepølse', 'kg', '95.00'],
-      ['Leverpostej', 'stk', '22.00'], ['Hønsesalat', 'stk', '35.00'], ['Tunsalat', 'stk', '28.00'],
-      ['Rejesalat', 'stk', '45.00'], ['Krabsalat', 'stk', '38.00'], ['Kartoffelsalat', 'stk', '25.00'],
-      ['Coleslaw', 'stk', '22.00'], ['Tabouleh', 'stk', '28.00'], ['Quinoa salat', 'stk', '32.00'],
-      ['Feta salat', 'stk', '35.00'], ['Cæsar salat', 'stk', '38.00'], ['Nicoise salat', 'stk', '42.00'],
-      ['Waldorf salat', 'stk', '32.00'], ['Græsk salat', 'stk', '35.00'], ['Caprese salat', 'stk', '45.00'],
-      ['Bruschetta', 'stk', '28.00'], ['Antipasti', 'stk', '55.00'], ['Oliven', 'kg', '65.00'],
-      ['Syltede agurker', 'stk', '15.00'], ['Syltede rødbeder', 'stk', '12.00'], ['Syltede løg', 'stk', '14.00'],
-      ['Cornichoner', 'stk', '18.00'], ['Kapers', 'stk', '25.00'], ['Ansjoser', 'stk', '35.00'],
-      ['Sardiner', 'stk', '22.00'], ['Makrel i tomat', 'stk', '18.00'], ['Tun i olie', 'stk', '28.00'],
-      ['Tun i vand', 'stk', '25.00'], ['Laks i dåse', 'stk', '45.00'], ['Krebs i dåse', 'stk', '38.00'],
-      ['Rejer i glas', 'stk', '55.00'], ['Krabber i glas', 'stk', '48.00'], ['Muslinger i glas', 'stk', '32.00'],
-      ['Østers i glas', 'stk', '65.00'], ['Hummer i glas', 'stk', '125.00'], ['Kaviar', 'stk', '195.00'],
-      ['Laks kaviar', 'stk', '145.00'], ['Tobiko', 'stk', '165.00'], ['Masago', 'stk', '125.00'],
-      ['Uni', 'stk', '225.00'], ['Sashimi laks', 'kg', '195.00'], ['Sashimi tun', 'kg', '225.00'],
-      ['Sashimi torsk', 'kg', '165.00'], ['Sashimi sej', 'kg', '155.00'], ['Sashimi rejer', 'kg', '245.00']
-    ];
+    // Organize items by category for each location
+    // Køl: Mejeri (reol 1), Kød (reol 2), Fisk (reol 3), Grøntsager (reol 4)
+    const koelKategorier = {
+      mejeri: {
+        varer: [
+          ['Mælk', 'L', '12.50'], ['Æg', 'stk', '25.00'], ['Yoghurt', 'stk', '8.50'],
+          ['Smør', 'stk', '15.00'], ['Ost', 'kg', '85.00'], ['Fløde', 'L', '22.00'],
+          ['Koldskål', 'L', '16.00'], ['Skyr', 'stk', '9.00'], ['Kvark', 'stk', '7.50'],
+          ['Rømme', 'L', '20.00'], ['Creme fraiche', 'L', '24.00'], ['Kærnemælk', 'L', '10.00'],
+          ['Buttermilk', 'L', '11.00'], ['Mozzarella', 'stk', '28.00'], ['Feta', 'stk', '32.00'],
+          ['Cheddar', 'kg', '95.00'], ['Gouda', 'kg', '88.00'], ['Brie', 'stk', '45.00'],
+          ['Camembert', 'stk', '42.00'], ['Hytteost', 'stk', '12.00'], ['Philadelphia', 'stk', '18.00'],
+          ['Juice', 'L', '18.00']
+        ],
+        reolStart: 1, reolSlut: 1, hylderPerReol: 5, varerPerHylle: 5
+      },
+      kød: {
+        varer: [
+          ['Kylling', 'kg', '75.00'], ['Oksekød', 'kg', '125.00'], ['Svinekød', 'kg', '85.00'],
+          ['Hakket oksekød', 'kg', '95.00'], ['Hakket svinekød', 'kg', '65.00'],
+          ['Kyllingebryst', 'kg', '110.00'], ['Kyllingelår', 'kg', '55.00'], ['Kyllingevinger', 'kg', '45.00'],
+          ['Skinke', 'kg', '125.00'], ['Bacon', 'kg', '95.00'], ['Pølser', 'kg', '65.00'],
+          ['Wienere', 'kg', '55.00'], ['Medister', 'kg', '75.00'], ['Frikadeller', 'kg', '85.00'],
+          ['Hamburgerryg', 'kg', '95.00'], ['Kogt skinke', 'kg', '115.00'], ['Røget skinke', 'kg', '105.00'],
+          ['Parma skinke', 'kg', '195.00'], ['Serrano skinke', 'kg', '185.00'], ['Salami', 'kg', '125.00'],
+          ['Pepperoni', 'kg', '135.00'], ['Chorizo', 'kg', '145.00'], ['Pølse på dåse', 'stk', '18.00'],
+          ['Rullepølse', 'kg', '95.00'], ['Leverpostej', 'stk', '22.00']
+        ],
+        reolStart: 2, reolSlut: 2, hylderPerReol: 5, varerPerHylle: 5
+      },
+      fisk: {
+        varer: [
+          ['Røget laks', 'kg', '180.00'], ['Røget ørred', 'kg', '165.00'], ['Gravad laks', 'kg', '195.00'],
+          ['Røget makrel', 'stk', '15.00'], ['Hummer', 'stk', '125.00'], ['Rejer', 'kg', '220.00'],
+          ['Krabber', 'kg', '185.00'], ['Laks', 'kg', '145.00'], ['Torsk', 'kg', '95.00'],
+          ['Sej', 'kg', '85.00'], ['Rødspætte', 'kg', '75.00'], ['Krebs', 'kg', '195.00'],
+          ['Muslinger', 'kg', '65.00'], ['Blåmuslinger', 'kg', '45.00'], ['Østers', 'stk', '25.00'],
+          ['Hummus', 'stk', '22.00'], ['Tzatziki', 'stk', '19.00'], ['Aioli', 'stk', '16.00'],
+          ['Remoulade', 'stk', '14.00'], ['Mayonnaise', 'stk', '12.00'], ['Ketchup', 'stk', '8.00'],
+          ['Sennep', 'stk', '9.00'], ['Hønsesalat', 'stk', '35.00'], ['Tunsalat', 'stk', '28.00'],
+          ['Rejesalat', 'stk', '45.00'], ['Krabsalat', 'stk', '38.00'], ['Kartoffelsalat', 'stk', '25.00'],
+          ['Coleslaw', 'stk', '22.00'], ['Tabouleh', 'stk', '28.00'], ['Quinoa salat', 'stk', '32.00'],
+          ['Feta salat', 'stk', '35.00'], ['Cæsar salat', 'stk', '38.00'], ['Nicoise salat', 'stk', '42.00'],
+          ['Waldorf salat', 'stk', '32.00'], ['Græsk salat', 'stk', '35.00'], ['Caprese salat', 'stk', '45.00'],
+          ['Bruschetta', 'stk', '28.00'], ['Antipasti', 'stk', '55.00'], ['Oliven', 'kg', '65.00'],
+          ['Syltede agurker', 'stk', '15.00'], ['Syltede rødbeder', 'stk', '12.00'], ['Syltede løg', 'stk', '14.00'],
+          ['Cornichoner', 'stk', '18.00'], ['Kapers', 'stk', '25.00'], ['Ansjoser', 'stk', '35.00'],
+          ['Sardiner', 'stk', '22.00'], ['Makrel i tomat', 'stk', '18.00'], ['Tun i olie', 'stk', '28.00'],
+          ['Tun i vand', 'stk', '25.00'], ['Laks i dåse', 'stk', '45.00'], ['Krebs i dåse', 'stk', '38.00'],
+          ['Rejer i glas', 'stk', '55.00'], ['Krabber i glas', 'stk', '48.00'], ['Muslinger i glas', 'stk', '32.00'],
+          ['Østers i glas', 'stk', '65.00'], ['Hummer i glas', 'stk', '125.00'], ['Kaviar', 'stk', '195.00'],
+          ['Laks kaviar', 'stk', '145.00'], ['Tobiko', 'stk', '165.00'], ['Masago', 'stk', '125.00'],
+          ['Uni', 'stk', '225.00'], ['Sashimi laks', 'kg', '195.00'], ['Sashimi tun', 'kg', '225.00'],
+          ['Sashimi torsk', 'kg', '165.00'], ['Sashimi sej', 'kg', '155.00'], ['Sashimi rejer', 'kg', '245.00']
+        ],
+        reolStart: 3, reolSlut: 3, hylderPerReol: 5, varerPerHylle: 5
+      },
+      grøntsager: {
+        varer: [
+          ['Rødbeder', 'stk', '11.00'], ['Agurk', 'stk', '6.00'], ['Tomater', 'kg', '35.00'],
+          ['Salat', 'stk', '12.00']
+        ],
+        reolStart: 4, reolSlut: 4, hylderPerReol: 5, varerPerHylle: 5
+      }
+    };
     
-    const frostBase = [
-      ['Frosne ærter', 'stk', '18.00'], ['Frosne jordbær', 'stk', '25.00'], ['Frosne blåbær', 'stk', '28.00'],
-      ['Frosne hindbær', 'stk', '30.00'], ['Frosne bønner', 'stk', '16.00'], ['Frosne majs', 'stk', '15.00'],
-      ['Frosne spinat', 'stk', '20.00'], ['Frosne broccolini', 'stk', '22.00'], ['Frosne asparges', 'stk', '35.00'],
-      ['Frosne gulerødder', 'stk', '14.00'], ['Frosne kartofler', 'kg', '18.00'], ['Frosne pommes frites', 'kg', '22.00'],
-      ['Frosne pizza', 'stk', '45.00'], ['Frosne lasagne', 'stk', '55.00'], ['Frosne boller', 'stk', '35.00'],
-      ['Frosne frikadeller', 'stk', '42.00'], ['Frosne fiskefilet', 'kg', '85.00'], ['Frosne rejer', 'kg', '195.00'],
-      ['Frosne kylling', 'kg', '65.00'], ['Frosne kyllingebryst', 'kg', '95.00'], ['Frosne kyllingelår', 'kg', '55.00'],
-      ['Frosne oksekød', 'kg', '125.00'], ['Frosne svinekød', 'kg', '85.00'], ['Frosne lammekød', 'kg', '145.00'],
-      ['Frosne is', 'L', '35.00'], ['Frosne ispinde', 'stk', '8.00'], ['Frosne sorbet', 'L', '32.00'],
-      ['Frosne gelato', 'L', '38.00'], ['Frosne kager', 'stk', '45.00'], ['Frosne croissanter', 'stk', '4.00'],
-      ['Frosne wienerbrød', 'stk', '5.00'], ['Frosne kanelsnegle', 'stk', '6.00'], ['Frosne boller', 'stk', '3.50'],
-      ['Frosne brød', 'stk', '18.00'], ['Frosne boller med chokolade', 'stk', '4.50'], ['Frosne muffins', 'stk', '8.00'],
-      ['Frosne brownies', 'stk', '12.00'], ['Frosne cheesecake', 'stk', '65.00'], ['Frosne tiramisu', 'stk', '55.00'],
-      ['Frosne chokoladekage', 'stk', '48.00'], ['Frosne kylling nuggets', 'kg', '55.00'], ['Frosne fiskestænger', 'kg', '45.00'],
-      ['Frosne fiskefrikadeller', 'kg', '65.00'], ['Frosne kyllingefileter', 'kg', '75.00'], ['Frosne kyllingespyd', 'kg', '65.00'],
-      ['Frosne kyllingewings', 'kg', '55.00'], ['Frosne kyllingedrumsticks', 'kg', '60.00'], ['Frosne oksekødboller', 'kg', '95.00'],
-      ['Frosne svinekødboller', 'kg', '75.00'], ['Frosne kødboller', 'kg', '85.00'], ['Frosne hakkebøffer', 'kg', '90.00'],
-      ['Frosne bøffer', 'kg', '125.00'], ['Frosne steg', 'kg', '115.00'], ['Frosne koteletter', 'kg', '95.00'],
-      ['Frosne ribben', 'kg', '85.00'], ['Frosne skinke', 'kg', '105.00'], ['Frosne bacon', 'kg', '95.00'],
-      ['Frosne pølser', 'kg', '65.00'], ['Frosne wienere', 'kg', '55.00'], ['Frosne medister', 'kg', '75.00'],
-      ['Frosne leverpostej', 'kg', '45.00'], ['Frosne rullepølse', 'kg', '95.00'], ['Frosne hamburgerryg', 'kg', '95.00'],
-      ['Frosne kogt skinke', 'kg', '115.00'], ['Frosne røget skinke', 'kg', '105.00'], ['Frosne parma skinke', 'kg', '195.00'],
-      ['Frosne serrano skinke', 'kg', '185.00'], ['Frosne salami', 'kg', '125.00'], ['Frosne pepperoni', 'kg', '135.00'],
-      ['Frosne chorizo', 'kg', '145.00'], ['Frosne laks', 'kg', '145.00'], ['Frosne torsk', 'kg', '95.00'],
-      ['Frosne sej', 'kg', '85.00'], ['Frosne rødspætte', 'kg', '75.00'], ['Frosne krebs', 'kg', '195.00'],
-      ['Frosne muslinger', 'kg', '65.00'], ['Frosne blåmuslinger', 'kg', '45.00'], ['Frosne østers', 'stk', '25.00'],
-      ['Frosne hummer', 'kg', '295.00'], ['Frosne krabber', 'kg', '195.00'], ['Frosne languster', 'kg', '275.00'],
-      ['Frosne kammuslinger', 'kg', '225.00'], ['Frosne pighuder', 'kg', '185.00'], ['Frosne søpindsvin', 'kg', '195.00'],
-      ['Frosne søstjerne', 'kg', '175.00'], ['Frosne blæksprutte', 'kg', '185.00'], ['Frosne blæksprutte tentakler', 'kg', '165.00'],
-      ['Frosne blæksprutte krop', 'kg', '155.00'], ['Frosne blæksprutte hoved', 'kg', '145.00'], ['Frosne blæksprutte øjne', 'kg', '135.00'],
-      ['Frosne blæksprutte sugekopper', 'kg', '125.00'], ['Frosne blæksprutte blæk', 'kg', '115.00'], ['Frosne blæksprutte hud', 'kg', '105.00'],
-      ['Frosne blæksprutte indvolde', 'kg', '95.00'], ['Frosne blæksprutte kød', 'kg', '175.00'], ['Frosne blæksprutte filet', 'kg', '185.00'],
-      ['Frosne blæksprutte steg', 'kg', '195.00'], ['Frosne blæksprutte grill', 'kg', '205.00'], ['Frosne blæksprutte ristet', 'kg', '215.00'],
-      ['Frosne blæksprutte kogt', 'kg', '225.00'], ['Frosne blæksprutte dampet', 'kg', '235.00'], ['Frosne blæksprutte stegt', 'kg', '245.00'],
-      ['Frosne blæksprutte friturestegt', 'kg', '255.00'], ['Frosne blæksprutte paneret', 'kg', '265.00'], ['Frosne blæksprutte marineret', 'kg', '275.00'],
-      ['Frosne blæksprutte røget', 'kg', '285.00'], ['Frosne blæksprutte tørret', 'kg', '295.00'], ['Frosne blæksprutte saltet', 'kg', '305.00']
-    ];
+    // Frost: Fisk (reol 1-2), Fjerkræ (reol 3), Oksekød (reol 4), Svinekød (reol 5), Kalv/Lam (reol 6), Grønsager (reol 7-8), Bær (reol 9), Is (reol 10)
+    const frostKategorier = {
+      fisk: {
+        varer: [
+          ['Frosne fiskefilet', 'kg', '85.00'], ['Frosne rejer', 'kg', '195.00'], ['Frosne laks', 'kg', '145.00'],
+          ['Frosne torsk', 'kg', '95.00'], ['Frosne sej', 'kg', '85.00'], ['Frosne rødspætte', 'kg', '75.00'],
+          ['Frosne krebs', 'kg', '195.00'], ['Frosne muslinger', 'kg', '65.00'], ['Frosne blåmuslinger', 'kg', '45.00'],
+          ['Frosne østers', 'stk', '25.00'], ['Frosne hummer', 'kg', '295.00'], ['Frosne krabber', 'kg', '195.00'],
+          ['Frosne languster', 'kg', '275.00'], ['Frosne kammuslinger', 'kg', '225.00'], ['Frosne pighuder', 'kg', '185.00'],
+          ['Frosne søpindsvin', 'kg', '195.00'], ['Frosne søstjerne', 'kg', '175.00'], ['Frosne blæksprutte', 'kg', '185.00'],
+          ['Frosne fiskestænger', 'kg', '45.00'], ['Frosne fiskefrikadeller', 'kg', '65.00']
+        ],
+        reolStart: 1, reolSlut: 2, hylderPerReol: 5, varerPerHylle: 5
+      },
+      fjerkræ: {
+        varer: [
+          ['Frosne kylling', 'kg', '65.00'], ['Frosne kyllingebryst', 'kg', '95.00'], ['Frosne kyllingelår', 'kg', '55.00'],
+          ['Frosne kylling nuggets', 'kg', '55.00'], ['Frosne kyllingefileter', 'kg', '75.00'], ['Frosne kyllingespyd', 'kg', '65.00'],
+          ['Frosne kyllingewings', 'kg', '55.00'], ['Frosne kyllingedrumsticks', 'kg', '60.00']
+        ],
+        reolStart: 3, reolSlut: 3, hylderPerReol: 5, varerPerHylle: 5
+      },
+      oksekød: {
+        varer: [
+          ['Frosne oksekød', 'kg', '125.00'], ['Frosne oksekødboller', 'kg', '95.00'], ['Frosne hakkebøffer', 'kg', '90.00'],
+          ['Frosne bøffer', 'kg', '125.00'], ['Frosne steg', 'kg', '115.00']
+        ],
+        reolStart: 4, reolSlut: 4, hylderPerReol: 5, varerPerHylle: 5
+      },
+      svinekød: {
+        varer: [
+          ['Frosne svinekød', 'kg', '85.00'], ['Frosne svinekødboller', 'kg', '75.00'], ['Frosne kødboller', 'kg', '85.00'],
+          ['Frosne frikadeller', 'kg', '70.00'], ['Frosne koteletter', 'kg', '95.00'], ['Frosne ribben', 'kg', '85.00'],
+          ['Frosne skinke', 'kg', '105.00'], ['Frosne bacon', 'kg', '95.00'], ['Frosne pølser', 'kg', '65.00'],
+          ['Frosne wienere', 'kg', '55.00'], ['Frosne medister', 'kg', '75.00'], ['Frosne leverpostej', 'kg', '45.00'],
+          ['Frosne rullepølse', 'kg', '95.00'], ['Frosne hamburgerryg', 'kg', '95.00'], ['Frosne kogt skinke', 'kg', '115.00'],
+          ['Frosne røget skinke', 'kg', '105.00'], ['Frosne parma skinke', 'kg', '195.00'], ['Frosne serrano skinke', 'kg', '185.00'],
+          ['Frosne salami', 'kg', '125.00'], ['Frosne pepperoni', 'kg', '135.00'], ['Frosne chorizo', 'kg', '145.00']
+        ],
+        reolStart: 5, reolSlut: 5, hylderPerReol: 5, varerPerHylle: 5
+      },
+      kalv_lam: {
+        varer: [
+          ['Frosne lammekød', 'kg', '145.00']
+        ],
+        reolStart: 6, reolSlut: 6, hylderPerReol: 5, varerPerHylle: 5
+      },
+      grønsager: {
+        varer: [
+          ['Frosne ærter', 'stk', '18.00'], ['Frosne bønner', 'stk', '16.00'], ['Frosne majs', 'stk', '15.00'],
+          ['Frosne spinat', 'stk', '20.00'], ['Frosne broccolini', 'stk', '22.00'], ['Frosne asparges', 'stk', '35.00'],
+          ['Frosne gulerødder', 'stk', '14.00'], ['Frosne kartofler', 'kg', '18.00'], ['Frosne pommes frites', 'kg', '22.00']
+        ],
+        reolStart: 7, reolSlut: 8, hylderPerReol: 5, varerPerHylle: 5
+      },
+      bær: {
+        varer: [
+          ['Frosne jordbær', 'stk', '25.00'], ['Frosne blåbær', 'stk', '28.00'], ['Frosne hindbær', 'stk', '30.00']
+        ],
+        reolStart: 9, reolSlut: 9, hylderPerReol: 5, varerPerHylle: 5
+      },
+      is: {
+        varer: [
+          ['Frosne is', 'L', '35.00'], ['Frosne ispinde', 'stk', '8.00'], ['Frosne sorbet', 'L', '32.00'],
+          ['Frosne gelato', 'L', '38.00']
+        ],
+        reolStart: 10, reolSlut: 10, hylderPerReol: 5, varerPerHylle: 5
+      }
+    };
     
-    const toereBase = [
-      ['Mel', 'kg', '8.50'], ['Sukker', 'kg', '12.00'], ['Salt', 'kg', '3.50'],
-      ['Peber', 'kg', '45.00'], ['Ris', 'kg', '15.00'], ['Pasta', 'kg', '18.00'],
-      ['Spaghetti', 'kg', '16.00'], ['Lasagneplader', 'kg', '22.00'], ['Havregryn', 'kg', '14.00'],
-      ['Cornflakes', 'kg', '25.00'], ['Müsli', 'kg', '35.00'], ['Kakao', 'kg', '28.00'],
-      ['Kaffe', 'kg', '85.00'], ['Te', 'kg', '95.00'], ['Honning', 'kg', '65.00'],
-      ['Syltetøj', 'kg', '35.00'], ['Marmelade', 'kg', '32.00'], ['Nutella', 'kg', '45.00'],
-      ['Peanutbutter', 'kg', '38.00'], ['Olivenolie', 'L', '55.00'], ['Rapsolie', 'L', '25.00'],
-      ['Eddike', 'L', '15.00'], ['Sojasovs', 'L', '22.00'], ['Fiskesovs', 'L', '18.00'],
-      ['Tomatpuré', 'kg', '28.00'], ['Hakkede tomater', 'kg', '20.00'], ['Kikærter', 'kg', '18.00'],
-      ['Bønner', 'kg', '16.00'], ['Linser', 'kg', '22.00'], ['Quinoa', 'kg', '65.00'],
-      ['Bulgur', 'kg', '28.00'], ['Couscous', 'kg', '32.00'], ['Kartoffelmel', 'kg', '12.00'],
-      ['Majsstivelse', 'kg', '15.00'], ['Bagepulver', 'kg', '18.00'], ['Natron', 'kg', '14.00'],
-      ['Gær', 'kg', '25.00'], ['Vaniljesukker', 'kg', '85.00'], ['Kanel', 'kg', '55.00'],
-      ['Nødder', 'kg', '95.00'], ['Mandler', 'kg', '125.00'], ['Cashewnødder', 'kg', '145.00'],
-      ['Valnødder', 'kg', '135.00'], ['Hasselnødder', 'kg', '155.00'], ['Pistacienødder', 'kg', '165.00'],
-      ['Macadamianødder', 'kg', '185.00'], ['Pecannødder', 'kg', '175.00'], ['Brasilianske nødder', 'kg', '195.00'],
-      ['Paranødder', 'kg', '185.00'], ['Kokosnødder', 'stk', '25.00'], ['Kokosflager', 'kg', '35.00'],
-      ['Kokosmælk', 'L', '28.00'], ['Kokosolie', 'L', '45.00'], ['Sesamfrø', 'kg', '55.00'],
-      ['Solsikkefrø', 'kg', '28.00'], ['Græskarkerner', 'kg', '35.00'], ['Chiafrø', 'kg', '85.00'],
-      ['Hørfrø', 'kg', '45.00'], ['Amaranth', 'kg', '65.00'], ['Teff', 'kg', '75.00'],
-      ['Buchweizen', 'kg', '55.00'], ['Spelt', 'kg', '42.00'], ['Emmer', 'kg', '48.00'],
-      ['Kamut', 'kg', '52.00'], ['Frikah', 'kg', '58.00'], ['Farro', 'kg', '62.00'],
-      ['Freekeh', 'kg', '68.00'], ['Sorghum', 'kg', '38.00'], ['Millet', 'kg', '32.00'],
-      ['Hirse', 'kg', '28.00'], ['Jobstårsmel', 'kg', '35.00'], ['Rismel', 'kg', '25.00'],
-      ['Majsmel', 'kg', '22.00'], ['Kartoffelmel', 'kg', '18.00'], ['Mandelmel', 'kg', '125.00'],
-      ['Kokosmel', 'kg', '45.00'], ['Kastanjemel', 'kg', '55.00'], ['Bagepulver', 'kg', '18.00'],
-      ['Natron', 'kg', '14.00'], ['Gær', 'kg', '25.00'], ['Tørgær', 'kg', '22.00'],
-      ['Fersk gær', 'stk', '8.00'], ['Vaniljesukker', 'kg', '85.00'], ['Vaniljepulver', 'kg', '195.00'],
-      ['Vaniljestang', 'stk', '45.00'], ['Kanel', 'kg', '55.00'], ['Kanelstang', 'stk', '12.00'],
-      ['Nelliker', 'kg', '125.00'], ['Kardemomme', 'kg', '145.00'], ['Ingefær', 'kg', '65.00'],
-      ['Kurkuma', 'kg', '75.00'], ['Spidskommen', 'kg', '85.00'], ['Korianderfrø', 'kg', '95.00'],
-      ['Fennikelfrø', 'kg', '105.00'], ['Anisfrø', 'kg', '115.00'], ['Stjerneanis', 'kg', '125.00'],
-      ['Muskatnød', 'kg', '135.00'], ['Muskatblomme', 'kg', '145.00'], ['Allehånde', 'kg', '155.00'],
-      ['Piment', 'kg', '165.00'], ['Juniperbær', 'kg', '175.00'], ['Timian', 'kg', '85.00'],
-      ['Rosmarin', 'kg', '95.00'], ['Oregano', 'kg', '75.00'], ['Basilikum', 'kg', '65.00'],
-      ['Persille', 'kg', '55.00'], ['Dild', 'kg', '45.00'], ['Laurbærblade', 'kg', '35.00'],
-      ['Salvie', 'kg', '85.00'], ['Estragon', 'kg', '95.00'], ['Mynte', 'kg', '75.00'],
-      ['Citronmelisse', 'kg', '65.00'], ['Lavendel', 'kg', '55.00'], ['Koriander', 'kg', '45.00']
-    ];
+    // Tørevare: Mel/Gryn (reol 1), Krydderier (reol 2), Konserves (reol 3), Nødder/Frø (reol 4)
+    const toereKategorier = {
+      mel_gryn: {
+        varer: [
+          ['Mel', 'kg', '8.50'], ['Ris', 'kg', '15.00'], ['Pasta', 'kg', '18.00'],
+          ['Spaghetti', 'kg', '16.00'], ['Lasagneplader', 'kg', '22.00'], ['Havregryn', 'kg', '14.00'],
+          ['Cornflakes', 'kg', '25.00'], ['Müsli', 'kg', '35.00'], ['Quinoa', 'kg', '65.00'],
+          ['Bulgur', 'kg', '28.00'], ['Couscous', 'kg', '32.00'], ['Kartoffelmel', 'kg', '12.00'],
+          ['Majsstivelse', 'kg', '15.00'], ['Rismel', 'kg', '25.00'], ['Majsmel', 'kg', '22.00'],
+          ['Mandelmel', 'kg', '125.00'], ['Kokosmel', 'kg', '45.00'], ['Kastanjemel', 'kg', '55.00'],
+          ['Jobstårsmel', 'kg', '35.00']
+        ],
+        reolStart: 1, reolSlut: 1, hylderPerReol: 5, varerPerHylle: 5
+      },
+      krydderier: {
+        varer: [
+          ['Salt', 'kg', '3.50'], ['Peber', 'kg', '45.00'], ['Kakao', 'kg', '28.00'],
+          ['Kaffe', 'kg', '85.00'], ['Te', 'kg', '95.00'], ['Bagepulver', 'kg', '18.00'],
+          ['Natron', 'kg', '14.00'], ['Gær', 'kg', '25.00'], ['Tørgær', 'kg', '22.00'],
+          ['Fersk gær', 'stk', '8.00'], ['Vaniljesukker', 'kg', '85.00'], ['Vaniljepulver', 'kg', '195.00'],
+          ['Vaniljestang', 'stk', '45.00'], ['Kanel', 'kg', '55.00'], ['Kanelstang', 'stk', '12.00'],
+          ['Nelliker', 'kg', '125.00'], ['Kardemomme', 'kg', '145.00'], ['Ingefær', 'kg', '65.00'],
+          ['Kurkuma', 'kg', '75.00'], ['Spidskommen', 'kg', '85.00'], ['Korianderfrø', 'kg', '95.00'],
+          ['Fennikelfrø', 'kg', '105.00'], ['Anisfrø', 'kg', '115.00'], ['Stjerneanis', 'kg', '125.00'],
+          ['Muskatnød', 'kg', '135.00'], ['Muskatblomme', 'kg', '145.00'], ['Allehånde', 'kg', '155.00'],
+          ['Piment', 'kg', '165.00'], ['Juniperbær', 'kg', '175.00'], ['Timian', 'kg', '85.00'],
+          ['Rosmarin', 'kg', '95.00'], ['Oregano', 'kg', '75.00'], ['Basilikum', 'kg', '65.00'],
+          ['Persille', 'kg', '55.00'], ['Dild', 'kg', '45.00'], ['Laurbærblade', 'kg', '35.00'],
+          ['Salvie', 'kg', '85.00'], ['Estragon', 'kg', '95.00'], ['Mynte', 'kg', '75.00'],
+          ['Citronmelisse', 'kg', '65.00'], ['Lavendel', 'kg', '55.00'], ['Koriander', 'kg', '45.00']
+        ],
+        reolStart: 2, reolSlut: 2, hylderPerReol: 5, varerPerHylle: 5
+      },
+      konserves: {
+        varer: [
+          ['Honning', 'kg', '65.00'], ['Syltetøj', 'kg', '35.00'], ['Marmelade', 'kg', '32.00'],
+          ['Nutella', 'kg', '45.00'], ['Peanutbutter', 'kg', '38.00'], ['Olivenolie', 'L', '55.00'],
+          ['Rapsolie', 'L', '25.00'], ['Eddike', 'L', '15.00'], ['Sojasovs', 'L', '22.00'],
+          ['Fiskesovs', 'L', '18.00'], ['Tomatpuré', 'kg', '28.00'], ['Hakkede tomater', 'kg', '20.00'],
+          ['Kikærter', 'kg', '18.00'], ['Bønner', 'kg', '16.00'], ['Linser', 'kg', '22.00']
+        ],
+        reolStart: 3, reolSlut: 3, hylderPerReol: 5, varerPerHylle: 5
+      },
+      nødder_frø: {
+        varer: [
+          ['Nødder', 'kg', '95.00'], ['Mandler', 'kg', '125.00'], ['Cashewnødder', 'kg', '145.00'],
+          ['Valnødder', 'kg', '135.00'], ['Hasselnødder', 'kg', '155.00'], ['Pistacienødder', 'kg', '165.00'],
+          ['Macadamianødder', 'kg', '185.00'], ['Pecannødder', 'kg', '175.00'], ['Brasilianske nødder', 'kg', '195.00'],
+          ['Paranødder', 'kg', '185.00'], ['Kokosnødder', 'stk', '25.00'], ['Kokosflager', 'kg', '35.00'],
+          ['Kokosmælk', 'L', '28.00'], ['Kokosolie', 'L', '45.00'], ['Sesamfrø', 'kg', '55.00'],
+          ['Solsikkefrø', 'kg', '28.00'], ['Græskarkerner', 'kg', '35.00'], ['Chiafrø', 'kg', '85.00'],
+          ['Hørfrø', 'kg', '45.00'], ['Amaranth', 'kg', '65.00'], ['Teff', 'kg', '75.00'],
+          ['Buchweizen', 'kg', '55.00'], ['Spelt', 'kg', '42.00'], ['Emmer', 'kg', '48.00'],
+          ['Kamut', 'kg', '52.00'], ['Frikah', 'kg', '58.00'], ['Farro', 'kg', '62.00'],
+          ['Freekeh', 'kg', '68.00'], ['Sorghum', 'kg', '38.00'], ['Millet', 'kg', '32.00'],
+          ['Hirse', 'kg', '28.00']
+        ],
+        reolStart: 4, reolSlut: 4, hylderPerReol: 5, varerPerHylle: 5
+      }
+    };
     
-    const groentBase = [
-      ['Salat', 'stk', '12.00'], ['Spinat', 'stk', '15.00'], ['Rucola', 'stk', '18.00'],
-      ['Iceberg salat', 'stk', '10.00'], ['Romaine salat', 'stk', '14.00'], ['Tomater', 'kg', '35.00'],
-      ['Cherrytomater', 'kg', '45.00'], ['Agurk', 'stk', '6.00'], ['Peberfrugt', 'kg', '55.00'],
-      ['Chili', 'kg', '85.00'], ['Løg', 'kg', '12.00'], ['Rødløg', 'kg', '15.00'],
-      ['Hvidløg', 'kg', '45.00'], ['Porrer', 'stk', '8.00'], ['Gulerødder', 'kg', '14.00'],
-      ['Selleri', 'stk', '12.00'], ['Broccoli', 'stk', '18.00'], ['Blomkål', 'stk', '16.00'],
-      ['Rosenkål', 'kg', '28.00'], ['Asparges', 'kg', '65.00'], ['Zucchini', 'kg', '25.00'],
-      ['Aubergine', 'kg', '35.00'], ['Squash', 'kg', '22.00'], ['Kartofler', 'kg', '12.00'],
-      ['Søde kartofler', 'kg', '18.00'], ['Rødbeder', 'kg', '20.00'], ['Gulerødder baby', 'kg', '28.00'],
-      ['Radiser', 'stk', '8.00'], ['Kål', 'stk', '14.00'], ['Rødkål', 'stk', '16.00'],
-      ['Spidskål', 'stk', '12.00'], ['Pak choi', 'stk', '18.00'], ['Mangold', 'stk', '15.00'],
-      ['Koriander', 'stk', '12.00'], ['Basilikum', 'stk', '15.00'], ['Persille', 'stk', '10.00'],
-      ['Dild', 'stk', '11.00'], ['Timian', 'stk', '14.00'], ['Rosmarin', 'stk', '16.00'],
-      ['Oregano', 'stk', '13.00'], ['Mynte', 'stk', '12.00'], ['Citronmelisse', 'stk', '14.00'],
-      ['Lavendel', 'stk', '16.00'], ['Salvie', 'stk', '15.00'], ['Estragon', 'stk', '13.00'],
-      ['Laurbær', 'stk', '18.00'], ['Karse', 'stk', '11.00'], ['Børneradiser', 'stk', '9.00'],
-      ['Rødbede blade', 'stk', '12.00'], ['Mizuna', 'stk', '14.00'], ['Tatsoi', 'stk', '13.00'],
-      ['Komatsuna', 'stk', '15.00'], ['Choy sum', 'stk', '16.00'], ['Bok choy', 'stk', '17.00'],
-      ['Kinesisk kål', 'stk', '15.00'], ['Savoykål', 'stk', '18.00'], ['Grønkål', 'stk', '14.00'],
-      ['Kålrabi', 'stk', '12.00'], ['Pastinak', 'kg', '22.00'], ['Palerods', 'kg', '18.00'],
-      ['Knoldselleri', 'kg', '25.00'], ['Rød peber', 'kg', '45.00'], ['Gul peber', 'kg', '42.00'],
-      ['Orange peber', 'kg', '44.00'], ['Grøn peber', 'kg', '38.00'], ['Lille peber', 'kg', '48.00'],
-      ['Cherry peber', 'kg', '52.00'], ['Jalapeño', 'kg', '65.00'], ['Habanero', 'kg', '85.00'],
-      ['Serrano', 'kg', '55.00'], ['Poblano', 'kg', '45.00'], ['Anaheim', 'kg', '42.00'],
-      ['Cubanelle', 'kg', '38.00'], ['Banana peber', 'kg', '35.00'], ['Shishito', 'kg', '48.00'],
-      ['Padron', 'kg', '52.00'], ['Fresno', 'kg', '58.00'], ['Cayenne', 'kg', '62.00'],
-      ['Thai chili', 'kg', '68.00'], ['Bird\'s eye', 'kg', '72.00'], ['Scotch bonnet', 'kg', '78.00'],
-      ['Ghost peber', 'kg', '95.00'], ['Carolina reaper', 'kg', '125.00'], ['Trinidad scorpion', 'kg', '115.00'],
-      ['7 pot', 'kg', '105.00'], ['Bhut jolokia', 'kg', '98.00'], ['Habanero orange', 'kg', '88.00'],
-      ['Habanero rød', 'kg', '85.00'], ['Habanero gul', 'kg', '82.00'], ['Habanero chokolade', 'kg', '92.00'],
-      ['Habanero hvid', 'kg', '78.00'], ['Habanero perle', 'kg', '75.00'], ['Habanero peach', 'kg', '88.00'],
-      ['Habanero mango', 'kg', '85.00'], ['Habanero pineapple', 'kg', '82.00'], ['Habanero citrus', 'kg', '78.00'],
-      ['Habanero tropical', 'kg', '75.00'], ['Habanero fruity', 'kg', '72.00'], ['Habanero sweet', 'kg', '68.00'],
-      ['Habanero mild', 'kg', '65.00'], ['Habanero hot', 'kg', '95.00'], ['Habanero extra hot', 'kg', '125.00'],
-      ['Habanero extreme', 'kg', '155.00'], ['Habanero insane', 'kg', '185.00'], ['Habanero death', 'kg', '225.00'],
-      ['Habanero inferno', 'kg', '275.00'], ['Habanero hellfire', 'kg', '325.00'], ['Habanero apocalypse', 'kg', '425.00']
-    ];
+    // Grønt: Frugter (reol 1), Salater (reol 2), Grønsager (reol 3), Krydderier/Urter (reol 4)
+    const groentKategorier = {
+      frugter: {
+        varer: [
+          ['Tomater', 'kg', '35.00'], ['Cherrytomater', 'kg', '45.00']
+        ],
+        reolStart: 1, reolSlut: 1, hylderPerReol: 5, varerPerHylle: 5
+      },
+      salater: {
+        varer: [
+          ['Salat', 'stk', '12.00'], ['Spinat', 'stk', '15.00'], ['Rucola', 'stk', '18.00'],
+          ['Iceberg salat', 'stk', '10.00'], ['Romaine salat', 'stk', '14.00'], ['Mizuna', 'stk', '14.00'],
+          ['Tatsoi', 'stk', '13.00'], ['Komatsuna', 'stk', '15.00'], ['Choy sum', 'stk', '16.00'],
+          ['Bok choy', 'stk', '17.00'], ['Kinesisk kål', 'stk', '15.00'], ['Savoykål', 'stk', '18.00'],
+          ['Grønkål', 'stk', '14.00'], ['Kålrabi', 'stk', '12.00'], ['Mangold', 'stk', '15.00'],
+          ['Rødbede blade', 'stk', '12.00'], ['Karse', 'stk', '11.00'], ['Børneradiser', 'stk', '9.00']
+        ],
+        reolStart: 2, reolSlut: 2, hylderPerReol: 5, varerPerHylle: 5
+      },
+      grønsager: {
+        varer: [
+          ['Agurk', 'stk', '6.00'], ['Peberfrugt', 'kg', '55.00'], ['Chili', 'kg', '85.00'],
+          ['Løg', 'kg', '12.00'], ['Rødløg', 'kg', '15.00'], ['Hvidløg', 'kg', '45.00'],
+          ['Porrer', 'stk', '8.00'], ['Gulerødder', 'kg', '14.00'], ['Selleri', 'stk', '12.00'],
+          ['Broccoli', 'stk', '18.00'], ['Blomkål', 'stk', '16.00'], ['Rosenkål', 'kg', '28.00'],
+          ['Asparges', 'kg', '65.00'], ['Zucchini', 'kg', '25.00'], ['Aubergine', 'kg', '35.00'],
+          ['Squash', 'kg', '22.00'], ['Kartofler', 'kg', '12.00'], ['Søde kartofler', 'kg', '18.00'],
+          ['Rødbeder', 'kg', '20.00'], ['Gulerødder baby', 'kg', '28.00'], ['Radiser', 'stk', '8.00'],
+          ['Kål', 'stk', '14.00'], ['Rødkål', 'stk', '16.00'], ['Spidskål', 'stk', '12.00'],
+          ['Pak choi', 'stk', '18.00'], ['Pastinak', 'kg', '22.00'], ['Palerods', 'kg', '18.00'],
+          ['Knoldselleri', 'kg', '25.00'], ['Rød peber', 'kg', '45.00'], ['Gul peber', 'kg', '42.00'],
+          ['Orange peber', 'kg', '44.00'], ['Grøn peber', 'kg', '38.00'], ['Lille peber', 'kg', '48.00'],
+          ['Cherry peber', 'kg', '52.00'], ['Jalapeño', 'kg', '65.00'], ['Habanero', 'kg', '85.00'],
+          ['Serrano', 'kg', '55.00'], ['Poblano', 'kg', '45.00'], ['Anaheim', 'kg', '42.00'],
+          ['Cubanelle', 'kg', '38.00'], ['Banana peber', 'kg', '35.00'], ['Shishito', 'kg', '48.00'],
+          ['Padron', 'kg', '52.00'], ['Fresno', 'kg', '58.00'], ['Cayenne', 'kg', '62.00'],
+          ['Thai chili', 'kg', '68.00'], ['Bird\'s eye', 'kg', '72.00'], ['Scotch bonnet', 'kg', '78.00'],
+          ['Ghost peber', 'kg', '95.00'], ['Carolina reaper', 'kg', '125.00'], ['Trinidad scorpion', 'kg', '115.00'],
+          ['7 pot', 'kg', '105.00'], ['Bhut jolokia', 'kg', '98.00'], ['Habanero orange', 'kg', '88.00'],
+          ['Habanero rød', 'kg', '85.00'], ['Habanero gul', 'kg', '82.00'], ['Habanero chokolade', 'kg', '92.00'],
+          ['Habanero hvid', 'kg', '78.00'], ['Habanero perle', 'kg', '75.00'], ['Habanero peach', 'kg', '88.00'],
+          ['Habanero mango', 'kg', '85.00'], ['Habanero pineapple', 'kg', '82.00'], ['Habanero citrus', 'kg', '78.00'],
+          ['Habanero tropical', 'kg', '75.00'], ['Habanero fruity', 'kg', '72.00'], ['Habanero sweet', 'kg', '68.00'],
+          ['Habanero mild', 'kg', '65.00'], ['Habanero hot', 'kg', '95.00'], ['Habanero extra hot', 'kg', '125.00'],
+          ['Habanero extreme', 'kg', '155.00'], ['Habanero insane', 'kg', '185.00'], ['Habanero death', 'kg', '225.00'],
+          ['Habanero inferno', 'kg', '275.00'], ['Habanero hellfire', 'kg', '325.00'], ['Habanero apocalypse', 'kg', '425.00']
+        ],
+        reolStart: 3, reolSlut: 3, hylderPerReol: 5, varerPerHylle: 5
+      },
+      krydderier: {
+        varer: [
+          ['Koriander', 'stk', '12.00'], ['Basilikum', 'stk', '15.00'], ['Persille', 'stk', '10.00'],
+          ['Dild', 'stk', '11.00'], ['Timian', 'stk', '14.00'], ['Rosmarin', 'stk', '16.00'],
+          ['Oregano', 'stk', '13.00'], ['Mynte', 'stk', '12.00'], ['Citronmelisse', 'stk', '14.00'],
+          ['Lavendel', 'stk', '16.00'], ['Salvie', 'stk', '15.00'], ['Estragon', 'stk', '13.00'],
+          ['Laurbær', 'stk', '18.00']
+        ],
+        reolStart: 4, reolSlut: 4, hylderPerReol: 5, varerPerHylle: 5
+      }
+    };
     
-    // Generate 100 items per location
-    const koelVarer = generer100Varer('Køl', koelBase);
-    const frostVarer = generer100Varer('Frost', frostBase);
-    const toereVarer = generer100Varer('Tørevare', toereBase);
-    const groentVarer = generer100Varer('Grønt', groentBase);
-    
-    // Combine all items for "Alle data" sheet
-    const alleVarer = [...koelVarer, ...frostVarer, ...toereVarer, ...groentVarer];
+    // Generate items using category-based organization
+    const koelVarer = genererKategoriseredeVarer('Køl', koelKategorier);
+    const frostVarer = genererKategoriseredeVarer('Frost', frostKategorier);
+    const toereVarer = genererKategoriseredeVarer('Tørevare', toereKategorier);
+    const groentVarer = genererKategoriseredeVarer('Grønt', groentKategorier);
     
     // Sort all items by location, reol, hylle, rækkefølge
     function sorterVarer(varer) {
@@ -5752,14 +5931,96 @@ function downloadExcelTemplate(){
       });
     }
     
+    // Helper function to configure Excel sheet with frozen panes, auto-size columns, and formatting
+    function konfigurerSheet(ws, sheetName) {
+      const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+      
+      // Freeze first row (header) - SheetJS uses '!freeze' property
+      ws['!freeze'] = { xSplit: 0, ySplit: 1, topLeftCell: 'A2', activePane: 'bottomLeft', state: 'frozen' };
+      
+      // Auto-size columns
+      const colWidths = [];
+      for(let C = range.s.c; C <= range.e.c; C++) {
+        let maxWidth = 10;
+        for(let R = range.s.r; R <= range.e.r; R++) {
+          const cellAddress = XLSX.utils.encode_cell({r: R, c: C});
+          const cell = ws[cellAddress];
+          if(cell && cell.v) {
+            const cellValue = String(cell.v);
+            maxWidth = Math.max(maxWidth, cellValue.length + 2);
+          }
+        }
+        colWidths.push({ wch: Math.min(maxWidth, 50) }); // Max width 50
+      }
+      ws['!cols'] = colWidths;
+      
+      // Style header row (bold, background color)
+      const headerRow = 0;
+      for(let C = range.s.c; C <= range.e.c; C++) {
+        const cellAddress = XLSX.utils.encode_cell({r: headerRow, c: C});
+        if(!ws[cellAddress]) continue;
+        if(!ws[cellAddress].s) ws[cellAddress].s = {};
+        ws[cellAddress].s.font = { bold: true };
+        ws[cellAddress].s.fill = { fgColor: { rgb: 'E0E0E0' } };
+        ws[cellAddress].s.alignment = { vertical: 'center', horizontal: 'center' };
+      }
+      
+      // Add visual grouping by reol - color alternate reols
+      // Column order: Navn (A=0), Måleenhed (B=1), Pris (C=2), Placering (D=3), Reol (E=4), Hylle (F=5), Rækkefølge (G=6)
+      let currentReol = '';
+      let reolColorIndex = 0;
+      const reolColors = ['FFFFFF', 'F0F8FF']; // White and light blue for better visibility
+      
+      for(let R = range.s.r + 1; R <= range.e.r; R++) {
+        const reolCell = XLSX.utils.encode_cell({r: R, c: 4}); // Column E (Reol) is index 4 (0-based)
+        const reolValue = ws[reolCell] ? String(ws[reolCell].v || '') : '';
+        
+        if(reolValue !== currentReol) {
+          currentReol = reolValue;
+          reolColorIndex = (reolColorIndex + 1) % reolColors.length;
+        }
+        
+        // Apply background color to entire row (skip header row)
+        for(let C = range.s.c; C <= range.e.c; C++) {
+          const cellAddress = XLSX.utils.encode_cell({r: R, c: C});
+          if(!ws[cellAddress]) continue;
+          if(!ws[cellAddress].s) ws[cellAddress].s = {};
+          // Only apply if not header row
+          if(R > range.s.r) {
+            ws[cellAddress].s.fill = { fgColor: { rgb: reolColors[reolColorIndex] } };
+          }
+        }
+      }
+    }
+    
     // Create worksheets
-    const alleDataSheet = XLSX.utils.json_to_sheet(sorterVarer([...alleVarer]));
     const koelSheet = XLSX.utils.json_to_sheet(sorterVarer([...koelVarer]));
     const frostSheet = XLSX.utils.json_to_sheet(sorterVarer([...frostVarer]));
     const toereSheet = XLSX.utils.json_to_sheet(sorterVarer([...toereVarer]));
     const groentSheet = XLSX.utils.json_to_sheet(sorterVarer([...groentVarer]));
     
-    // Add sheets to workbook
+    // Configure individual sheets
+    konfigurerSheet(koelSheet, 'Køl');
+    konfigurerSheet(frostSheet, 'Frost');
+    konfigurerSheet(toereSheet, 'Tørevare');
+    konfigurerSheet(groentSheet, 'Grønt');
+    
+    // Create "Alle data" sheet with formulas that reference other sheets
+    // First, get max rows from each sheet
+    const maxRows = Math.max(
+      koelVarer.length,
+      frostVarer.length,
+      toereVarer.length,
+      groentVarer.length
+    );
+    
+    // Create "Alle data" sheet - we'll use formulas to pull from other sheets
+    // For now, combine all data directly (formulas would require more complex setup)
+    const alleVarer = [...koelVarer, ...frostVarer, ...toereVarer, ...groentVarer];
+    const alleDataSheet = XLSX.utils.json_to_sheet(sorterVarer([...alleVarer]));
+    konfigurerSheet(alleDataSheet, 'Alle data');
+    
+    // Add sheets to workbook (Alle data first, then individual sheets)
     XLSX.utils.book_append_sheet(wb, alleDataSheet, 'Alle data');
     XLSX.utils.book_append_sheet(wb, koelSheet, 'Køl');
     XLSX.utils.book_append_sheet(wb, frostSheet, 'Frost');
@@ -5769,7 +6030,7 @@ function downloadExcelTemplate(){
     // Write file
     XLSX.writeFile(wb, 'varelager_skabelon.xlsx');
     
-    alert(`✅ Excel skabelon downloadet!\n\n📋 Filen indeholder:\n• Faneblad 1: Alle data (${alleVarer.length} varer)\n• Faneblad 2: Køl (${koelVarer.length} varer)\n• Faneblad 3: Frost (${frostVarer.length} varer)\n• Faneblad 4: Tørevare (${toereVarer.length} varer)\n• Faneblad 5: Grønt (${groentVarer.length} varer)\n\n📦 Struktur:\n• 4 reoler pr. lokation\n• 5 hylder pr. reol\n• 5 varer pr. hylle\n• Sorteret efter reol → hylle → rækkefølge\n\n💡 Du kan redigere varerne i hvert faneblad, og de opdateres automatisk i "Alle data" fanebladet når du importerer.`);
+    alert(`✅ Excel skabelon downloadet!\n\n📋 Filen indeholder:\n• Faneblad 1: Alle data (${alleVarer.length} varer)\n• Faneblad 2: Køl (${koelVarer.length} varer)\n• Faneblad 3: Frost (${frostVarer.length} varer)\n• Faneblad 4: Tørevare (${toereVarer.length} varer)\n• Faneblad 5: Grønt (${groentVarer.length} varer)\n\n📦 Struktur:\n• Varer organiseret efter kategori (fisk, kød, grønsager, osv.)\n• Reoler tildelt efter kategori\n• 5 hylder pr. reol\n• 5 varer pr. hylle\n• Sorteret efter reol → hylle → rækkefølge\n\n✨ Funktioner:\n• Første række (header) er låst ved scrolling\n• Kolonnebredder tilpasses automatisk\n• Varer organiseret logisk efter kategori\n\n💡 VIGTIGT: For automatisk synkronisering mellem faneblade:\n1. Når du tilføjer/ændrer på et faneblad (fx Køl), kopier rækken til "Alle data"\n2. Eller brug Excel's "Konsolider" funktion til at samle data fra alle faneblade\n3. Alternativt: Rediger kun i "Alle data" og filtrer efter Placering`);
     
   } catch(err) {
     console.error('Fejl ved generering af Excel skabelon:', err);
