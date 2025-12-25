@@ -5614,10 +5614,11 @@ function downloadExcelTemplate(){
         
         let vareIndex = 0;
         
-        // Expand varer to fill category
+        // Expand varer to fill category - use all available varer
         const expandedVarer = [];
         const targetCount = (reolSlut - reolStart + 1) * hylderPerReol * varerPerHylle;
-        while(expandedVarer.length < targetCount && expandedVarer.length < 100) {
+        // Use all varer from the array, repeat if needed to reach targetCount
+        while(expandedVarer.length < targetCount) {
           varer.forEach((vare, idx) => {
             if(expandedVarer.length < targetCount) {
               let navn = vare[0];
@@ -5628,13 +5629,15 @@ function downloadExcelTemplate(){
               expandedVarer.push([navn, vare[1], vare[2]]);
             }
           });
+          // Safety break to prevent infinite loop
+          if(expandedVarer.length === 0 && varer.length === 0) break;
         }
         
-        // Distribute across reoler and hylder
+        // Distribute across reoler and hylder - use all available varer
         for(let reol = reolStart; reol <= reolSlut; reol++) {
           for(let hylle = 1; hylle <= hylderPerReol; hylle++) {
             for(let i = 0; i < varerPerHylle; i++) {
-              if(vareIndex < expandedVarer.length && totalVarer < 100) {
+              if(vareIndex < expandedVarer.length) {
                 const vare = expandedVarer[vareIndex];
                 resultat.push({
                   Navn: vare[0],
