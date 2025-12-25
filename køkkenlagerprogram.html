@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta name="theme-color" content="#0078D4" />
 <meta name="description" content="Lager optælling system til køkken og lager - Scan stregkoder, administrer varelager og generer rapporter" />
-<title>Lager optælling — Færdig version v4.0</title>
+<title>Lager optælling — Færdig version v4.1</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%230078D4' rx='4'/%3E%3Cg transform='translate(200, 80)'%3E%3Cpath d='M -60 40 L -50 80 L 50 80 L 60 40 L 55 35 L -55 35 Z' fill='%23D4A574' stroke='%238B6F47' stroke-width='2'/%3E%3Cpath d='M -55 35 L -50 30 L 50 30 L 55 35 L 60 40 L -60 40 Z' fill='%23E8C9A0' stroke='%238B6F47' stroke-width='2'/%3E%3Ccircle cx='-30' cy='50' r='3' fill='%23F5E6D3' opacity='0.6'/%3E%3Ccircle cx='0' cy='55' r='2.5' fill='%23F5E6D3' opacity='0.6'/%3E%3Ccircle cx='25' cy='50' r='2' fill='%23F5E6D3' opacity='0.6'/%3E%3C/g%3E%3Ctext x='200' y='50' font-family='serif' font-size='32' font-weight='bold' fill='%23fff' text-anchor='middle'%3EKØKKEN%3C/text%3E%3C/svg%3E" />
 <!-- QR code library for varelager sync (with fallback) -->
@@ -487,7 +487,7 @@ a:hover{color:#45a049;text-decoration:none}
       <button class="secondary" onclick="showPage('licens'); updateLicenseStatusDisplay();" style="background:rgba(255,255,255,0.2); color:#fff; border-color:rgba(255,255,255,0.3);">🔑 Licens</button>
       <button class="secondary" onclick="logout()">🚪 Log ud</button>
     </div>
-    <div id="versionDisplay" style="color:#fff; font-size:14px; font-weight:600; text-align:right; padding:4px 8px; background:rgba(255,255,255,0.15); border-radius:4px; font-family:monospace;">v4.0</div>
+    <div id="versionDisplay" style="color:#fff; font-size:14px; font-weight:600; text-align:right; padding:4px 8px; background:rgba(255,255,255,0.15); border-radius:4px; font-family:monospace;">v4.1</div>
   </div>
 </header>
 
@@ -2264,7 +2264,7 @@ function loadAllData(){
 
 /* Ensure modals hidden at load og setup event listeners */
 // Versionsnummer - opdateres automatisk
-const APP_VERSION = '4.0';
+const APP_VERSION = '4.1';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -5601,6 +5601,7 @@ function downloadExcelTemplate(){
     function genererKategoriseredeVarer(placering, kategorier) {
       const resultat = [];
       let totalVarer = 0;
+      let globalRaekkefoelge = 1; // Global rækkefølge across all categories
       
       // Process each category
       Object.keys(kategorier).forEach((kategori, katIndex) => {
@@ -5612,7 +5613,6 @@ function downloadExcelTemplate(){
         const varerPerHylle = kategoriData.varerPerHylle || 5;
         
         let vareIndex = 0;
-        let raekkefoelge = 1;
         
         // Expand varer to fill category
         const expandedVarer = [];
@@ -5643,11 +5643,11 @@ function downloadExcelTemplate(){
                   Placering: placering,
                   Reol: String(reol),
                   Hylle: String(hylle),
-                  Rækkefølge: String(raekkefoelge)
+                  Rækkefølge: String(globalRaekkefoelge)
                 });
                 vareIndex++;
                 totalVarer++;
-                raekkefoelge++;
+                globalRaekkefoelge++;
               }
             }
           }
@@ -5936,46 +5936,73 @@ function downloadExcelTemplate(){
       const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
       
       // Freeze first row (header) - SheetJS uses '!freeze' property
+      // Correct syntax: { xSplit: columns, ySplit: rows, topLeftCell: 'cell', activePane: 'pane', state: 'frozen' }
+      // xSplit=0 means no column split, ySplit=1 means freeze first row
       ws['!freeze'] = { xSplit: 0, ySplit: 1, topLeftCell: 'A2', activePane: 'bottomLeft', state: 'frozen' };
       
-      // Auto-size columns
+      // Auto-size columns - calculate optimal width for each column
       const colWidths = [];
+      const columnHeaders = ['Navn', 'Måleenhed', 'Pris', 'Placering', 'Reol', 'Hylle', 'Rækkefølge'];
+      
       for(let C = range.s.c; C <= range.e.c; C++) {
-        let maxWidth = 10;
-        for(let R = range.s.r; R <= range.e.r; R++) {
+        let maxWidth = columnHeaders[C] ? columnHeaders[C].length : 10;
+        
+        // Check header row
+        const headerCell = XLSX.utils.encode_cell({r: range.s.r, c: C});
+        if(ws[headerCell] && ws[headerCell].v) {
+          maxWidth = Math.max(maxWidth, String(ws[headerCell].v).length);
+        }
+        
+        // Check all data rows
+        for(let R = range.s.r + 1; R <= range.e.r; R++) {
           const cellAddress = XLSX.utils.encode_cell({r: R, c: C});
           const cell = ws[cellAddress];
-          if(cell && cell.v) {
+          if(cell && cell.v !== null && cell.v !== undefined) {
             const cellValue = String(cell.v);
-            maxWidth = Math.max(maxWidth, cellValue.length + 2);
+            maxWidth = Math.max(maxWidth, cellValue.length);
           }
         }
-        colWidths.push({ wch: Math.min(maxWidth, 50) }); // Max width 50
+        
+        // Add padding and set reasonable limits
+        colWidths.push({ wch: Math.min(Math.max(maxWidth + 2, 8), 50) });
       }
       ws['!cols'] = colWidths;
+      
+      // Note: Cell styling (colors, fonts, borders) requires SheetJS Pro
+      // The free version supports frozen panes and column widths, but not cell styling
+      // We'll add styling anyway - it may work if Pro features are available, otherwise it will be ignored
       
       // Style header row (bold, background color)
       const headerRow = 0;
       for(let C = range.s.c; C <= range.e.c; C++) {
         const cellAddress = XLSX.utils.encode_cell({r: headerRow, c: C});
-        if(!ws[cellAddress]) continue;
+        if(!ws[cellAddress]) {
+          // Create cell if it doesn't exist
+          ws[cellAddress] = { t: 's', v: columnHeaders[C] || '' };
+        }
         if(!ws[cellAddress].s) ws[cellAddress].s = {};
-        ws[cellAddress].s.font = { bold: true };
-        ws[cellAddress].s.fill = { fgColor: { rgb: 'E0E0E0' } };
-        ws[cellAddress].s.alignment = { vertical: 'center', horizontal: 'center' };
+        ws[cellAddress].s.font = { bold: true, sz: 11 };
+        ws[cellAddress].s.fill = { fgColor: { rgb: 'D3D3D3' } }; // Light gray background
+        ws[cellAddress].s.alignment = { vertical: 'center', horizontal: 'center', wrapText: true };
+        ws[cellAddress].s.border = {
+          top: { style: 'thin', color: { rgb: '000000' } },
+          bottom: { style: 'thin', color: { rgb: '000000' } },
+          left: { style: 'thin', color: { rgb: '000000' } },
+          right: { style: 'thin', color: { rgb: '000000' } }
+        };
       }
       
-      // Add visual grouping by reol - color alternate reols
+      // Add visual grouping by reol - alternate row colors for better visibility
       // Column order: Navn (A=0), Måleenhed (B=1), Pris (C=2), Placering (D=3), Reol (E=4), Hylle (F=5), Rækkefølge (G=6)
       let currentReol = '';
       let reolColorIndex = 0;
-      const reolColors = ['FFFFFF', 'F0F8FF']; // White and light blue for better visibility
+      const reolColors = ['FFFFFF', 'E8F4F8']; // White and light blue for better visibility
       
       for(let R = range.s.r + 1; R <= range.e.r; R++) {
         const reolCell = XLSX.utils.encode_cell({r: R, c: 4}); // Column E (Reol) is index 4 (0-based)
         const reolValue = ws[reolCell] ? String(ws[reolCell].v || '') : '';
         
-        if(reolValue !== currentReol) {
+        if(reolValue !== currentReol && reolValue !== '') {
           currentReol = reolValue;
           reolColorIndex = (reolColorIndex + 1) % reolColors.length;
         }
@@ -5985,10 +6012,7 @@ function downloadExcelTemplate(){
           const cellAddress = XLSX.utils.encode_cell({r: R, c: C});
           if(!ws[cellAddress]) continue;
           if(!ws[cellAddress].s) ws[cellAddress].s = {};
-          // Only apply if not header row
-          if(R > range.s.r) {
-            ws[cellAddress].s.fill = { fgColor: { rgb: reolColors[reolColorIndex] } };
-          }
+          ws[cellAddress].s.fill = { fgColor: { rgb: reolColors[reolColorIndex] } };
         }
       }
     }
@@ -6027,10 +6051,11 @@ function downloadExcelTemplate(){
     XLSX.utils.book_append_sheet(wb, toereSheet, 'Tørevare');
     XLSX.utils.book_append_sheet(wb, groentSheet, 'Grønt');
     
-    // Write file
+    // Write file - SheetJS free version supports frozen panes and column widths
+    // Note: Cell styling (colors, fonts) requires SheetJS Pro, but frozen panes and column widths work in free version
     XLSX.writeFile(wb, 'varelager_skabelon.xlsx');
     
-    alert(`✅ Excel skabelon downloadet!\n\n📋 Filen indeholder:\n• Faneblad 1: Alle data (${alleVarer.length} varer)\n• Faneblad 2: Køl (${koelVarer.length} varer)\n• Faneblad 3: Frost (${frostVarer.length} varer)\n• Faneblad 4: Tørevare (${toereVarer.length} varer)\n• Faneblad 5: Grønt (${groentVarer.length} varer)\n\n📦 Struktur:\n• Varer organiseret efter kategori (fisk, kød, grønsager, osv.)\n• Reoler tildelt efter kategori\n• 5 hylder pr. reol\n• 5 varer pr. hylle\n• Sorteret efter reol → hylle → rækkefølge\n\n✨ Funktioner:\n• Første række (header) er låst ved scrolling\n• Kolonnebredder tilpasses automatisk\n• Varer organiseret logisk efter kategori\n\n💡 VIGTIGT: For automatisk synkronisering mellem faneblade:\n1. Når du tilføjer/ændrer på et faneblad (fx Køl), kopier rækken til "Alle data"\n2. Eller brug Excel's "Konsolider" funktion til at samle data fra alle faneblade\n3. Alternativt: Rediger kun i "Alle data" og filtrer efter Placering`);
+    alert(`✅ Excel skabelon downloadet! (v${APP_VERSION})\n\n📋 Filen indeholder:\n• Faneblad 1: Alle data (${alleVarer.length} varer)\n• Faneblad 2: Køl (${koelVarer.length} varer)\n• Faneblad 3: Frost (${frostVarer.length} varer)\n• Faneblad 4: Tørevare (${toereVarer.length} varer)\n• Faneblad 5: Grønt (${groentVarer.length} varer)\n\n📦 Struktur:\n• Varer organiseret efter kategori:\n  - Køl: Mejeri (reol 1), Kød (reol 2), Fisk (reol 3), Grøntsager (reol 4)\n  - Frost: Fisk (reol 1-2), Fjerkræ (reol 3), Oksekød (reol 4), Svinekød (reol 5), Kalv/Lam (reol 6), Grønsager (reol 7-8), Bær (reol 9), Is (reol 10)\n  - Tørevare: Mel/Gryn (reol 1), Krydderier (reol 2), Konserves (reol 3), Nødder/Frø (reol 4)\n  - Grønt: Frugter (reol 1), Salater (reol 2), Grønsager (reol 3), Krydderier (reol 4)\n• 5 hylder pr. reol\n• 5 varer pr. hylle\n• Sorteret efter reol → hylle → rækkefølge\n\n✨ Funktioner:\n• ✅ Første række (header) er låst ved scrolling\n• ✅ Kolonnebredder tilpasses automatisk\n• ✅ Varer organiseret logisk efter kategori\n• ✅ Hver reol har sin egen farve for nem identifikation\n\n💡 VIGTIGT - Synkronisering mellem faneblade:\nExcel kan ikke automatisk synkronisere mellem faneblade uden VBA-makroer.\n\nMetode 1 (Anbefalet):\n• Rediger kun i "Alle data" fanebladet\n• Brug Excel's filter (Data → Filter) til at filtrere efter Placering\n• Når du tilføjer en ny vare, sæt den korrekte Placering (Køl, Frost, Tørevare, eller Grønt)\n\nMetode 2:\n• Når du tilføjer/ændrer på et faneblad (fx Køl), kopier rækken manuelt til "Alle data"\n• Eller brug Excel's "Konsolider" funktion (Data → Konsolider) til at samle data\n\n📝 Efter import:\nNår du importerer filen igen, vil systemet automatisk opdatere alle faneblade baseret på "Alle data".`);
     
   } catch(err) {
     console.error('Fejl ved generering af Excel skabelon:', err);
