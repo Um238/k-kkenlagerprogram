@@ -8,6 +8,7 @@
 <meta name="description" content="Lager optælling system til køkken og lager - Scan stregkoder, administrer varelager og generer rapporter" />
 <title>Lager optælling — Færdig version v4.0</title>
 <link rel="manifest" href="manifest.json" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%230078D4' rx='4'/%3E%3Cg transform='translate(200, 80)'%3E%3Cpath d='M -60 40 L -50 80 L 50 80 L 60 40 L 55 35 L -55 35 Z' fill='%23D4A574' stroke='%238B6F47' stroke-width='2'/%3E%3Cpath d='M -55 35 L -50 30 L 50 30 L 55 35 L 60 40 L -60 40 Z' fill='%23E8C9A0' stroke='%238B6F47' stroke-width='2'/%3E%3Ccircle cx='-30' cy='50' r='3' fill='%23F5E6D3' opacity='0.6'/%3E%3Ccircle cx='0' cy='55' r='2.5' fill='%23F5E6D3' opacity='0.6'/%3E%3Ccircle cx='25' cy='50' r='2' fill='%23F5E6D3' opacity='0.6'/%3E%3C/g%3E%3Ctext x='200' y='50' font-family='serif' font-size='32' font-weight='bold' fill='%23fff' text-anchor='middle'%3EKØKKEN%3C/text%3E%3C/svg%3E" />
 <!-- QR code library for varelager sync (with fallback) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
@@ -476,12 +477,15 @@ a:hover{color:#45a049;text-decoration:none}
 
   <div style="flex:1;">
     <h1 id="firmaNavn" contenteditable="true">Indsæt dit firmanavn her</h1>
-    <p id="tagline">Lager optælling – Professionel lageroptælling <span style="font-size:12px; color:rgba(255,255,255,0.8);">v4.0</span></p>
+    <p id="tagline">Lager optælling – Professionel lageroptælling</p>
   </div>
 
-  <div class="header-controls">
-    <button class="secondary" onclick="showPage('licens'); updateLicenseStatusDisplay();" style="background:rgba(255,255,255,0.2); color:#fff; border-color:rgba(255,255,255,0.3);">🔑 Licens</button>
-    <button class="secondary" onclick="logout()">🚪 Log ud</button>
+  <div class="header-controls" style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+    <div style="display:flex; gap:8px;">
+      <button class="secondary" onclick="showPage('licens'); updateLicenseStatusDisplay();" style="background:rgba(255,255,255,0.2); color:#fff; border-color:rgba(255,255,255,0.3);">🔑 Licens</button>
+      <button class="secondary" onclick="logout()">🚪 Log ud</button>
+    </div>
+    <div id="versionDisplay" style="color:#fff; font-size:14px; font-weight:600; text-align:right; padding:4px 8px; background:rgba(255,255,255,0.15); border-radius:4px; font-family:monospace;">v4.0</div>
   </div>
 </header>
 
@@ -491,10 +495,10 @@ a:hover{color:#45a049;text-decoration:none}
 <nav id="topnav">
   <span class="menu-item active" data-target="lageropt" onclick="navClick(event)">📦 Lager optælling</span>
   <span class="menu-item" data-target="opsaetning" onclick="navClick(event)">⚙️ Opsætning Lager</span>
+  <span class="menu-item" data-target="master" onclick="navClick(event)">📋 Varelager administration</span>
   <span class="menu-item" data-target="rapporter" onclick="navClick(event)">📊 Rapporter</span>
   <span class="menu-item" data-target="labels" onclick="navClick(event)">🏷️ Labels</span>
   <span class="menu-item" data-target="leverandor" onclick="navClick(event)">🚚 Leverandører</span>
-  <span class="menu-item" data-target="master" onclick="navClick(event)">📋 Varelager administration</span>
   <span class="menu-item" data-target="systemOpsaetning" onclick="navClick(event)">⚙️ Opsætning</span>
 </nav>
 
@@ -2248,7 +2252,22 @@ function loadAllData(){
 }
 
 /* Ensure modals hidden at load og setup event listeners */
+// Versionsnummer - opdateres automatisk
+const APP_VERSION = '4.0';
+
+// Opdater versionsnummer i header
+function updateVersionDisplay(){
+  const versionDisplay = document.getElementById('versionDisplay');
+  if(versionDisplay){
+    versionDisplay.textContent = `v${APP_VERSION}`;
+  }
+  // Opdater også i title
+  document.title = `Lager optælling — Færdig version v${APP_VERSION}`;
+}
+
 document.addEventListener('DOMContentLoaded', ()=>{
+  // Opdater versionsnummer ved opstart
+  updateVersionDisplay();
   try {
     // Vis login først
     showLoginModal();
