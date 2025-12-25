@@ -82,7 +82,8 @@ table th{background:#fafafa;font-weight:800}
 }
 
 /* [CSS 9] Labels */
-.label-container{display:flex;flex-direction:column;margin-top:15px;gap:15mm;align-items:flex-start}
+#labels .label-controls{position:sticky;top:0;background:#fff;z-index:100;padding:15px 0;margin-bottom:15px;border-bottom:2px solid #e6e6e6;box-shadow:0 2px 4px rgba(0,0,0,0.1)}
+.label-container{display:flex;flex-direction:column;margin-top:15px;gap:15mm;align-items:flex-start;padding:20px 40px;max-width:100%}
 .label{border:1px solid #000;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0;padding:6px;box-sizing:border-box;background:#fff;page-break-inside:avoid;break-inside:avoid;margin-bottom:15mm}
 
 /* [CSS 10] Login Modal */
@@ -128,6 +129,7 @@ body.login-active #content{display:none}
 @media print{
   nav,button,input,select{display:none !important} 
   body{background:white;margin:0;padding:0}
+  .label-controls{position:static !important;box-shadow:none !important;border-bottom:none !important}
   .label-container{display:flex;flex-direction:column;gap:20mm;margin:0;padding:10mm;align-items:flex-start}
   .label{margin-bottom:20mm !important;margin-right:0;margin-top:0;page-break-after:auto;break-after:auto;page-break-inside:avoid;break-inside:avoid}
   .label:not(:last-child){margin-bottom:20mm !important}
@@ -696,7 +698,7 @@ a:hover{color:#45a049;text-decoration:none}
   <!-- [HTML 3.4] LABELS -->
   <section id="labels" class="page hidden">
     <h2>Print Labels</h2>
-    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+    <div class="label-controls" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
       <label class="small">Vælg lokation / gruppe</label>
       <select id="labelSelect" onchange="updateLabelReolSelect()"></select>
       <label class="small" id="labelReolLabel" style="display:none;">Vælg reol</label>
