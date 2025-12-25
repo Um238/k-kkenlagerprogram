@@ -6769,10 +6769,11 @@ function exportAllBackup(){
       recoveryEmail: localStorage.getItem(RECOVERY_EMAIL_KEY),
       recoveryEmailHash: localStorage.getItem(RECOVERY_EMAIL_HASH_KEY),
       userName: localStorage.getItem('user_name'),
-      license: localStorage.getItem('app_license'),
+      license: localStorage.getItem('app_license')
       
-      // GitHub token (optional, for server sync)
-      githubToken: localStorage.getItem('github_gist_token') || null
+      // NOTE: githubToken is NOT included in backup for security reasons
+      // GitHub automatically revokes tokens found in gist content
+      // Token should only be stored locally in browser localStorage
     };
     
     // Check if there's any data to export
@@ -6845,8 +6846,10 @@ async function uploadBackupToServer(){
       recoveryEmail: localStorage.getItem(RECOVERY_EMAIL_KEY),
       recoveryEmailHash: localStorage.getItem(RECOVERY_EMAIL_HASH_KEY),
       userName: localStorage.getItem('user_name'),
-      license: localStorage.getItem('app_license'),
-      githubToken: localStorage.getItem('github_gist_token') || null
+      license: localStorage.getItem('app_license')
+      // NOTE: githubToken is NOT included in backup for security reasons
+      // GitHub automatically revokes tokens found in gist content
+      // Token should only be stored locally in browser localStorage
     };
     
     // Check if there's any data to export
@@ -7260,11 +7263,9 @@ function importAllBackupFromFile(file){
         }
       }
       
-      // Restore GitHub token (optional)
-      if (backupData.githubToken) {
-        localStorage.setItem('github_gist_token', backupData.githubToken);
-        restored.push('GitHub token');
-      }
+      // NOTE: GitHub token is NOT restored from backup for security reasons
+      // GitHub automatically revokes tokens found in gist content
+      // User must enter token manually after restore if needed
       
       // Save all restored data
       saveAllData();
