@@ -419,7 +419,10 @@ function showQuantityDialog(barcode){
     (v.stregkode && String(v.stregkode).trim() === String(barcode).trim())
   );
   if (item) {
-    codeDisplay.textContent = item.navn + ' (' + barcode + ')';
+    const maaleenhed = item.maaleenhed || 'stk';
+    const pris = item.pris !== undefined ? Number(item.pris) : 0;
+    const prisText = pris > 0 ? ` • ${pris.toFixed(2)} kr. pr. ${maaleenhed}` : '';
+    codeDisplay.innerHTML = `<strong>${item.navn}</strong><br><span style="font-size:14px; color:#666;">${maaleenhed}${prisText}</span>`;
   } else {
     codeDisplay.textContent = 'Stregkode: ' + barcode;
   }
@@ -715,11 +718,14 @@ function renderList(){
     itemsByLocation[location].forEach((item, idx) => {
       const v = item.vare;
       const key = Object.keys(scannedItems).find(k => scannedItems[k] === item);
+      const maaleenhed = v.maaleenhed || 'stk';
+      const pris = v.pris !== undefined ? Number(v.pris) : 0;
+      const prisText = pris > 0 ? ` • ${pris.toFixed(2)} kr. pr. ${maaleenhed}` : '';
       html += `
         <div class="scanned-item">
           <div class="info">
             <div class="name">${v.navn}</div>
-            <div class="details">${v.maaleenhed || 'stk'}${v.reolNr ? ' • Reol ' + v.reolNr : ''}${v.hylleNr ? ' • Hylle ' + v.hylleNr : ''}</div>
+            <div class="details">${maaleenhed}${prisText}${v.reolNr ? ' • Reol ' + v.reolNr : ''}${v.hylleNr ? ' • Hylle ' + v.hylleNr : ''}</div>
           </div>
           <div class="count">${item.count}</div>
           <button class="remove" onclick="removeItem('${key}')">Slet</button>
