@@ -5937,33 +5937,20 @@ function downloadExcelTemplate(){
       
       const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
       
-      // Check if first row is version info (contains "VERSIONSINFO")
-      const firstRowCell = ws['A1'];
-      const isVersionRow = firstRowCell && firstRowCell.v && String(firstRowCell.v).includes('VERSIONSINFO');
-      
-      // Freeze panes - freeze first data row (skip version row if present)
-      // If version row exists, freeze at row 2 (after version row), otherwise freeze at row 2 (after header)
-      const freezeRow = isVersionRow ? 2 : 1;
-      ws['!freeze'] = { xSplit: 0, ySplit: freezeRow, topLeftCell: `A${freezeRow + 1}`, activePane: 'bottomLeft', state: 'frozen' };
+      // Freeze first row (header) - SheetJS uses '!freeze' property
+      // Freeze at row 1 (after header row)
+      ws['!freeze'] = { xSplit: 0, ySplit: 1, topLeftCell: 'A2', activePane: 'bottomLeft', state: 'frozen' };
       
       // Auto-size columns - calculate optimal width for each column
       const colWidths = [];
       const columnHeaders = ['Navn', 'Måleenhed', 'Pris', 'Placering', 'Reol', 'Hylle', 'Rækkefølge'];
       
-      // Determine header row (skip version row if present)
-      const headerRow = isVersionRow ? range.s.r + 1 : range.s.r;
-      const dataStartRow = isVersionRow ? range.s.r + 2 : range.s.r + 1;
+      // Header row is always first row (row 0)
+      const headerRow = range.s.r;
+      const dataStartRow = range.s.r + 1;
       
       for(let C = range.s.c; C <= range.e.c; C++) {
         let maxWidth = columnHeaders[C] ? columnHeaders[C].length : 10;
-        
-        // Check version row if present
-        if(isVersionRow) {
-          const versionCell = XLSX.utils.encode_cell({r: range.s.r, c: C});
-          if(ws[versionCell] && ws[versionCell].v) {
-            maxWidth = Math.max(maxWidth, String(ws[versionCell].v).length);
-          }
-        }
         
         // Check header row
         const headerCell = XLSX.utils.encode_cell({r: headerRow, c: C});
@@ -5990,20 +5977,8 @@ function downloadExcelTemplate(){
       // The free version supports frozen panes and column widths, but not cell styling
       // We'll add styling anyway - it may work if Pro features are available, otherwise it will be ignored
       
-      // Style version row if present
-      if(isVersionRow) {
-        for(let C = range.s.c; C <= range.e.c; C++) {
-          const cellAddress = XLSX.utils.encode_cell({r: range.s.r, c: C});
-          if(ws[cellAddress] && !ws[cellAddress].s) ws[cellAddress].s = {};
-          if(ws[cellAddress] && ws[cellAddress].s) {
-            ws[cellAddress].s.font = { bold: true, sz: 10, color: { rgb: '0066CC' } };
-            ws[cellAddress].s.fill = { fgColor: { rgb: 'E3F2FD' } }; // Light blue background
-          }
-        }
-      }
-      
       // Style header row (bold, background color)
-      const actualHeaderRow = isVersionRow ? range.s.r + 1 : range.s.r;
+      const actualHeaderRow = range.s.r;
       for(let C = range.s.c; C <= range.e.c; C++) {
         const cellAddress = XLSX.utils.encode_cell({r: actualHeaderRow, c: C});
         if(!ws[cellAddress]) {
@@ -6028,8 +6003,8 @@ function downloadExcelTemplate(){
       let reolColorIndex = 0;
       const reolColors = ['FFFFFF', 'E8F4F8']; // White and light blue for better visibility
       
-      // Start from data rows (skip version row and header row)
-      const startRow = isVersionRow ? range.s.r + 2 : range.s.r + 1;
+      // Start from data rows (skip header row)
+      const startRow = range.s.r + 1;
       for(let R = startRow; R <= range.e.r; R++) {
         const reolCell = XLSX.utils.encode_cell({r: R, c: 4}); // Column E (Reol) is index 4 (0-based)
         const reolValue = ws[reolCell] ? String(ws[reolCell].v || '') : '';
@@ -6061,39 +6036,33 @@ function downloadExcelTemplate(){
     konfigurerSheet(toereSheet, 'Tørevare');
     konfigurerSheet(groentSheet, 'Grønt');
     
-    // Create "Alle data" sheet with formulas that reference other sheets
-    // First, get max rows from each sheet
-    const maxRows = Math.max(
-      koelVarer.length,
-      frostVarer.length,
-      toereVarer.length,
-      groentVarer.length
-    );
-    
     // Create "Alle data" sheet - we'll use formulas to pull from other sheets
     // For now, combine all data directly (formulas would require more complex setup)
     const alleVarer = [...koelVarer, ...frostVarer, ...toereVarer, ...groentVarer];
-    
-    // Sort data first
-    const sortedAlleVarer = sorterVarer([...alleVarer]);
-    
-    // Add version info as first row before data
-    const versionInfo = {
-      Navn: `VERSIONSINFO - Version ${APP_VERSION}`,
-      Måleenhed: `Oprettet: ${new Date().toLocaleString('da-DK')}`,
-      Pris: '',
-      Placering: '',
-      Reol: '',
-      Hylle: '',
-      Rækkefølge: ''
-    };
-    
-    // Create sheet with version row first, then sorted data
-    const alleDataWithVersion = [versionInfo, ...sortedAlleVarer];
-    const alleDataSheet = XLSX.utils.json_to_sheet(alleDataWithVersion);
+    const alleDataSheet = XLSX.utils.json_to_sheet(sorterVarer([...alleVarer]));
     konfigurerSheet(alleDataSheet, 'Alle data');
     
-    // Add sheets to workbook (Alle data first, then individual sheets)
+    // Create a separate "Info" sheet with version information
+    const infoData = [
+      { Info: 'Excel Skabelon Information', Værdi: '' },
+      { Info: 'Version', Værdi: APP_VERSION },
+      { Info: 'Oprettet', Værdi: new Date().toLocaleString('da-DK') },
+      { Info: '', Værdi: '' },
+      { Info: 'Struktur', Værdi: '' },
+      { Info: 'Køl varer', Værdi: koelVarer.length },
+      { Info: 'Frost varer', Værdi: frostVarer.length },
+      { Info: 'Tørevare varer', Værdi: toereVarer.length },
+      { Info: 'Grønt varer', Værdi: groentVarer.length },
+      { Info: 'Total varer', Værdi: alleVarer.length }
+    ];
+    const infoSheet = XLSX.utils.json_to_sheet(infoData);
+    
+    // Configure info sheet - set column widths
+    const infoColWidths = [{ wch: 20 }, { wch: 30 }];
+    infoSheet['!cols'] = infoColWidths;
+    
+    // Add sheets to workbook (Info first, then Alle data, then individual sheets)
+    XLSX.utils.book_append_sheet(wb, infoSheet, 'Info');
     XLSX.utils.book_append_sheet(wb, alleDataSheet, 'Alle data');
     XLSX.utils.book_append_sheet(wb, koelSheet, 'Køl');
     XLSX.utils.book_append_sheet(wb, frostSheet, 'Frost');
@@ -6106,7 +6075,7 @@ function downloadExcelTemplate(){
     const filename = `varelager_skabelon_v${APP_VERSION}.xlsx`;
     XLSX.writeFile(wb, filename);
     
-    alert(`✅ Excel skabelon downloadet! (v${APP_VERSION})\n\n📋 Filen indeholder:\n• Faneblad 1: Alle data (${alleVarer.length} varer) - med versionsnummer i første række\n• Faneblad 2: Køl (${koelVarer.length} varer)\n• Faneblad 3: Frost (${frostVarer.length} varer)\n• Faneblad 4: Tørevare (${toereVarer.length} varer)\n• Faneblad 5: Grønt (${groentVarer.length} varer)\n\n📦 Struktur:\n• Varer organiseret efter kategori:\n  - Køl: Mejeri (reol 1), Kød (reol 2), Fisk (reol 3), Grøntsager (reol 4)\n  - Frost: Fisk (reol 1-2), Fjerkræ (reol 3), Oksekød (reol 4), Svinekød (reol 5), Kalv/Lam (reol 6), Grønsager (reol 7-8), Bær (reol 9), Is (reol 10)\n  - Tørevare: Mel/Gryn (reol 1), Krydderier (reol 2), Konserves (reol 3), Nødder/Frø (reol 4)\n  - Grønt: Frugter (reol 1), Salater (reol 2), Grønsager (reol 3), Krydderier (reol 4)\n• 5 hylder pr. reol\n• 5 varer pr. hylle\n• Sorteret efter reol → hylle → rækkefølge\n\n✨ Funktioner:\n• ✅ Versionsnummer i første række (v${APP_VERSION})\n• ✅ Første række (header) er låst ved scrolling\n• ✅ Kolonnebredder tilpasses automatisk\n• ✅ Varer organiseret logisk efter kategori\n• ✅ Hver reol har sin egen farve for nem identifikation\n\n💡 VIGTIGT - Synkronisering mellem faneblade:\nExcel kan ikke automatisk synkronisere mellem faneblade uden VBA-makroer.\n\nMetode 1 (Anbefalet):\n• Rediger kun i "Alle data" fanebladet\n• Brug Excel's filter (Data → Filter) til at filtrere efter Placering\n• Når du tilføjer en ny vare, sæt den korrekte Placering (Køl, Frost, Tørevare, eller Grønt)\n\nMetode 2:\n• Når du tilføjer/ændrer på et faneblad (fx Køl), kopier rækken manuelt til "Alle data"\n• Eller brug Excel's "Konsolider" funktion (Data → Konsolider) til at samle data\n\n📝 Efter import:\nNår du importerer filen igen, vil systemet automatisk opdatere alle faneblade baseret på "Alle data".`);
+    alert(`✅ Excel skabelon downloadet! (v${APP_VERSION})\n\n📋 Filen indeholder:\n• Faneblad 1: Info - med versionsnummer og struktur information\n• Faneblad 2: Alle data (${alleVarer.length} varer) - klar til import/redigering\n• Faneblad 3: Køl (${koelVarer.length} varer)\n• Faneblad 4: Frost (${frostVarer.length} varer)\n• Faneblad 5: Tørevare (${toereVarer.length} varer)\n• Faneblad 6: Grønt (${groentVarer.length} varer)\n\n📦 Struktur:\n• Varer organiseret efter kategori:\n  - Køl: Mejeri (reol 1), Kød (reol 2), Fisk (reol 3), Grøntsager (reol 4)\n  - Frost: Fisk (reol 1-2), Fjerkræ (reol 3), Oksekød (reol 4), Svinekød (reol 5), Kalv/Lam (reol 6), Grønsager (reol 7-8), Bær (reol 9), Is (reol 10)\n  - Tørevare: Mel/Gryn (reol 1), Krydderier (reol 2), Konserves (reol 3), Nødder/Frø (reol 4)\n  - Grønt: Frugter (reol 1), Salater (reol 2), Grønsager (reol 3), Krydderier (reol 4)\n• 5 hylder pr. reol\n• 5 varer pr. hylle\n• Sorteret efter reol → hylle → rækkefølge\n\n✨ Funktioner:\n• ✅ Versionsnummer i "Info" fanebladet (v${APP_VERSION})\n• ✅ Versionsnummer i filnavn: varelager_skabelon_v${APP_VERSION}.xlsx\n• ✅ Første række (header) er låst ved scrolling\n• ✅ Kolonnebredder tilpasses automatisk\n• ✅ Varer organiseret logisk efter kategori\n• ✅ Hver reol har sin egen farve for nem identifikation\n\n💡 VIGTIGT - Synkronisering mellem faneblade:\nExcel kan ikke automatisk synkronisere mellem faneblade uden VBA-makroer.\n\nMetode 1 (Anbefalet):\n• Rediger kun i "Alle data" fanebladet\n• Brug Excel's filter (Data → Filter) til at filtrere efter Placering\n• Når du tilføjer en ny vare, sæt den korrekte Placering (Køl, Frost, Tørevare, eller Grønt)\n\nMetode 2:\n• Når du tilføjer/ændrer på et faneblad (fx Køl), kopier rækken manuelt til "Alle data"\n• Eller brug Excel's "Konsolider" funktion (Data → Konsolider) til at samle data\n\n📝 Efter import:\nNår du importerer filen igen, vil systemet automatisk opdatere alle faneblade baseret på "Alle data".`);
     
   } catch(err) {
     console.error('Fejl ved generering af Excel skabelon:', err);
