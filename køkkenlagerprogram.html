@@ -5933,12 +5933,18 @@ function downloadExcelTemplate(){
     
     // Helper function to configure Excel sheet with frozen panes, auto-size columns, and formatting
     function konfigurerSheet(ws, sheetName) {
+      if(!ws || !ws['!ref']) return; // Safety check
+      
       const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
       
-      // Freeze first row (header) - SheetJS uses '!freeze' property
-      // Correct syntax: { xSplit: columns, ySplit: rows, topLeftCell: 'cell', activePane: 'pane', state: 'frozen' }
-      // xSplit=0 means no column split, ySplit=1 means freeze first row
-      ws['!freeze'] = { xSplit: 0, ySplit: 1, topLeftCell: 'A2', activePane: 'bottomLeft', state: 'frozen' };
+      // Check if first row is version info (contains "VERSIONSINFO")
+      const firstRowCell = ws['A1'];
+      const isVersionRow = firstRowCell && firstRowCell.v && String(firstRowCell.v).includes('VERSIONSINFO');
+      
+      // Freeze panes - freeze first data row (skip version row if present)
+      // If version row exists, freeze at row 2 (after version row), otherwise freeze at row 2 (after header)
+      const freezeRow = isVersionRow ? 2 : 1;
+      ws['!freeze'] = { xSplit: 0, ySplit: freezeRow, topLeftCell: `A${freezeRow + 1}`, activePane: 'bottomLeft', state: 'frozen' };
       
       // Auto-size columns - calculate optimal width for each column
       const colWidths = [];
@@ -6067,51 +6073,24 @@ function downloadExcelTemplate(){
     // Create "Alle data" sheet - we'll use formulas to pull from other sheets
     // For now, combine all data directly (formulas would require more complex setup)
     const alleVarer = [...koelVarer, ...frostVarer, ...toereVarer, ...groentVarer];
-    const alleDataSheet = XLSX.utils.json_to_sheet(sorterVarer([...alleVarer]));
-    konfigurerSheet(alleDataSheet, 'Alle data');
     
-    // Add version info as first row in "Alle data" sheet (before headers)
-    // Insert version row at the top
-    const versionRow = [
-      { t: 's', v: 'VERSIONSINFO' },
-      { t: 's', v: `Version: ${APP_VERSION}` },
-      { t: 's', v: `Oprettet: ${new Date().toLocaleString('da-DK')}` },
-      { t: 's', v: '' },
-      { t: 's', v: '' },
-      { t: 's', v: '' },
-      { t: 's', v: '' }
-    ];
+    // Sort data first
+    const sortedAlleVarer = sorterVarer([...alleVarer]);
     
-    // Shift existing data down and insert version row
-    const range = XLSX.utils.decode_range(alleDataSheet['!ref'] || 'A1');
-    const newRange = XLSX.utils.decode_range(alleDataSheet['!ref'] || 'A1');
-    newRange.e.r += 1; // Add one row
+    // Add version info as first row before data
+    const versionInfo = {
+      Navn: `VERSIONSINFO - Version ${APP_VERSION}`,
+      Måleenhed: `Oprettet: ${new Date().toLocaleString('da-DK')}`,
+      Pris: '',
+      Placering: '',
+      Reol: '',
+      Hylle: '',
+      Rækkefølge: ''
+    };
     
-    // Shift all existing cells down by one row
-    const shiftedCells = {};
-    for(let R = range.s.r; R <= range.e.r; R++) {
-      for(let C = range.s.c; C <= range.e.c; C++) {
-        const oldAddr = XLSX.utils.encode_cell({r: R, c: C});
-        const newAddr = XLSX.utils.encode_cell({r: R + 1, c: C});
-        if(alleDataSheet[oldAddr]) {
-          shiftedCells[newAddr] = alleDataSheet[oldAddr];
-        }
-      }
-    }
-    
-    // Add version row cells
-    versionRow.forEach((cell, C) => {
-      const addr = XLSX.utils.encode_cell({r: 0, c: C});
-      shiftedCells[addr] = cell;
-    });
-    
-    // Update sheet with shifted cells
-    Object.keys(shiftedCells).forEach(addr => {
-      alleDataSheet[addr] = shiftedCells[addr];
-    });
-    alleDataSheet['!ref'] = XLSX.utils.encode_range(newRange);
-    
-    // Reconfigure sheet after adding version row
+    // Create sheet with version row first, then sorted data
+    const alleDataWithVersion = [versionInfo, ...sortedAlleVarer];
+    const alleDataSheet = XLSX.utils.json_to_sheet(alleDataWithVersion);
     konfigurerSheet(alleDataSheet, 'Alle data');
     
     // Add sheets to workbook (Alle data first, then individual sheets)
