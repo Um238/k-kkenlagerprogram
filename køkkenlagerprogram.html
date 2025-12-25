@@ -1429,7 +1429,13 @@ function attemptLogin(){
     }
     
     console.log('Stored hash:', storedHash);
-    const finalInputHash = storedUsername ? hashPassword(password, username) : hashPassword(password);
+    // Calculate hash for logging (same as used in validation)
+    let finalInputHash;
+    if(!storedUsername) {
+      finalInputHash = hashPassword(password);
+    } else {
+      finalInputHash = username ? hashPassword(password, username) : hashPassword(password);
+    }
     console.log('Input hash:', finalInputHash);
     console.log('Match:', loginValid);
     if(loginValid){
@@ -1752,7 +1758,9 @@ function completePasswordReset(){
   }
   
   // Nulstil password (bevar recovery email)
-  const hash = hashPassword(newPass);
+  // Brug brugernavn hvis det findes
+  const storedUsername = localStorage.getItem(USERNAME_KEY);
+  const hash = storedUsername ? hashPassword(newPass, storedUsername) : hashPassword(newPass);
   localStorage.setItem(PASSWORD_KEY, hash);
   // Recovery email forbliver uændret - kun password nulstilles
   
