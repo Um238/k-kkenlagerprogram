@@ -370,7 +370,7 @@ a:hover{color:#45a049;text-decoration:none}
         <a href="#" onclick="showForgotPassword(); return false;" style="font-size:13px; color:#0078D4;">Glemt password?</a>
       </div>
       <div class="actions">
-        <button onclick="attemptLogin()">🔐 Login</button>
+        <button type="button" onclick="attemptLogin()">🔐 Login</button>
       </div>
     </div>
     <div id="createPasswordForm" style="display:none">
@@ -1375,12 +1375,15 @@ function checkPasswordExists(){
 
 function attemptLogin(){
   try {
+    console.log('attemptLogin kaldt');
     const passwordInput = $('loginPassword');
     if(!passwordInput) {
       console.error('Login password input ikke fundet');
+      showLoginError('Login input ikke fundet. Genindlæs siden.');
       return;
     }
     const password = passwordInput.value;
+    console.log('Password længde:', password ? password.length : 0);
     if(!password){
       showLoginError('Indtast password');
       return;
@@ -1391,16 +1394,22 @@ function attemptLogin(){
       return;
     }
     const inputHash = hashPassword(password);
+    console.log('Stored hash:', storedHash);
+    console.log('Input hash:', inputHash);
+    console.log('Match:', storedHash === inputHash);
     if(storedHash === inputHash){
+      console.log('Login succesfuld');
       isLoggedIn = true;
       hideLoginModal();
     } else {
+      console.log('Forkert password');
       showLoginError('Forkert password');
       passwordInput.value = '';
+      passwordInput.focus();
     }
   } catch(error) {
     console.error('Fejl ved login:', error);
-    showLoginError('Der opstod en fejl. Prøv igen.');
+    showLoginError('Der opstod en fejl. Prøv igen. Fejl: ' + error.message);
   }
 }
 
@@ -2280,7 +2289,11 @@ document.addEventListener('DOMContentLoaded', ()=>{
     const confirmPass = $('confirmPassword');
     if(loginPass) {
       loginPass.addEventListener('keypress', (e)=>{ 
-        if(e.key==='Enter') attemptLogin(); 
+        if(e.key==='Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          attemptLogin(); 
+        }
       });
     }
     const userName = $('userName');
