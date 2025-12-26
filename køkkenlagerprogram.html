@@ -6386,30 +6386,13 @@ function downloadExcelTemplate(){
       }
     }
     
-    // Create worksheets
-    const koelSheet = XLSX.utils.json_to_sheet(sorterVarer([...koelVarer]));
-    const frostSheet = XLSX.utils.json_to_sheet(sorterVarer([...frostVarer]));
-    const toereSheet = XLSX.utils.json_to_sheet(sorterVarer([...toereVarer]));
-    const groentSheet = XLSX.utils.json_to_sheet(sorterVarer([...groentVarer]));
-    
-    // Configure individual sheets
-    konfigurerSheet(koelSheet, 'Køl');
-    konfigurerSheet(frostSheet, 'Frost');
-    konfigurerSheet(toereSheet, 'Tørevare');
-    konfigurerSheet(groentSheet, 'Grønt');
-    
-    // Create "Alle data" sheet - we'll use formulas to pull from other sheets
-    // For now, combine all data directly (formulas would require more complex setup)
+    // Create "Alle data" sheet with ALL items - simple single sheet template
     const alleVarer = [...koelVarer, ...frostVarer, ...toereVarer, ...groentVarer];
     const alleDataSheet = XLSX.utils.json_to_sheet(sorterVarer([...alleVarer]));
     konfigurerSheet(alleDataSheet, 'Alle data');
     
-    // Add sheets to workbook (Alle data first, then individual sheets)
+    // Add only "Alle data" sheet to workbook (simple single sheet template)
     XLSX.utils.book_append_sheet(wb, alleDataSheet, 'Alle data');
-    XLSX.utils.book_append_sheet(wb, koelSheet, 'Køl');
-    XLSX.utils.book_append_sheet(wb, frostSheet, 'Frost');
-    XLSX.utils.book_append_sheet(wb, toereSheet, 'Tørevare');
-    XLSX.utils.book_append_sheet(wb, groentSheet, 'Grønt');
     
     // Write file with version number in filename
     // SheetJS free version supports frozen panes and column widths
@@ -6417,7 +6400,7 @@ function downloadExcelTemplate(){
     const filename = `varelager_skabelon_v${APP_VERSION}.xlsx`;
     XLSX.writeFile(wb, filename);
     
-    alert(`✅ Excel skabelon downloadet! (v${APP_VERSION})\n\n📋 Filen indeholder:\n• Faneblad 1: Alle data (${alleVarer.length} varer) - ⭐ REDIGER KUN HER!\n• Faneblad 2-5: Køl, Frost, Tørevare, Grønt (reference-ark - ikke rediger)\n\n📦 Struktur:\n• Varer organiseret efter kategori:\n  - Køl: Mejeri (reol 1), Kød (reol 2), Fisk (reol 3), Grøntsager (reol 4)\n  - Frost: Fisk (reol 1-2), Fjerkræ (reol 3), Oksekød (reol 4), Svinekød (reol 5), Kalv/Lam (reol 6), Grønsager (reol 7-8), Bær (reol 9), Is (reol 10)\n  - Tørevare: Mel/Gryn (reol 1), Krydderier (reol 2), Konserves (reol 3), Nødder/Frø (reol 4)\n  - Grønt: Frugter (reol 1), Salater (reol 2), Grønsager (reol 3), Krydderier (reol 4)\n• 5 hylder pr. reol\n• 5 varer pr. hylle\n• Sorteret efter reol → hylle → rækkefølge\n\n✨ Funktioner:\n• ✅ Versionsnummer i filnavn: varelager_skabelon_v${APP_VERSION}.xlsx\n• ✅ Første række (header) er låst ved scrolling\n• ✅ Kolonnebredder tilpasses automatisk\n• ✅ Varer organiseret logisk efter kategori\n• ✅ Hver reol har sin egen farve for nem identifikation\n\n⚠️ VIGTIGT - REDIGER KUN I "ALLE DATA" FANEBLADET:\n• Excel kan IKKE automatisk synkronisere mellem faneblade uden VBA-makroer\n• Systemet importerer KUN fra "Alle data" fanebladet\n• Faneblad 2-5 (Køl, Frost, Tørevare, Grønt) er kun reference-ark - de opdateres IKKE automatisk\n\n📝 Sådan bruger du skabelonen:\n1. Rediger KUN i "Alle data" fanebladet\n2. Brug Excel's filter (Data → Filter) til at filtrere efter Placering hvis du vil se specifikke lokationer\n3. Når du tilføjer en ny vare, sæt den korrekte Placering (Køl, Frost, Tørevare, eller Grønt)\n4. Gem filen og importer den igen - systemet læser kun fra "Alle data"\n\n💡 Tip: Du kan slette faneblad 2-5 hvis du ikke har brug for dem - de er kun til reference.`);
+    alert(`✅ Excel skabelon downloadet! (v${APP_VERSION})\n\n📋 Filen indeholder:\n• Faneblad: Alle data (${alleVarer.length} varer)\n\n📦 Struktur:\n• Alle varer fra alle lokationer (Køl, Frost, Tørevare, Grønt)\n• Varer organiseret efter kategori:\n  - Køl: Mejeri (reol 1), Kød (reol 2), Fisk (reol 3), Grøntsager (reol 4)\n  - Frost: Fisk (reol 1-2), Fjerkræ (reol 3), Oksekød (reol 4), Svinekød (reol 5), Kalv/Lam (reol 6), Grønsager (reol 7-8), Bær (reol 9), Is (reol 10)\n  - Tørevare: Mel/Gryn (reol 1), Krydderier (reol 2), Konserves (reol 3), Nødder/Frø (reol 4)\n  - Grønt: Frugter (reol 1), Salater (reol 2), Grønsager (reol 3), Krydderier (reol 4)\n• Sorteret efter Placering → Reol → Hylle → Rækkefølge\n\n✨ Funktioner:\n• ✅ Versionsnummer i filnavn: varelager_skabelon_v${APP_VERSION}.xlsx\n• ✅ Første række (header) er låst ved scrolling\n• ✅ Kolonnebredder tilpasses automatisk\n• ✅ Varer organiseret logisk efter kategori\n\n📝 Sådan bruger du skabelonen:\n1. Rediger varer direkte i arket\n2. Brug Excel's filter (Data → Filter) til at filtrere efter Placering hvis du vil se specifikke lokationer\n3. Når du tilføjer en ny vare, sæt den korrekte Placering (Køl, Frost, Tørevare, eller Grønt)\n4. Gem filen og importer den igen`);
     
   } catch(err) {
     console.error('Fejl ved generering af Excel skabelon:', err);
