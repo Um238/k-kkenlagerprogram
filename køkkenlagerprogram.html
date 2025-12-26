@@ -766,19 +766,19 @@ a:hover{color:#45a049;text-decoration:none}
         <div id="master-section-add" class="settings-section active">
           <h3 style="margin-top:0; margin-bottom:16px;">Tilføj ny varelager</h3>
           <div style="display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap;">
-            <div style="min-width:220px; flex:1;">
+            <div style="min-width:280px; max-width:400px;">
               <input id="masterVarenavn" placeholder="Varenavn" />
               <input id="masterMaaleenhed" placeholder="Måleenhed (stk/L/kg)" />
               <input id="masterPris" type="number" step="0.01" placeholder="Pris pr. enhed" />
-              <label class="small">Placering (Lager)</label>
+              <label style="display:block; margin-top:12px; margin-bottom:6px; font-size:15px; font-weight:700; color:#333;">Placering (Lager)</label>
               <select id="masterPlaceringFilter"></select>
-              <label class="small" style="margin-top:8px;">Reol nummer (valgfrit)</label>
+              <label style="display:block; margin-top:12px; margin-bottom:6px; font-size:15px; font-weight:700; color:#333;">Reol nummer (valgfrit)</label>
               <input id="masterReolNr" type="text" placeholder="fx 1, 2, 3 eller A, B, C" />
-              <label class="small" style="margin-top:8px;">Hylle nummer (valgfrit)</label>
+              <label style="display:block; margin-top:12px; margin-bottom:6px; font-size:15px; font-weight:700; color:#333;">Hylle nummer (valgfrit)</label>
               <input id="masterHylleNr" type="text" placeholder="fx 1, 2, 3 eller A, B, C" />
-              <label class="small" style="margin-top:8px;">Rækkefølge (0 = automatisk)</label>
+              <label style="display:block; margin-top:12px; margin-bottom:6px; font-size:15px; font-weight:700; color:#333;">Rækkefølge (0 = automatisk)</label>
               <input id="masterRaekkefoelge" type="number" step="1" placeholder="0 = automatisk" value="0" />
-              <div style="margin-top:8px;"><button onclick="tilfoejMasterVare()">➕ Tilføj vare</button></div>
+              <div style="margin-top:12px;"><button onclick="tilfoejMasterVare()">➕ Tilføj vare</button></div>
             </div>
             <div style="width:320px;">
               <h3 style="margin:0">Import/Export Excel/CSV</h3>
