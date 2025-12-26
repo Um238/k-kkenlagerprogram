@@ -77,12 +77,6 @@ table th{background:#fafafa;font-weight:800}
 .modal h3{margin-top:0}
 .modal .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
 .modal-backdrop.hidden{display:none !important}
-#scannerModal .modal{max-width:95vw;width:600px;overflow:visible}
-#scannerVideo{max-height:70vh;object-fit:contain;width:100%}
-@media (max-width:768px){
-  #scannerModal .modal{width:98vw;padding:16px}
-  #scannerVideo{max-height:60vh}
-}
 
 /* [CSS 9] Labels */
 #labels .label-controls{position:sticky;top:0;background:#fff;z-index:100;padding:15px 0;margin-bottom:15px;border-bottom:2px solid #e6e6e6;box-shadow:0 2px 4px rgba(0,0,0,0.1)}
@@ -1165,28 +1159,6 @@ a:hover{color:#45a049;text-decoration:none}
   </div>
 </div>
 
-<!-- Barcode Scanner Modal -->
-<div id="scannerModal" class="modal-backdrop hidden" aria-hidden="true">
-  <div class="modal" role="dialog" aria-modal="true" style="max-width:95vw; width:600px;">
-    <h3>Stregkode Scanner</h3>
-    <div id="scannerStatus" style="margin-bottom:10px; padding:8px; background:#f0f0f0; border-radius:4px; font-size:14px;">
-      Starter kamera...
-    </div>
-    <div id="scannerWarning" style="margin-bottom:10px; padding:10px; background:#fff3cd; border-left:4px solid #ffc107; border-radius:4px; font-size:13px; display:none;">
-      <strong>⚠️ Vigtigt:</strong> Kameraet virker kun med HTTPS eller localhost.<br>
-      <strong>På computeren:</strong> Brug <code>http://localhost:8000</code> i stedet for IP-adresse.<br>
-      <strong>På telefonen:</strong> Hvis kameraet ikke virker, brug "Søg vare" til manuel indtastning.
-    </div>
-    <video id="scannerVideo" style="width:100%; max-width:100%; border:2px solid #0078D4; border-radius:8px; background:#000; display:none;" autoplay playsinline></video>
-    <div id="scannerResult" style="margin-top:10px; padding:10px; background:#E3F2FD; border-radius:4px; display:none;">
-      <strong>Scannet:</strong> <span id="scannedVareName"></span>
-    </div>
-    <div class="actions" style="margin-top:15px;">
-      <button class="secondary" onclick="stopScanner()">Luk scanner</button>
-    </div>
-  </div>
-</div>
-
 <!-- Phone Link Modal -->
 <div id="phoneLinkModal" class="modal-backdrop hidden" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" style="max-width:500px;">
@@ -1335,8 +1307,6 @@ a:hover{color:#45a049;text-decoration:none}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <!-- JsBarcode (for labels) -->
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-<!-- ZXing for barcode scanning -->
-<script src="https://unpkg.com/@zxing/library@0.19.1"></script>
 <!-- QR Code generator (already included in head, but kept here for compatibility) -->
 
 <!-- =========================
@@ -2447,7 +2417,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     }
     
     // Skjul alle modals ved opstart
-    ['startModal','finishModal','importModal','scannerModal','phoneLinkModal','serverReportsModal'].forEach(id=>{
+    ['startModal','finishModal','importModal','phoneLinkModal','serverReportsModal'].forEach(id=>{
       const el = $(id);
       if(!el) {
         console.warn(`Modal med id "${id}" ikke fundet`);
@@ -2623,7 +2593,7 @@ function initializeApp(){
     // Gem data når siden lukkes
     window.addEventListener('beforeunload', ()=>{
       saveAllData();
-      stopScanner(); // Luk scanner hvis aktiv
+      // stopScanner() kald fjernet - scanner funktionalitet er flyttet til separat fil
     });
     
     // Setup logo upload handler
@@ -4209,393 +4179,10 @@ function clearCurrentCounts(){
 }
 
 /* ================================
-   [JS 10] BARCODE SCANNER
+   [JS 10] BARCODE SCANNER - FJERNET
    ================================ */
-let scannerActive = false;
-let scannerStream = null;
-let codeReader = null;
-let lastScannedCode = null;
-let scanCooldown = 1000; // 1 sekund mellem scans
-
-async function startScanner(){
-  if(scannerActive){
-    stopScanner();
-    return;
-  }
-  
-  // Tjek om ZXing er tilgængelig
-  if(typeof ZXing === 'undefined' || !ZXing.BrowserMultiFormatReader){
-    alert('Barcode scanner library ikke indlæst. Genindlæs siden og prøv igen.');
-    return;
-  }
-  
-  // Tjek om vi er på HTTPS eller localhost (påkrævet for kamera)
-  const isSecure = window.location.protocol === 'https:' || 
-                   window.location.hostname === 'localhost' || 
-                   window.location.hostname === '127.0.0.1';
-  
-  if(!isSecure){
-    const hostname = window.location.hostname;
-    const protocol = window.location.protocol;
-    const port = window.location.port || '8000';
-    
-    // Vis advarsel om HTTPS/localhost krav
-    const useLocalhost = confirm(
-      '⚠️ KAMERA KRÆVER HTTPS ELLER LOCALHOST\n\n' +
-      'Du bruger: ' + protocol + '//' + hostname + ':' + port + '\n\n' +
-      'På din telefon skal du bruge HTTPS for at få adgang til kameraet.\n\n' +
-      'LØSNINGER:\n' +
-      '1. På computeren: Brug http://localhost:8000 i stedet\n' +
-      '2. På telefonen: Du skal bruge HTTPS (se nedenfor)\n\n' +
-      'Vil du fortsætte alligevel? (Det vil sandsynligvis fejle)'
-    );
-    
-    if(!useLocalhost){
-      // Vis instruktioner
-      const instructions = 
-        '📱 KAMERA PÅ TELEFON - INSTRUKTIONER:\n\n' +
-        'Kameraet kræver HTTPS på telefonen. Du har 2 muligheder:\n\n' +
-        'MULIGHED 1: Brug manuel indtastning i stedet\n' +
-        '- I stedet for at scanne, kan du indtaste stregkoden manuelt\n' +
-        '- Klik på "Søg vare" og indtast stregkoden\n\n' +
-        'MULIGHED 2: Opret HTTPS server (avanceret)\n' +
-        '- Dette kræver SSL-certifikat og er kompliceret\n' +
-        '- Anbefalet: Brug manuel indtastning i stedet\n\n' +
-        'På computeren kan du bruge:\n' +
-        'http://localhost:8000/køkkenlager24 password (nyt pas) import scan.html\n' +
-        'Dette virker med kameraet!';
-      
-      alert(instructions);
-      return;
-    }
-  }
-  
-  const modal = $('scannerModal');
-  const video = $('scannerVideo');
-  const status = $('scannerStatus');
-  const result = $('scannerResult');
-  const warning = $('scannerWarning');
-  
-  if(!modal || !video || !status) return;
-  
-  // Vis modal
-  modal.classList.remove('hidden');
-  modal.style.display = 'flex';
-  modal.setAttribute('aria-hidden', 'false');
-  
-  // Vis/skjul advarsel baseret på om vi er på HTTPS/localhost
-  if(warning){
-    if(isSecure){
-      warning.style.display = 'none';
-    } else {
-      warning.style.display = 'block';
-    }
-  }
-  
-  status.textContent = 'Starter kamera...';
-  status.style.background = '#fff3cd';
-  result.style.display = 'none';
-  video.style.display = 'none';
-  
-  try {
-    // Tjek om getUserMedia er tilgængelig
-    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-      throw new Error('Kamera API ikke tilgængelig. Brug HTTPS eller localhost.');
-    }
-    
-    // Få adgang til kamera
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: 'environment', // Brug bagkamera på mobil
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
-      }
-    });
-    
-    scannerStream = stream;
-    video.srcObject = stream;
-    video.style.display = 'block';
-    scannerActive = true;
-    
-    // Vent på at video faktisk starter at spille
-    try {
-      await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          // Timeout - men fortsæt alligevel, video kan stadig virke
-          console.warn('Video timeout, men fortsætter...');
-          resolve();
-        }, 3000);
-        
-        const tryPlay = () => {
-          video.play().then(() => {
-            clearTimeout(timeout);
-            resolve();
-          }).catch(err => {
-            // Ignorer play fejl - video kan stadig være klar
-            console.warn('Video play fejl (ignoreres):', err);
-            clearTimeout(timeout);
-            resolve();
-          });
-        };
-        
-        if(video.readyState >= 2){
-          // Video er allerede klar
-          tryPlay();
-        } else {
-          video.onloadedmetadata = tryPlay;
-          video.oncanplay = tryPlay;
-        }
-      });
-    } catch(videoErr){
-      console.warn('Video start fejl (ignoreres):', videoErr);
-      // Fortsæt alligevel - video kan stadig virke
-    }
-    
-    // Initialiser ZXing code reader
-    const { BrowserMultiFormatReader } = ZXing;
-    codeReader = new BrowserMultiFormatReader();
-    
-    status.textContent = 'Peger på stregkoden...';
-    status.style.background = '#E3F2FD';
-    
-    // Opdater knapper
-    const scannerBtn = $('scannerBtn');
-    const stopBtn = $('stopScannerBtn');
-    if(scannerBtn) scannerBtn.style.display = 'none';
-    if(stopBtn) stopBtn.style.display = 'inline-block';
-    
-    // Vent lidt mere for at video kan starte korrekt
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Start scanning - VIGTIGT: Send video elementet, ikke video.id!
-    try {
-      // Tjek om video faktisk spiller
-      if(video.readyState < 2){
-        // Vent lidt mere hvis video ikke er klar
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-      
-      // ZXing API: decodeFromVideoDevice(deviceId, videoElement, callback)
-      // deviceId = null betyder auto-select kamera
-      // videoElement = video DOM elementet
-      console.log('Starter scanning med video element:', video);
-      console.log('Video readyState:', video.readyState);
-      console.log('Video playing:', !video.paused);
-      
-      codeReader.decodeFromVideoDevice(null, video, (result, err) => {
-        if(result){
-          console.log('Scan resultat modtaget:', result);
-          // Håndter både .text og .getText() metoder
-          let code = null;
-          if(typeof result === 'string'){
-            code = result;
-          } else if(result.text){
-            code = result.text;
-          } else if(result.getText){
-            code = result.getText();
-          } else {
-            code = String(result);
-          }
-          
-          if(code){
-            console.log('Scannet stregkode:', code);
-            handleScannedCode(code);
-          } else {
-            console.warn('Ingen stregkode i resultat:', result);
-          }
-        }
-        if(err){
-          // NotFoundException er normalt - betyder bare at der ikke er fundet en stregkode endnu
-          // Ignorer disse fejl da de er forventede
-          const isNormalError = err.name === 'NotFoundException' || 
-                               err.name === 'NotFoundError' || 
-                               err.name === 'NoDeviceFoundError' ||
-                               (err.message && (err.message.includes('No QR') || err.message.includes('not found')));
-          
-          if(!isNormalError){
-            console.error('Scan fejl:', err);
-            // Vis fejl hvis det ikke er en "ikke fundet" fejl
-            if(status){
-              status.textContent = 'Scan fejl: ' + (err.message || err.name || 'Ukendt fejl');
-              status.style.background = '#ffebee';
-              // Reset efter 3 sekunder
-              setTimeout(() => {
-                if(status){
-                  status.textContent = 'Peger på stregkoden...';
-                  status.style.background = '#E3F2FD';
-                }
-              }, 3000);
-            }
-          }
-        }
-      });
-      
-      console.log('Scanning startet');
-      
-      // Opdater status
-      status.textContent = 'Peger på stregkoden...';
-      status.style.background = '#E3F2FD';
-      
-    } catch(scanErr){
-      console.error('Fejl ved start af scanning:', scanErr);
-      if(status){
-        status.textContent = 'Fejl ved start af scanning: ' + (scanErr.message || scanErr);
-        status.style.background = '#ffebee';
-      }
-      alert('Kunne ikke starte scanning. Prøv at genindlæse siden.\n\nFejl: ' + (scanErr.message || scanErr));
-    }
-    
-  } catch(err){
-    console.error('Kamera fejl:', err);
-    scannerActive = false;
-    
-    let errorMsg = '';
-    let instructions = '';
-    
-    if(err.name === 'NotAllowedError'){
-      errorMsg = 'Kamera tilladelse nægtet.';
-      instructions = 
-        'Giv tilladelse til kamera:\n' +
-        '1. Klik på kamera-ikonet i browserens adresselinje\n' +
-        '2. Vælg "Tillad" for kamera\n' +
-        '3. Genindlæs siden og prøv igen';
-    } else if(err.name === 'NotFoundError'){
-      errorMsg = 'Ingen kamera fundet.';
-      instructions = 'Tjek at dit kamera er tilsluttet og ikke bruges af andre programmer.';
-    } else if(err.message && err.message.includes('HTTPS')){
-      errorMsg = 'Kamera kræver HTTPS eller localhost.';
-      instructions = 
-        'På computeren: Brug http://localhost:8000 i stedet for IP-adresse\n' +
-        'På telefonen: Kameraet virker ikke med HTTP. Brug manuel indtastning i stedet.';
-    } else {
-      errorMsg = 'Kunne ikke starte scanner: ' + (err.message || err.name || 'Ukendt fejl');
-      instructions = 
-        'Prøv:\n' +
-        '1. Genindlæs siden\n' +
-        '2. Tjek browser tilladelser for kamera\n' +
-        '3. Brug localhost på computeren i stedet for IP-adresse';
-    }
-    
-    status.textContent = errorMsg;
-    status.style.background = '#ffebee';
-    status.style.padding = '12px';
-    status.style.whiteSpace = 'pre-line';
-    status.innerHTML = '<strong>' + errorMsg + '</strong><br><br>' + instructions;
-    
-    alert(errorMsg + '\n\n' + instructions);
-  }
-}
-
-function handleScannedCode(code){
-  const now = Date.now();
-  
-  // Undgå duplikat scans
-  if(lastScannedCode === code && (now - (lastScannedCode.time || 0)) < scanCooldown){
-    return;
-  }
-  
-  lastScannedCode = { code, time: now };
-  
-  // Find vare med dette ID
-  const vare = masterVarelager.find(v => v.id === code);
-  
-  const status = $('scannerStatus');
-  const result = $('scannerResult');
-  const scannedName = $('scannedVareName');
-  
-  if(!vare){
-    status.textContent = 'Vare ikke fundet: ' + code;
-    status.style.background = '#ffebee';
-    result.style.display = 'none';
-    
-    // Vis fejl i 2 sekunder
-    setTimeout(() => {
-      if(status) status.textContent = 'Peger på stregkoden...';
-      if(status) status.style.background = '#E3F2FD';
-    }, 2000);
-    return;
-  }
-  
-  // Vare fundet - tilføj til optælling
-  const antal = 1; // Standard antal ved scanning
-  const lokation = vare.placering || '';
-  
-  const success = addToSessionOrWarn(lokation, vare.id, antal);
-  
-  if(success){
-    status.textContent = '✓ Vare tilføjet: ' + vare.navn;
-    status.style.background = '#c8e6c9';
-    
-    if(result && scannedName){
-      result.style.display = 'block';
-      scannedName.textContent = vare.navn + ' (' + antal + ' ' + (vare.maaleenhed || 'stk') + ')';
-    }
-    
-    // Vis success i 1.5 sekunder, derefter tilbage til scanning
-    setTimeout(() => {
-      if(status) status.textContent = 'Peger på stregkoden...';
-      if(status) status.style.background = '#E3F2FD';
-      if(result) result.style.display = 'none';
-    }, 1500);
-    
-    // Opdater lager tabel
-    renderLagerTable();
-    updateLogPreview();
-    saveAllData();
-  } else {
-    status.textContent = 'Kunne ikke tilføje vare';
-    status.style.background = '#ffebee';
-  }
-}
-
-function stopScanner(){
-  scannerActive = false;
-  
-  // Stop video stream
-  if(scannerStream){
-    scannerStream.getTracks().forEach(track => track.stop());
-    scannerStream = null;
-  }
-  
-  // Stop code reader
-  if(codeReader){
-    codeReader.reset();
-    codeReader = null;
-  }
-  
-  // Skjul modal
-  const modal = $('scannerModal');
-  const video = $('scannerVideo');
-  const status = $('scannerStatus');
-  const result = $('scannerResult');
-  
-  if(modal){
-    modal.classList.add('hidden');
-    modal.style.display = 'none';
-    modal.setAttribute('aria-hidden', 'true');
-  }
-  
-  if(video){
-    video.srcObject = null;
-  }
-  
-  if(status){
-    status.textContent = '';
-    status.style.background = '#f0f0f0';
-  }
-  
-  if(result){
-    result.style.display = 'none';
-  }
-  
-  // Opdater knapper
-  const scannerBtn = $('scannerBtn');
-  const stopBtn = $('stopScannerBtn');
-  if(scannerBtn) scannerBtn.style.display = 'inline-block';
-  if(stopBtn) stopBtn.style.display = 'none';
-  
-  lastScannedCode = null;
-}
+// Scanner funktionalitet er flyttet til separat stregkode-scanner.html fil
+// Backup af koden findes i BACKUP_SCANNER_KODE.js hvis den skal genskabes
 
 /* ================================
    [JS 8] RAPPORTER + PDF (DEL 3)
