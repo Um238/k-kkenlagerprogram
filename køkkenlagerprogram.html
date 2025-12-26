@@ -826,7 +826,12 @@ a:hover{color:#45a049;text-decoration:none}
         <div id="master-section-view" class="settings-section">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
             <h3 style="margin:0;">Søg & Se hele Varelager</h3>
-            <button onclick="uploadVarelagerToServer()" style="background:#28a745; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:600; white-space:nowrap; font-size:14px; box-shadow:0 2px 4px rgba(0,0,0,0.2);">☁️ Upload Varelager til Server</button>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <div id="varelagerUpdateNotification" style="display:none; background:#ffc107; color:#000; padding:8px 12px; border-radius:6px; font-size:13px; font-weight:600; margin-right:8px; cursor:pointer;" onclick="uploadVarelagerToServer()" title="Klik for at uploade">
+                ⚠️ Varelager opdateret - Upload til server
+              </div>
+              <button onclick="uploadVarelagerToServer()" style="background:#28a745; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:600; white-space:nowrap; font-size:14px; box-shadow:0 2px 4px rgba(0,0,0,0.2);">☁️ Upload Varelager til Server</button>
+            </div>
           </div>
           <div style="display:flex; gap:12px; align-items:center; justify-content:flex-end; flex-wrap:wrap; margin-bottom:12px;">
             <label class="small">Søg vare:</label>
@@ -2295,6 +2300,17 @@ function saveAllData(){
     // Ensure installation ID is included
     const installationId = getInstallationId();
     
+    // Track varelager changes for notification
+    const lastUploadTime = localStorage.getItem('varelager_last_upload_time');
+    const lastVarelagerHash = localStorage.getItem('varelager_hash');
+    const currentVarelagerHash = JSON.stringify(masterVarelager).length + '-' + masterVarelager.length;
+    
+    // If varelager has changed since last upload, mark for notification
+    if(lastVarelagerHash && lastVarelagerHash !== currentVarelagerHash && lastUploadTime) {
+      localStorage.setItem('varelager_needs_upload', 'true');
+      checkVarelagerUpdateNotification();
+    }
+    
     const dataToSave = {
       installationId: installationId, // Store main program installation ID
       masterVarelager,
@@ -2310,8 +2326,23 @@ function saveAllData(){
       savedAt: Date.now()
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+    
+    // Update varelager hash
+    localStorage.setItem('varelager_hash', currentVarelagerHash);
   }catch(err){
     console.warn('Kunne ikke gemme data:', err);
+  }
+}
+
+// Check and show notification if varelager needs upload
+function checkVarelagerUpdateNotification(){
+  const needsUpload = localStorage.getItem('varelager_needs_upload') === 'true';
+  const notificationEl = document.getElementById('varelagerUpdateNotification');
+  
+  if(needsUpload && notificationEl) {
+    notificationEl.style.display = 'block';
+  } else if(notificationEl) {
+    notificationEl.style.display = 'none';
   }
 }
 
@@ -2353,6 +2384,8 @@ function updateVersionDisplay(){
 document.addEventListener('DOMContentLoaded', ()=>{
   // Opdater versionsnummer ved opstart
   updateVersionDisplay();
+  // Tjek om varelager skal uploades
+  checkVarelagerUpdateNotification();
   try {
     // Vis login først
     showLoginModal();
@@ -9889,6 +9922,13 @@ async function uploadVarelagerToServer(){
     const gist = await response.json();
     const gistUrl = gist.html_url;
     const gistId = gist.id;
+    
+    // Mark as uploaded and clear notification
+    localStorage.setItem('varelager_last_upload_time', Date.now().toString());
+    localStorage.setItem('varelager_needs_upload', 'false');
+    const currentVarelagerHash = JSON.stringify(masterVarelager).length + '-' + masterVarelager.length;
+    localStorage.setItem('varelager_hash', currentVarelagerHash);
+    checkVarelagerUpdateNotification();
     
     if (statusEl) {
       statusEl.textContent = `✅ Varelager uploadet! (${masterVarelager.length} varer)`;

@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Stregkode Scanner" />
 <link rel="manifest" href="stregkode-scanner-manifest.json" />
-<title>Stregkode Scanner - Telefon v4.1</title>
+<title id="scannerTitle">Stregkode Scanner - Telefon v4.1</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:#f5f5f5;padding:10px;max-width:600px;margin:0 auto}
@@ -53,7 +53,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <body>
 <div class="header">
   <h1>📱 Stregkode Scanner</h1>
-  <p>Scan stregkoder med din telefon - v4.1</p>
+  <p>Scan stregkoder med din telefon - v<span id="versionDisplayScanner">4.1</span></p>
 </div>
 
 <div class="scanner-container">
@@ -80,6 +80,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
     <div class="empty">Ingen varer scannet endnu</div>
   </div>
   <div class="actions">
+    <div id="varelagerUpdateNotificationScanner" style="display:none; background:#ffc107; color:#000; padding:8px 12px; border-radius:6px; font-size:12px; font-weight:600; margin-right:8px; cursor:pointer; white-space:nowrap;" onclick="fetchVarelagerFromServer()" title="Klik for at hente nyt varelager">
+      ⚠️ Nyt varelager tilgængeligt
+    </div>
     <button class="button secondary" onclick="clearAll()" style="font-size:13px; padding:10px 16px; border-radius:6px; font-weight:600;">🗑 Ryd alt</button>
     <button class="button secondary" onclick="fetchVarelagerFromServer()" style="font-size:13px; padding:10px 16px; background:#17a2b8; color:white; border-radius:6px; font-weight:600; box-shadow:0 2px 4px rgba(0,0,0,0.2);">☁️ Hent varelager</button>
     <button class="button secondary" onclick="uploadReportsToServer()" style="font-size:13px; padding:10px 16px; background:#28a745; color:white; border-radius:6px; font-weight:600; box-shadow:0 2px 4px rgba(0,0,0,0.2);">☁️ Upload rapporter</button>
@@ -123,6 +126,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
+// Versionsnummer - opdateres automatisk
+const APP_VERSION = '4.1';
+
 let scannerActive = false;
 let html5QrCode = null;
 let scannedItems = {};
@@ -1704,6 +1710,18 @@ async function fetchVarelagerFromServer(){
     // Sort by date (newest first) and automatically use the newest
     varelagerGists.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     
+    // Check if there's a newer varelager than what we have
+    const lastVarelagerTime = localStorage.getItem('scanner_last_varelager_time');
+    const newestGistTime = new Date(varelagerGists[0].created_at).getTime();
+    
+    if(lastVarelagerTime && parseInt(lastVarelagerTime) < newestGistTime) {
+      // New varelager available - show notification
+      const notificationEl = document.getElementById('varelagerUpdateNotificationScanner');
+      if(notificationEl) {
+        notificationEl.style.display = 'block';
+      }
+    }
+    
     // Always use the newest varelager - no need to ask user
     let selectedGist = varelagerGists[0];
     
@@ -1803,6 +1821,14 @@ async function fetchVarelagerFromServer(){
     existingData.masterVarelager = validatedItems;
     localStorage.setItem(storageKey, JSON.stringify(existingData));
     
+    // Mark as fetched and clear notification
+    const gistTime = new Date(selectedGist.created_at).getTime();
+    localStorage.setItem('scanner_last_varelager_time', gistTime.toString());
+    const notificationEl = document.getElementById('varelagerUpdateNotificationScanner');
+    if(notificationEl) {
+      notificationEl.style.display = 'none';
+    }
+    
     // Reload items
     allItems = validatedItems;
     availableLocations = importedData.lagerLokationer || [];
@@ -1873,9 +1899,26 @@ async function fetchVarelagerFromServer(){
   }
 }
 
+// Opdater versionsnummer i header
+function updateVersionDisplayScanner(){
+  const versionDisplay = document.getElementById('versionDisplayScanner');
+  if(versionDisplay){
+    versionDisplay.textContent = APP_VERSION;
+  }
+  // Opdater også i title
+  const titleEl = document.getElementById('scannerTitle');
+  if(titleEl) {
+    titleEl.textContent = `Stregkode Scanner - Telefon v${APP_VERSION}`;
+  }
+  document.title = `Stregkode Scanner - Telefon v${APP_VERSION}`;
+}
+
 // Wait for DOM and library to load
 document.addEventListener('DOMContentLoaded', function() {
   console.log('DOM loaded, initializing scanner...');
+  
+  // Opdater versionsnummer ved opstart
+  updateVersionDisplayScanner();
   
   // Check if Html5Qrcode library is loaded
   if (typeof Html5Qrcode === 'undefined') {
@@ -1896,8 +1939,48 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
+// Check for new varelager on server
+async function checkForNewVarelager() {
+  try {
+    const githubToken = localStorage.getItem('github_gist_token');
+    if(!githubToken) return; // No token, can't check
+    
+    const response = await fetch('https://api.github.com/gists', {
+      headers: {
+        'Authorization': `Bearer ${githubToken}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+    
+    if(!response.ok) return;
+    
+    const gists = await response.json();
+    const varelagerGists = gists.filter(gist => 
+      gist.description && gist.description.includes('Varelager skabelon')
+    );
+    
+    if(varelagerGists.length === 0) return;
+    
+    varelagerGists.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const newestGistTime = new Date(varelagerGists[0].created_at).getTime();
+    const lastVarelagerTime = localStorage.getItem('scanner_last_varelager_time');
+    
+    if(!lastVarelagerTime || parseInt(lastVarelagerTime) < newestGistTime) {
+      const notificationEl = document.getElementById('varelagerUpdateNotificationScanner');
+      if(notificationEl) {
+        notificationEl.style.display = 'block';
+      }
+    }
+  } catch(err) {
+    console.warn('Could not check for new varelager:', err);
+  }
+}
+
 function initializeApp() {
   console.log('Initializing app...');
+  
+  // Check for new varelager on server
+  checkForNewVarelager();
   
   if(loadItemsFromMainApp()){
     updateStatus('Klar til scanning - Klik "Start Scanner"', 'waiting');
