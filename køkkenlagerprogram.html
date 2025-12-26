@@ -5723,14 +5723,16 @@ function downloadExcelTemplate(){
             for(let i = 0; i < varerPerHylle; i++) {
               if(vareIndex < expandedVarer.length) {
                 const vare = expandedVarer[vareIndex];
+                // Ensure price is a number, not a string
+                const pris = parseFloat(vare[2]) || 0;
                 resultat.push({
-                  Navn: vare[0],
-                  Måleenhed: vare[1],
-                  Pris: parseFloat(vare[2]),
-                  Placering: placering,
-                  Reol: String(reol),
-                  Hylle: String(hylle),
-                  Rækkefølge: String(globalRaekkefoelge)
+                  Navn: String(vare[0] || ''),
+                  Måleenhed: String(vare[1] || 'stk'),
+                  Pris: pris,
+                  Placering: String(placering || ''),
+                  Reol: String(reol || ''),
+                  Hylle: String(hylle || ''),
+                  Rækkefølge: String(globalRaekkefoelge || '0')
                 });
                 vareIndex++;
                 totalVarer++;
@@ -6387,8 +6389,16 @@ function downloadExcelTemplate(){
     }
     
     // Create "Alle data" sheet with ALL items - simple single sheet template
+    // IMPORTANT: Column order must match import function: Navn, Måleenhed, Pris, Placering, Reol, Hylle, Rækkefølge
     const alleVarer = [...koelVarer, ...frostVarer, ...toereVarer, ...groentVarer];
-    const alleDataSheet = XLSX.utils.json_to_sheet(sorterVarer([...alleVarer]));
+    const sortedVarer = sorterVarer([...alleVarer]);
+    
+    // Create sheet with explicit column order to match import format
+    const alleDataSheet = XLSX.utils.json_to_sheet(sortedVarer, {
+      header: ['Navn', 'Måleenhed', 'Pris', 'Placering', 'Reol', 'Hylle', 'Rækkefølge'],
+      skipHeader: false
+    });
+    
     konfigurerSheet(alleDataSheet, 'Alle data');
     
     // Add only "Alle data" sheet to workbook (simple single sheet template)
@@ -6481,18 +6491,35 @@ async function importExcelFile(file){
           }
         }
         
-        // Konverter sheet til JSON
-        const jsonData = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ''});
+        // Konverter sheet til JSON - use header: 1 to get arrays (first row is header)
+        const jsonData = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: '', raw: false});
         
         if(jsonData.length < 2) {
           alert('❌ Filen indeholder ikke nok data.\n\nTjek at filen har en header-række og mindst én vare.');
           return;
         }
         
+        // Verify header row matches expected format
+        const headerRow = jsonData[0] || [];
+        const expectedHeaders = ['Navn', 'Måleenhed', 'Pris', 'Placering', 'Reol', 'Hylle', 'Rækkefølge'];
+        const headerMatch = expectedHeaders.every((h, i) => {
+          const headerValue = String(headerRow[i] || '').trim();
+          return headerValue === h || headerValue === ''; // Allow empty headers
+        });
+        
+        if(!headerMatch && headerRow.length > 0) {
+          console.warn('Header row does not match expected format:', headerRow);
+          // Continue anyway - might still work if columns are in right order
+        }
+        
         // Konverter til CSV format for at bruge eksisterende import-logik
-        const csvLines = jsonData.map(row => {
+        const csvLines = jsonData.map((row, rowIndex) => {
+          // Ensure row has correct number of columns
+          const paddedRow = [...row];
+          while(paddedRow.length < 7) paddedRow.push('');
+          
           // Konverter array til CSV linje med semikolon separator
-          return row.map(cell => {
+          return paddedRow.map(cell => {
             const cellStr = String(cell || '').trim();
             // Escape semikolon og quotes
             if(cellStr.includes(';') || cellStr.includes('"') || cellStr.includes('\n')) {
