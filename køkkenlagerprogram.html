@@ -6417,7 +6417,7 @@ function downloadExcelTemplate(){
     const filename = `varelager_skabelon_v${APP_VERSION}.xlsx`;
     XLSX.writeFile(wb, filename);
     
-    alert(`✅ Excel skabelon downloadet! (v${APP_VERSION})\n\n📋 Filen indeholder:\n• Faneblad 1: Alle data (${alleVarer.length} varer) - klar til import/redigering\n• Faneblad 2: Køl (${koelVarer.length} varer)\n• Faneblad 3: Frost (${frostVarer.length} varer)\n• Faneblad 4: Tørevare (${toereVarer.length} varer)\n• Faneblad 5: Grønt (${groentVarer.length} varer)\n\n📦 Struktur:\n• Varer organiseret efter kategori:\n  - Køl: Mejeri (reol 1), Kød (reol 2), Fisk (reol 3), Grøntsager (reol 4)\n  - Frost: Fisk (reol 1-2), Fjerkræ (reol 3), Oksekød (reol 4), Svinekød (reol 5), Kalv/Lam (reol 6), Grønsager (reol 7-8), Bær (reol 9), Is (reol 10)\n  - Tørevare: Mel/Gryn (reol 1), Krydderier (reol 2), Konserves (reol 3), Nødder/Frø (reol 4)\n  - Grønt: Frugter (reol 1), Salater (reol 2), Grønsager (reol 3), Krydderier (reol 4)\n• 5 hylder pr. reol\n• 5 varer pr. hylle\n• Sorteret efter reol → hylle → rækkefølge\n\n✨ Funktioner:\n• ✅ Versionsnummer i filnavn: varelager_skabelon_v${APP_VERSION}.xlsx\n• ✅ Første række (header) er låst ved scrolling\n• ✅ Kolonnebredder tilpasses automatisk\n• ✅ Varer organiseret logisk efter kategori\n• ✅ Hver reol har sin egen farve for nem identifikation\n\n💡 VIGTIGT - Synkronisering mellem faneblade:\nExcel kan ikke automatisk synkronisere mellem faneblade uden VBA-makroer.\n\nMetode 1 (Anbefalet):\n• Rediger kun i "Alle data" fanebladet\n• Brug Excel's filter (Data → Filter) til at filtrere efter Placering\n• Når du tilføjer en ny vare, sæt den korrekte Placering (Køl, Frost, Tørevare, eller Grønt)\n\nMetode 2:\n• Når du tilføjer/ændrer på et faneblad (fx Køl), kopier rækken manuelt til "Alle data"\n• Eller brug Excel's "Konsolider" funktion (Data → Konsolider) til at samle data\n\n📝 Efter import:\nNår du importerer filen igen, vil systemet automatisk opdatere alle faneblade baseret på "Alle data".`);
+    alert(`✅ Excel skabelon downloadet! (v${APP_VERSION})\n\n📋 Filen indeholder:\n• Faneblad 1: Alle data (${alleVarer.length} varer) - ⭐ REDIGER KUN HER!\n• Faneblad 2-5: Køl, Frost, Tørevare, Grønt (reference-ark - ikke rediger)\n\n📦 Struktur:\n• Varer organiseret efter kategori:\n  - Køl: Mejeri (reol 1), Kød (reol 2), Fisk (reol 3), Grøntsager (reol 4)\n  - Frost: Fisk (reol 1-2), Fjerkræ (reol 3), Oksekød (reol 4), Svinekød (reol 5), Kalv/Lam (reol 6), Grønsager (reol 7-8), Bær (reol 9), Is (reol 10)\n  - Tørevare: Mel/Gryn (reol 1), Krydderier (reol 2), Konserves (reol 3), Nødder/Frø (reol 4)\n  - Grønt: Frugter (reol 1), Salater (reol 2), Grønsager (reol 3), Krydderier (reol 4)\n• 5 hylder pr. reol\n• 5 varer pr. hylle\n• Sorteret efter reol → hylle → rækkefølge\n\n✨ Funktioner:\n• ✅ Versionsnummer i filnavn: varelager_skabelon_v${APP_VERSION}.xlsx\n• ✅ Første række (header) er låst ved scrolling\n• ✅ Kolonnebredder tilpasses automatisk\n• ✅ Varer organiseret logisk efter kategori\n• ✅ Hver reol har sin egen farve for nem identifikation\n\n⚠️ VIGTIGT - REDIGER KUN I "ALLE DATA" FANEBLADET:\n• Excel kan IKKE automatisk synkronisere mellem faneblade uden VBA-makroer\n• Systemet importerer KUN fra "Alle data" fanebladet\n• Faneblad 2-5 (Køl, Frost, Tørevare, Grønt) er kun reference-ark - de opdateres IKKE automatisk\n\n📝 Sådan bruger du skabelonen:\n1. Rediger KUN i "Alle data" fanebladet\n2. Brug Excel's filter (Data → Filter) til at filtrere efter Placering hvis du vil se specifikke lokationer\n3. Når du tilføjer en ny vare, sæt den korrekte Placering (Køl, Frost, Tørevare, eller Grønt)\n4. Gem filen og importer den igen - systemet læser kun fra "Alle data"\n\n💡 Tip: Du kan slette faneblad 2-5 hvis du ikke har brug for dem - de er kun til reference.`);
     
   } catch(err) {
     console.error('Fejl ved generering af Excel skabelon:', err);
@@ -6458,13 +6458,89 @@ function importCSV(){
   const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
   
   if(isExcel){
-    alert('Excel-filer (.xlsx/.xls) skal først gemmes som CSV format i Excel.\n\nI Excel: Vælg "Gem som" → "CSV (semikolon adskilt)" eller "CSV UTF-8 (semikolon adskilt)" for at bevare danske tegn.');
+    // Læs Excel fil direkte med SheetJS
+    importExcelFile(f);
     return;
   }
   
-  // Gem filen og vis valg-modal
+  // Gem filen og vis valg-modal for CSV
   selectedImportFile = f;
   showImportModal();
+}
+
+async function importExcelFile(file){
+  try {
+    // Check if SheetJS is available
+    if(typeof XLSX === 'undefined'){
+      alert('❌ Excel bibliotek ikke indlæst.\n\nPrøv at genindlæse siden (Ctrl+F5).');
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+        
+        // Først prøv at finde "Alle data" arket
+        let sheetName = 'Alle data';
+        let sheet = workbook.Sheets[sheetName];
+        
+        // Hvis "Alle data" ikke findes, brug det første ark
+        if(!sheet) {
+          const firstSheetName = workbook.SheetNames[0];
+          sheet = workbook.Sheets[firstSheetName];
+          sheetName = firstSheetName;
+          
+          if(workbook.SheetNames.length > 1) {
+            const confirm = confirm(`⚠️ "Alle data" fanebladet ikke fundet.\n\nBruger "${firstSheetName}" i stedet.\n\n💡 Tip: Rediger kun i "Alle data" fanebladet for at sikre korrekt import.\n\nFortsæt med import?`);
+            if(!confirm) return;
+          }
+        }
+        
+        // Konverter sheet til JSON
+        const jsonData = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ''});
+        
+        if(jsonData.length < 2) {
+          alert('❌ Filen indeholder ikke nok data.\n\nTjek at filen har en header-række og mindst én vare.');
+          return;
+        }
+        
+        // Konverter til CSV format for at bruge eksisterende import-logik
+        const csvLines = jsonData.map(row => {
+          // Konverter array til CSV linje med semikolon separator
+          return row.map(cell => {
+            const cellStr = String(cell || '').trim();
+            // Escape semikolon og quotes
+            if(cellStr.includes(';') || cellStr.includes('"') || cellStr.includes('\n')) {
+              return `"${cellStr.replace(/"/g, '""')}"`;
+            }
+            return cellStr;
+          }).join(';');
+        });
+        
+        const csvText = csvLines.join('\n');
+        
+        // Vis valg-modal for import type
+        selectedImportFile = {name: file.name, content: csvText, isExcel: true};
+        showImportModal();
+        
+      } catch(err) {
+        console.error('Fejl ved læsning af Excel fil:', err);
+        alert('❌ Fejl ved læsning af Excel fil: ' + err.message + '\n\nPrøv at gemme filen som CSV i stedet.');
+      }
+    };
+    
+    reader.onerror = function() {
+      alert('❌ Kunne ikke læse filen. Tjek at filen er en gyldig Excel fil.');
+    };
+    
+    reader.readAsArrayBuffer(file);
+    
+  } catch(err) {
+    console.error('Fejl ved import af Excel fil:', err);
+    alert('❌ Fejl ved import af Excel fil: ' + err.message);
+  }
 }
 
 function showImportModal(){
@@ -6934,6 +7010,12 @@ function selectImportType(type){
   
   const f = selectedImportFile;
   closeImportModal();
+  
+  // Hvis det er en Excel fil der allerede er konverteret til tekst
+  if(f.isExcel && f.content) {
+    processImportText(f.content, type);
+    return;
+  }
   
   const r = new FileReader(); 
   
