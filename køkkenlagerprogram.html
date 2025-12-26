@@ -5475,28 +5475,42 @@ function generateLabels(){
     for(let i=0;i<count;i++){
       const d = document.createElement('div'); d.className='label'; d.style.width='90mm'; d.style.height='50mm';
       const maaleenhed = v.maaleenhed || 'stk';
+      const placering = v.placering || '';
+      const reolNr = v.reolNr || '';
+      const hylleNr = v.hylleNr || '';
       
-      // Format: "1 L mælk" eller "1 kg mel" eller "12,5 kg sæk" etc.
-      let labelText = `<strong>${v.navn}</strong>`;
+      // Format: "1 L mælk" eller "1 kg mel" eller "12,5 kg sæk" eller "1 stk mælk" etc.
+      let labelText = `<strong style="font-size:14px;">${v.navn}</strong>`;
       
-      if(maaleenhed.toLowerCase() !== 'stk' && maaleenhed.toLowerCase() !== 'stk.') {
-        // Prøv at finde mængde i varenavnet (f.eks. "12,5 kg sæk mel" eller "10 kg sæk")
-        const navn = v.navn || '';
-        // Match mønstre som "12,5 kg", "10 kg", "1 L", "2,5 L" etc.
-        const maengdeMatch = navn.match(/(\d+[,.]?\d*)\s*(kg|L|l|sæk|sække)/i);
-        
-        if(maengdeMatch) {
-          // Mængde fundet i navnet - brug den (f.eks. "12,5 kg sæk mel")
-          labelText = `<strong>${v.navn}</strong>`;
-        } else {
-          // Ingen mængde i navnet - vis "1" + måleenhed + navn (f.eks. "1 L mælk")
-          labelText = `<strong>1 ${maaleenhed} ${v.navn}</strong>`;
-        }
+      // Altid vis måleenhed - prøv først at finde mængde i navnet
+      const navn = v.navn || '';
+      const maengdeMatch = navn.match(/(\d+[,.]?\d*)\s*(kg|L|l|sæk|sække|stk|stk\.|pk|pk\.|ks|ks\.)/i);
+      
+      if(maengdeMatch) {
+        // Mængde fundet i navnet - brug den (f.eks. "12,5 kg sæk mel")
+        labelText = `<strong style="font-size:14px;">${v.navn}</strong>`;
+      } else {
+        // Ingen mængde i navnet - vis "1" + måleenhed + navn (f.eks. "1 L mælk" eller "1 stk mælk")
+        labelText = `<strong style="font-size:14px;">1 ${maaleenhed} ${v.navn}</strong>`;
       }
       
-      d.innerHTML = `${labelText}<br><svg class="barcode"></svg>`;
+      // Tilføj lokation, reol og hylle information
+      let locationInfo = '';
+      if(placering) {
+        locationInfo += `<div style="font-size:10px; margin-top:4px; color:#666;">Lokation: ${placering}`;
+        if(reolNr) {
+          locationInfo += ` | Reol: ${reolNr}`;
+        }
+        if(hylleNr) {
+          locationInfo += ` | Hylle: ${hylleNr}`;
+        }
+        locationInfo += `</div>`;
+      }
+      
+      d.innerHTML = `${labelText}${locationInfo}<br><svg class="barcode"></svg>`;
       container.appendChild(d);
-      try{ JsBarcode(d.querySelector('.barcode'), v.id, { format:'CODE128', displayValue:true, width:2, height:40 }); }catch(e){}
+      // Fjern displayValue for at skjule ID nummeret
+      try{ JsBarcode(d.querySelector('.barcode'), v.id, { format:'CODE128', displayValue:false, width:2, height:40 }); }catch(e){}
     }
   });
 }
