@@ -1820,9 +1820,9 @@ async function fetchVarelagerFromServer(){
       });
     }
     
-    // Validate that all items have required fields
+    // Validate that all items have required fields (inkluder billeder)
     const validatedItems = importedData.masterVarelager.map(item => {
-      // Ensure all required fields are present, including stregkode
+      // Ensure all required fields are present, including stregkode and billede
       return {
         id: item.id || '',
         navn: item.navn || 'Ukendt vare',
@@ -1832,7 +1832,8 @@ async function fetchVarelagerFromServer(){
         reolNr: item.reolNr !== undefined ? item.reolNr : null,
         hylleNr: item.hylleNr !== undefined ? item.hylleNr : null,
         raekkefoelge: item.raekkefoelge !== undefined ? item.raekkefoelge : null,
-        stregkode: item.stregkode || item.id || '' // Include stregkode - use id as fallback
+        stregkode: item.stregkode || item.id || '', // Include stregkode - use id as fallback
+        billede: item.billede || null // Inkluder billede hvis tilgængelig
       };
     });
     

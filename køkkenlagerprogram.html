@@ -4610,6 +4610,15 @@ function renderReports(){
     const isFromServer = r.importedFromServer || r.gistId;
     const serverBadge = isFromServer ? '<span style="background:#17a2b8; color:white; padding:2px 6px; border-radius:4px; font-size:10px; margin-left:6px; font-weight:600;" title="Hentet fra server">☁️ Server</span>' : '';
     
+    // Forskellige baggrundsfarver for server vs. lokale rapporter
+    if (isFromServer) {
+      tr.style.background = '#E3F2FD'; // Lyseblå baggrund for server rapporter
+      tr.style.borderLeft = '4px solid #17a2b8'; // Blå venstre border
+    } else {
+      tr.style.background = '#F5F5F5'; // Grå baggrund for lokale rapporter
+      tr.style.borderLeft = '4px solid #4CAF50'; // Grøn venstre border
+    }
+    
     tr.innerHTML = `<td>${formatTime(r.ts)}</td><td>${title}${serverBadge}</td><td>${summary}</td><td>${antalDisplay}</td><td>${lokationDisplay}</td><td style="white-space:nowrap"><button class="secondary small" onclick="viewReportPDF(${i})" style="margin-right:4px;">📄 Vis PDF</button><button class="secondary small" onclick="exportReportPDF(${i})" style="margin-right:4px;">💾 Download</button><button class="secondary small" onclick="moveReportToArchive(${i})" style="background:#FF9800; color:white;">📦 Arkiver</button></td>`;
     tbody.appendChild(tr); shown++;
   });
@@ -9710,7 +9719,7 @@ async function uploadVarelagerToServer(){
     // Prepare varelager data for export - ensure all fields are included
     const mainInstallationId = getInstallationId();
     
-    // Validate and ensure all items have all required fields
+    // Validate and ensure all items have all required fields (inkluder billeder)
     const validatedVarelager = masterVarelager.map(item => {
       return {
         id: item.id || '',
@@ -9721,7 +9730,8 @@ async function uploadVarelagerToServer(){
         reolNr: item.reolNr !== undefined ? item.reolNr : null,
         hylleNr: item.hylleNr !== undefined ? item.hylleNr : null,
         raekkefoelge: item.raekkefoelge !== undefined ? item.raekkefoelge : null,
-        stregkode: item.stregkode || item.id || ''
+        stregkode: item.stregkode || item.id || '',
+        billede: item.billede || null // Inkluder billede hvis tilgængelig
       };
     });
     
