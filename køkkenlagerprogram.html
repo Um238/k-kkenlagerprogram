@@ -778,6 +778,12 @@ a:hover{color:#45a049;text-decoration:none}
               <input id="masterHylleNr" type="text" placeholder="fx 1, 2, 3 eller A, B, C" style="font-size:16px; padding:12px; border:2px solid #0078D4; border-radius:6px; font-weight:600;" />
               <label style="display:block; margin-top:12px; margin-bottom:6px; font-size:15px; font-weight:700; color:#333;">Rækkefølge (0 = automatisk)</label>
               <input id="masterRaekkefoelge" type="number" step="1" placeholder="0 = automatisk" value="0" style="font-size:16px; padding:12px; border:2px solid #0078D4; border-radius:6px; font-weight:600;" />
+              <label style="display:block; margin-top:12px; margin-bottom:6px; font-size:15px; font-weight:700; color:#333;">Billede (valgfrit)</label>
+              <input type="file" id="masterVareBillede" accept="image/*" style="font-size:14px; padding:8px; border:2px solid #0078D4; border-radius:6px;" onchange="handleImageUpload(event)">
+              <div id="masterBilledePreview" style="margin-top:10px; display:none;">
+                <img id="masterBilledePreviewImg" src="" alt="Preview" style="max-width:150px; max-height:150px; border:2px solid #0078D4; border-radius:6px; object-fit:contain;">
+                <button type="button" onclick="clearImagePreview()" style="background:#dc3545; color:white; padding:6px 12px; border:none; border-radius:4px; margin-left:10px; font-size:12px;">Fjern billede</button>
+              </div>
               <div style="margin-top:12px;"><button onclick="tilfoejMasterVare()">➕ Tilføj vare</button></div>
             </div>
             <div style="width:320px; margin-left:60px;">
@@ -839,6 +845,7 @@ a:hover{color:#45a049;text-decoration:none}
             <table style="width:100%; border-collapse:collapse;">
               <thead style="position:sticky; top:0; z-index:10; background:#fff;">
                 <tr>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold; width:80px;">Billede</th>
                   <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Vare</th>
                   <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Måleenhed</th>
                   <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Pris</th>
@@ -1155,6 +1162,19 @@ a:hover{color:#45a049;text-decoration:none}
     <div class="actions" style="margin-top:20px;">
       <button onclick="closeStartOptaellingPrompt(); openStartModal();" style="background:#0078D4; color:white;">✅ Ja, start optælling</button>
       <button class="secondary" onclick="closeStartOptaellingPrompt()">Annuller</button>
+    </div>
+  </div>
+</div>
+
+<!-- Vare Billede Modal -->
+<div id="vareImageModal" class="modal-backdrop hidden" aria-hidden="true" onclick="if(event.target.id === 'vareImageModal') closeVareImageModal()">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:90vw; max-height:90vh; width:auto;" onclick="event.stopPropagation()">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+      <h3 id="vareImageModalTitle" style="margin:0;">Vare Billede</h3>
+      <button class="secondary" onclick="closeVareImageModal()" style="padding:8px 16px;">✕ Luk</button>
+    </div>
+    <div style="text-align:center;">
+      <img id="vareImageModalImg" src="" alt="Vare billede" style="max-width:100%; max-height:70vh; border:2px solid #0078D4; border-radius:8px; object-fit:contain;">
     </div>
   </div>
 </div>
@@ -2818,8 +2838,18 @@ function renderMasterTable(){
 
     paginatedItems.forEach(v => {
         const tr = document.createElement("tr");
+        
+        // Billede cell - mini format
+        let imageCell = '<td style="text-align:center; padding:8px;">';
+        if(v.billede) {
+            imageCell += `<img src="${v.billede}" alt="${v.navn}" style="width:60px; height:60px; object-fit:contain; border:1px solid #ddd; border-radius:4px; cursor:pointer;" onclick="showVareImage('${v.id}')" title="Klik for at se større">`;
+        } else {
+            imageCell += '<span style="color:#999; font-size:12px;">Ingen billede</span>';
+        }
+        imageCell += '</td>';
 
         tr.innerHTML = `
+            ${imageCell}
             <td onclick="editMasterName('${v.id}')" style="cursor:pointer">${v.navn}</td>
             <td onclick="editMasterUnit('${v.id}')" style="cursor:pointer">${v.maaleenhed}</td>
             <td onclick="editMasterPrice('${v.id}')" style="cursor:pointer">${v.pris.toFixed(2)} kr.</td>
@@ -2838,7 +2868,7 @@ function renderMasterTable(){
         const paginationRow = document.createElement('tr');
         paginationRow.style.background = '#f9f9f9';
         paginationRow.innerHTML = `
-            <td colspan="8" style="text-align:center; padding:12px;">
+            <td colspan="9" style="text-align:center; padding:12px;">
                 <button class="secondary small" onclick="window.masterTablePage = Math.max(1, (window.masterTablePage || 1) - 1); renderMasterTable();" ${currentPage === 1 ? 'disabled' : ''}>◀ Forrige</button>
                 <span style="margin:0 12px; color:#666;">Side ${currentPage} af ${totalPages} (${sorted.length} varer)</span>
                 <button class="secondary small" onclick="window.masterTablePage = Math.min(${totalPages}, (window.masterTablePage || 1) + 1); renderMasterTable();" ${currentPage === totalPages ? 'disabled' : ''}>Næste ▶</button>
@@ -2962,6 +2992,90 @@ function editMasterRaekkefoelge(id){
     saveAllData();
 }
 
+// ============================================
+// BILLEDE FUNKTIONER
+// ============================================
+function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) {
+        clearImagePreview();
+        return;
+    }
+
+    // Tjek filtype
+    if (!file.type.startsWith('image/')) {
+        alert('⚠️ Vælg venligst en billedfil (jpg, png, etc.)');
+        event.target.value = '';
+        return;
+    }
+
+    // Tjek filstørrelse (max 2MB for at undgå for store base64 strings)
+    if (file.size > 2 * 1024 * 1024) {
+        alert('⚠️ Billedet er for stort. Maksimal størrelse er 2MB. Komprimer billedet og prøv igen.');
+        event.target.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const base64 = e.target.result;
+        window.currentImageData = base64;
+        
+        // Vis preview
+        const preview = $('masterBilledePreview');
+        const previewImg = $('masterBilledePreviewImg');
+        if (preview && previewImg) {
+            previewImg.src = base64;
+            preview.style.display = 'block';
+        }
+    };
+    reader.onerror = function() {
+        alert('❌ Fejl ved indlæsning af billede. Prøv igen.');
+        event.target.value = '';
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearImagePreview() {
+    const preview = $('masterBilledePreview');
+    const previewImg = $('masterBilledePreviewImg');
+    const fileInput = $('masterVareBillede');
+    
+    if (preview) preview.style.display = 'none';
+    if (previewImg) previewImg.src = '';
+    if (fileInput) fileInput.value = '';
+    window.currentImageData = null;
+}
+
+function showVareImage(vareId) {
+    const vare = masterVarelager.find(v => v.id === vareId);
+    if (!vare || !vare.billede) {
+        alert('Ingen billede fundet for denne vare');
+        return;
+    }
+
+    const modal = $('vareImageModal');
+    const modalImg = $('vareImageModalImg');
+    const modalTitle = $('vareImageModalTitle');
+    
+    if (modal && modalImg && modalTitle) {
+        modalTitle.textContent = vare.navn;
+        modalImg.src = vare.billede;
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+    }
+}
+
+function closeVareImageModal() {
+    const modal = $('vareImageModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+    }
+}
+
 /* ======================================================
    [JS 3.2] TILFØJ MASTER VARE
    ====================================================== */
@@ -3030,13 +3144,25 @@ function tilfoejMasterVare(){
       }
     }
     
-    masterVarelager.push({ id: genId(), navn, maaleenhed, pris, placering, reolNr: reolNr || null, hylleNr: hylleNr || null, raekkefoelge: raekkefoelge || 0 });
+    // Hent billede hvis uploadet
+    const billedeInput = $('masterVareBillede');
+    let billedeData = null;
+    if(billedeInput && billedeInput.files && billedeInput.files[0]) {
+        // Billede vil blive konverteret til base64 i handleImageUpload
+        billedeData = window.currentImageData || null;
+    }
+    
+    masterVarelager.push({ id: genId(), navn, maaleenhed, pris, placering, reolNr: reolNr || null, hylleNr: hylleNr || null, raekkefoelge: raekkefoelge || 0, billede: billedeData });
     $('masterVarenavn').value = '';
     $('masterMaaleenhed').value = '';
     $('masterPris').value = '';
     $('masterReolNr').value = '';
     $('masterHylleNr').value = '';
     $('masterRaekkefoelge').value = '0';
+    // Ryd billede
+    if($('masterVareBillede')) $('masterVareBillede').value = '';
+    clearImagePreview();
+    window.currentImageData = null;
     renderMasterTable();
     if($('hylleLagerSelect') && $('hylleLagerSelect').value === placering){
       updateHylleReolSelect();
@@ -3609,7 +3735,16 @@ function updateVareInfoDisplay(vare){
   const reolNr = vare.reolNr || '';
   const hylleNr = vare.hylleNr || '';
   
-  let detailsHTML = `<strong style="color:#1976D2;font-size:16px;">${vare.navn}</strong><br>`;
+  let detailsHTML = '';
+  
+  // Vis billede hvis tilgængelig
+  if(vare.billede) {
+    detailsHTML += `<div style="text-align:center; margin-bottom:12px;">
+      <img src="${vare.billede}" alt="${vare.navn}" style="max-width:120px; max-height:120px; border:2px solid #0078D4; border-radius:6px; object-fit:contain; cursor:pointer;" onclick="showVareImage('${vare.id}')" title="Klik for at se større">
+    </div>`;
+  }
+  
+  detailsHTML += `<strong style="color:#1976D2;font-size:16px;">${vare.navn}</strong><br>`;
   detailsHTML += `<span style="color:#0078D4;font-weight:bold;">Måleenhed: ${maaleenhed}</span><br>`;
   detailsHTML += `Pris: <strong>${pris.toFixed(2)} kr.</strong> pr. ${maaleenhed}<br>`;
   detailsHTML += `Lager: ${placering}`;
@@ -3668,7 +3803,16 @@ function updateVareInfo(){
   const antalStr = antalInput ? antalInput.value.trim() : '';
   const antal = parseFloat(antalStr);
   
-  let detailsHTML = `<strong style="color:#1976D2;font-size:16px;">${vare.navn}</strong><br>`;
+  let detailsHTML = '';
+  
+  // Vis billede hvis tilgængelig
+  if(vare.billede) {
+    detailsHTML += `<div style="text-align:center; margin-bottom:12px;">
+      <img src="${vare.billede}" alt="${vare.navn}" style="max-width:100px; max-height:100px; border:2px solid #0078D4; border-radius:6px; object-fit:contain; cursor:pointer;" onclick="showVareImage('${vare.id}')" title="Klik for at se større">
+    </div>`;
+  }
+  
+  detailsHTML += `<strong style="color:#1976D2;font-size:16px;">${vare.navn}</strong><br>`;
   detailsHTML += `<span style="color:#0078D4;font-weight:bold;">Måleenhed: ${maaleenhed}</span><br>`;
   detailsHTML += `Pris: <strong>${pris.toFixed(2)} kr.</strong> pr. ${maaleenhed}<br>`;
   detailsHTML += `Lager: ${placering}`;
@@ -6044,7 +6188,7 @@ function downloadExcelTemplate(){
     const filename = `varelager_skabelon_v${APP_VERSION}.xlsx`;
     XLSX.writeFile(wb, filename);
     
-    alert(`✅ Excel skabelon downloadet! (v${APP_VERSION})\n\n📋 Filen indeholder:\n• Faneblad: Alle data (${alleVarer.length} varer)\n\n📦 Struktur:\n• Alle varer fra alle lokationer (Køl, Frost, Tørevare, Grønt)\n• Varer organiseret efter kategori:\n  - Køl: Mejeri (reol 1), Kød (reol 2), Fisk (reol 3), Grøntsager (reol 4)\n  - Frost: Fisk (reol 1-2), Fjerkræ (reol 3), Oksekød (reol 4), Svinekød (reol 5), Kalv/Lam (reol 6), Grønsager (reol 7-8), Bær (reol 9), Is (reol 10)\n  - Tørevare: Mel/Gryn (reol 1), Krydderier (reol 2), Konserves (reol 3), Nødder/Frø (reol 4)\n  - Grønt: Frugter (reol 1), Salater (reol 2), Grønsager (reol 3), Krydderier (reol 4)\n• Sorteret efter Placering → Reol → Hylle → Rækkefølge\n\n✨ Funktioner:\n• ✅ Versionsnummer i filnavn: varelager_skabelon_v${APP_VERSION}.xlsx\n• ✅ Første række (header) er låst ved scrolling\n• ✅ Kolonnebredder tilpasses automatisk\n• ✅ Varer organiseret logisk efter kategori\n\n📝 Sådan bruger du skabelonen:\n1. Rediger varer direkte i arket\n2. Brug Excel's filter (Data → Filter) til at filtrere efter Placering hvis du vil se specifikke lokationer\n3. Når du tilføjer en ny vare, sæt den korrekte Placering (Køl, Frost, Tørevare, eller Grønt)\n4. Gem filen og importer den igen`);
+    alert(`✅ Excel skabelon downloadet! (v${APP_VERSION})\n\n📋 Filen indeholder:\n• Faneblad: Alle data (${alleVarer.length} varer)\n\n📦 Struktur:\n• Alle varer fra alle lokationer (Køl, Frost, Tørevare, Grønt)\n• Varer organiseret efter kategori:\n  - Køl: Mejeri (reol 1), Kød (reol 2), Fisk (reol 3), Grøntsager (reol 4)\n  - Frost: Fisk (reol 1-2), Fjerkræ (reol 3), Oksekød (reol 4), Svinekød (reol 5), Kalv/Lam (reol 6), Grønsager (reol 7-8), Bær (reol 9), Is (reol 10)\n  - Tørevare: Mel/Gryn (reol 1), Krydderier (reol 2), Konserves (reol 3), Nødder/Frø (reol 4)\n  - Grønt: Frugter (reol 1), Salater (reol 2), Grønsager (reol 3), Krydderier (reol 4)\n• Sorteret efter Placering → Reol → Hylle → Rækkefølge\n\n✨ Funktioner:\n• ✅ Versionsnummer i filnavn: varelager_skabelon_v${APP_VERSION}.xlsx\n• ✅ Første række (header) er låst ved scrolling\n• ✅ Kolonnebredder tilpasses automatisk\n• ✅ Varer organiseret logisk efter kategori\n\n📸 Billeder:\n• Billeder kan ikke gemmes i Excel, men de gemmes i systemet\n• Når du importerer Excel filen igen, bevares eksisterende billeder\n• Tilføj nye billeder via "Tilføj ny vare til varelageret" formularen\n\n📝 Sådan bruger du skabelonen:\n1. Rediger varer direkte i arket\n2. Brug Excel's filter (Data → Filter) til at filtrere efter Placering hvis du vil se specifikke lokationer\n3. Når du tilføjer en ny vare, sæt den korrekte Placering (Køl, Frost, Tørevare, eller Grønt)\n4. Gem filen og importer den igen`);
     
   } catch(err) {
     console.error('Fejl ved generering af Excel skabelon:', err);
@@ -6838,15 +6982,17 @@ function processImportText(text, importType = 'add'){
       const existing = masterVarelager.find(existing => existing.navn.toLowerCase() === v.navn.toLowerCase());
       if(existing){
         // Opdater pris (og måske måleenhed, placering, reol, hylle, rækkefølge hvis de er angivet)
+        // BEVAR eksisterende billede - billeder kan ikke importeres fra Excel
         existing.pris = v.pris;
         if(v.maaleenhed) existing.maaleenhed = v.maaleenhed;
         if(v.placering) existing.placering = v.placering;
         if(v.reolNr !== undefined && v.reolNr !== null && v.reolNr !== '') existing.reolNr = v.reolNr;
         if(v.hylleNr !== undefined && v.hylleNr !== null && v.hylleNr !== '') existing.hylleNr = v.hylleNr;
         if(v.raekkefoelge !== undefined) existing.raekkefoelge = v.raekkefoelge || 0;
+        // Billede bevares automatisk (existing.billede forbliver uændret)
         updated++;
       } else {
-        // Tilføj ny vare
+        // Tilføj ny vare (uden billede - billeder tilføjes via formularen)
         masterVarelager.push({ id: genId(), navn: v.navn, maaleenhed: v.maaleenhed, pris: v.pris, placering: v.placering, reolNr: v.reolNr || null, hylleNr: v.hylleNr || null, raekkefoelge: v.raekkefoelge || 0 });
         imported++;
       }
