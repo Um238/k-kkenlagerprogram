@@ -799,6 +799,13 @@ a:hover{color:#45a049;text-decoration:none}
               <div class="small" style="margin-top:8px; color:#666;">
                 <strong>Tip:</strong> Download skabelonen, udfyld den i Excel, og importer den igen.
               </div>
+              <div style="margin-top:16px; padding-top:16px; border-top:2px solid #ddd;">
+                <h4 style="margin:0 0 8px 0; font-size:14px;">Billeder</h4>
+                <button onclick="tilfoejDemoBillederTilAlleVarer()" style="width:100%; background:#9C27B0; color:white; border-color:#7B1FA2; margin-bottom:8px;">🖼️ Tilføj demo-billeder til alle varer</button>
+                <div class="small" style="color:#666; font-size:11px;">
+                  <strong>Info:</strong> Tilføjer automatisk passende demo-billeder til alle varer der mangler billede. Billederne gemmes automatisk i backup.
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -2392,7 +2399,7 @@ function loadAllData(){
 
 /* Ensure modals hidden at load og setup event listeners */
 // Versionsnummer - opdateres automatisk
-const APP_VERSION = '4.1';
+const APP_VERSION = '4.3';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -3284,6 +3291,142 @@ function updateVareBillede(vareId, base64Data) {
         notification.style.transition = 'opacity 0.3s';
         setTimeout(() => document.body.removeChild(notification), 300);
     }, 2000);
+}
+
+// Generer passende demo-billede baseret på varenavn og placering
+function genererDemoBillede(vareNavn, placering) {
+    const navnLower = vareNavn.toLowerCase();
+    
+    // Bestem emoji og farve baseret på varenavn
+    let emoji = '📦'; // Standard
+    let bgColor = '#E0E0E0';
+    let textColor = '#424242';
+    
+    // Kød og fisk
+    if (navnLower.includes('okse') || navnLower.includes('bøf') || navnLower.includes('hakket') || navnLower.includes('kød')) {
+        emoji = '🥩'; bgColor = '#8B4513'; textColor = '#FFFFFF';
+    } else if (navnLower.includes('svine') || navnLower.includes('flæsk') || navnLower.includes('bacon')) {
+        emoji = '🥓'; bgColor = '#FFB6C1'; textColor = '#8B0000';
+    } else if (navnLower.includes('kylling') || navnLower.includes('fjerkræ') || navnLower.includes('høne')) {
+        emoji = '🍗'; bgColor = '#FFD700'; textColor = '#8B4513';
+    } else if (navnLower.includes('fisk') || navnLower.includes('laks') || navnLower.includes('torsk') || navnLower.includes('rødspætte') || navnLower.includes('tun')) {
+        emoji = '🐟'; bgColor = '#87CEEB'; textColor = '#000080';
+    } else if (navnLower.includes('lam') || navnLower.includes('kalv')) {
+        emoji = '🍖'; bgColor = '#F5DEB3'; textColor = '#8B4513';
+    }
+    // Mejeri
+    else if (navnLower.includes('mælk') || navnLower.includes('fløde') || navnLower.includes('yoghurt')) {
+        emoji = '🥛'; bgColor = '#FFFFFF'; textColor = '#4169E1';
+    } else if (navnLower.includes('ost') || navnLower.includes('cheddar') || navnLower.includes('gouda')) {
+        emoji = '🧀'; bgColor = '#FFD700'; textColor = '#8B4513';
+    } else if (navnLower.includes('smør') || navnLower.includes('margarine')) {
+        emoji = '🧈'; bgColor = '#FFD700'; textColor = '#8B4513';
+    } else if (navnLower.includes('æg')) {
+        emoji = '🥚'; bgColor = '#FFF8DC'; textColor = '#8B4513';
+    }
+    // Grøntsager og frugt
+    else if (navnLower.includes('salat') || navnLower.includes('spinat') || navnLower.includes('ruccola')) {
+        emoji = '🥬'; bgColor = '#98FB98'; textColor = '#228B22';
+    } else if (navnLower.includes('tomat') || navnLower.includes('tomater')) {
+        emoji = '🍅'; bgColor = '#FF6347'; textColor = '#8B0000';
+    } else if (navnLower.includes('agurk') || navnLower.includes('cucumber')) {
+        emoji = '🥒'; bgColor = '#90EE90'; textColor = '#006400';
+    } else if (navnLower.includes('gulerod') || navnLower.includes('carrot')) {
+        emoji = '🥕'; bgColor = '#FF8C00'; textColor = '#8B4513';
+    } else if (navnLower.includes('løg') || navnLower.includes('onion')) {
+        emoji = '🧅'; bgColor = '#F0E68C'; textColor = '#8B4513';
+    } else if (navnLower.includes('hvidløg') || navnLower.includes('garlic')) {
+        emoji = '🧄'; bgColor = '#F5F5DC'; textColor = '#8B4513';
+    } else if (navnLower.includes('æble') || navnLower.includes('apple')) {
+        emoji = '🍎'; bgColor = '#FF6B6B'; textColor = '#8B0000';
+    } else if (navnLower.includes('banan') || navnLower.includes('banana')) {
+        emoji = '🍌'; bgColor = '#FFD700'; textColor = '#8B4513';
+    } else if (navnLower.includes('citron') || navnLower.includes('lemon')) {
+        emoji = '🍋'; bgColor = '#FFD700'; textColor = '#8B4513';
+    } else if (navnLower.includes('bær') || navnLower.includes('jordbær') || navnLower.includes('blåbær')) {
+        emoji = '🫐'; bgColor = '#9370DB'; textColor = '#FFFFFF';
+    }
+    // Frosne varer
+    else if (navnLower.includes('frosne') || navnLower.includes('frozen')) {
+        if (placering === 'Frost') {
+            if (navnLower.includes('grønt') || navnLower.includes('grønsag')) {
+                emoji = '🥶'; bgColor = '#B0E0E6'; textColor = '#000080';
+            } else if (navnLower.includes('is') || navnLower.includes('ice')) {
+                emoji = '🍦'; bgColor = '#E0F6FF'; textColor = '#4169E1';
+            } else {
+                emoji = '🧊'; bgColor = '#E0F6FF'; textColor = '#000080';
+            }
+        }
+    }
+    // Tørvarer
+    else if (navnLower.includes('mel') || navnLower.includes('flour')) {
+        emoji = '🌾'; bgColor = '#FFF8DC'; textColor = '#8B4513';
+    } else if (navnLower.includes('sukker') || navnLower.includes('sugar')) {
+        emoji = '🍬'; bgColor = '#FFFFFF'; textColor = '#8B4513';
+    } else if (navnLower.includes('ris') || navnLower.includes('rice')) {
+        emoji = '🍚'; bgColor = '#FFF8DC'; textColor = '#8B4513';
+    } else if (navnLower.includes('pasta') || navnLower.includes('spaghetti')) {
+        emoji = '🍝'; bgColor = '#FFF8DC'; textColor = '#8B4513';
+    } else if (navnLower.includes('olie') || navnLower.includes('oil')) {
+        emoji = '🫒'; bgColor = '#90EE90'; textColor = '#006400';
+    } else if (navnLower.includes('krydderi') || navnLower.includes('peber') || navnLower.includes('salt')) {
+        emoji = '🧂'; bgColor = '#F5F5DC'; textColor = '#8B4513';
+    }
+    // Drikkevarer
+    else if (navnLower.includes('øl') || navnLower.includes('beer')) {
+        emoji = '🍺'; bgColor = '#FFD700'; textColor = '#8B4513';
+    } else if (navnLower.includes('vin') || navnLower.includes('wine')) {
+        emoji = '🍷'; bgColor = '#8B0000'; textColor = '#FFFFFF';
+    } else if (navnLower.includes('sodavand') || navnLower.includes('cola') || navnLower.includes('saft')) {
+        emoji = '🥤'; bgColor = '#FF6347'; textColor = '#FFFFFF';
+    }
+    // Brød og bagværk
+    else if (navnLower.includes('brød') || navnLower.includes('bread')) {
+        emoji = '🍞'; bgColor = '#DEB887'; textColor = '#8B4513';
+    } else if (navnLower.includes('kage') || navnLower.includes('cake')) {
+        emoji = '🎂'; bgColor = '#FFB6C1'; textColor = '#8B0000';
+    }
+    
+    // Generer SVG
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+      <rect width="200" height="200" fill="${bgColor}" rx="10"/>
+      <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="60" fill="${textColor}" text-anchor="middle" dominant-baseline="middle">${emoji}</text>
+    </svg>`;
+    
+    return 'data:image/svg+xml;base64,' + btoa(svg);
+}
+
+// Tilføj demo-billeder til alle varer der mangler billede
+function tilfoejDemoBillederTilAlleVarer() {
+    if (!masterVarelager || masterVarelager.length === 0) {
+        alert('⚠️ Ingen varer i varelageret.\n\nTilføj varer først.');
+        return;
+    }
+    
+    const varerUdenBillede = masterVarelager.filter(v => !v.billede || v.billede.trim() === '');
+    
+    if (varerUdenBillede.length === 0) {
+        alert('✅ Alle varer har allerede billeder!');
+        return;
+    }
+    
+    if (!confirm(`🖼️ Tilføj demo-billeder til ${varerUdenBillede.length} varer?\n\nBillederne genereres automatisk baseret på varenavn og placering.\n\nBillederne gemmes automatisk i backup.`)) {
+        return;
+    }
+    
+    let opdateret = 0;
+    varerUdenBillede.forEach(vare => {
+        const demoBillede = genererDemoBillede(vare.navn, vare.placering);
+        vare.billede = demoBillede;
+        opdateret++;
+    });
+    
+    // Gem alle ændringer
+    saveAllData();
+    renderMasterTable();
+    
+    // Vis bekræftelse
+    alert(`✅ ${opdateret} varer har nu fået demo-billeder!\n\n💾 Billederne er gemt og vil blive inkluderet i backup.\n\n📤 Husk at uploade varelageret til serveren for at synkronisere billederne.`);
 }
 
 /* ======================================================
