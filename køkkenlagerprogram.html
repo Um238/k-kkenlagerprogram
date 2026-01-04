@@ -510,6 +510,7 @@ a:hover{color:#45a049;text-decoration:none}
   
   <!-- Vinlager menuer (skjules i køkkenlager mode) -->
   <span class="menu-item vinlager-menu hidden" data-target="vinlager" onclick="navClick(event)">🍷 Vinlager optælling</span>
+  <span class="menu-item vinlager-menu hidden" data-target="vinlagerOpsaetning" onclick="navClick(event)">⚙️ Opsætning Vinlager</span>
   <span class="menu-item vinlager-menu hidden" data-target="vinlagerAdmin" onclick="navClick(event)">📋 Vinlager administration</span>
   <span class="menu-item vinlager-menu hidden" data-target="vinlagerRapporter" onclick="navClick(event)">📊 Vinlager rapporter</span>
   <span class="menu-item vinlager-menu hidden" data-target="systemOpsaetning" onclick="navClick(event)">⚙️ Opsætning</span>
@@ -854,6 +855,17 @@ a:hover{color:#45a049;text-decoration:none}
         </table>
       </div>
     </div>
+  </section>
+
+  <!-- [HTML 3.6.0] OPSÆTNING VINLAGER -->
+  <section id="vinlagerOpsaetning" class="page hidden">
+    <h2 style="color:#8B0000;">Opsætning Vinlager</h2>
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      <input id="nytVinlagerLand" placeholder="Nyt land" style="border:2px solid #8B0000; padding:8px 12px; border-radius:6px;" />
+      <button onclick="tilfoejVinlagerLand()" style="background:#8B0000; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer;">➕ Tilføj land</button>
+    </div>
+    <p class="small" style="margin-top:10px; color:#666;">Træk og slip for at ændre rækkefølge — rækkefølgen opdateres i hele systemet.</p>
+    <ul id="vinlagerOpsaetningList" style="margin-top:12px; list-style:none; padding:0;"></ul>
   </section>
 
   <!-- [HTML 3.6.1] VINLAGER ADMINISTRATION -->
@@ -2540,6 +2552,7 @@ let editingLeverandorIndex = null;
 // [JS 1.1.1] Vinlager data
 let vinlager = []; // Array af vin-objekter
 let vinlagerHistorik = []; // Audit log for alle lagerændringer
+let vinlagerLande = []; // Array af lande til vinlager
 
 // $, genId og formatTime er allerede defineret tidligere i koden
 function downloadFile(content, filename, type='text/plain'){ const b = new Blob([content], {type}); const url = URL.createObjectURL(b); const a = document.createElement('a'); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url); }
@@ -2616,6 +2629,20 @@ function loadAllData(){
     if(data.activeSession) activeSession = data.activeSession;
     if(data.vinlager) vinlager = data.vinlager;
     if(data.vinlagerHistorik) vinlagerHistorik = data.vinlagerHistorik;
+    if(data.vinlagerLande) vinlagerLande = data.vinlagerLande;
+    
+    // Seed default lande hvis tom
+    if(!vinlagerLande || vinlagerLande.length === 0){
+      vinlagerLande = [
+        'Frankrig', 'Italien', 'Spanien', 'Portugal', 'Tyskland', 'Østrig', 'Schweiz', 'Ungarn', 'Tjekkiet', 'Slovakiet',
+        'Slovenien', 'Kroatien', 'Serbien', 'Rumænien', 'Bulgarien', 'Grækenland', 'Cypern', 'Nordmakedonien', 'Bosnien-Hercegovina', 'Montenegro',
+        'Georgien', 'Armenien', 'Aserbajdsjan', 'Storbritannien', 'Danmark', 'Sverige', 'Norge', 'Belgien', 'Holland', 'Polen',
+        'Letland', 'Litauen', 'USA', 'Canada', 'Mexico', 'Argentina', 'Chile', 'Uruguay', 'Brasilien', 'Peru',
+        'Bolivia', 'Sydafrika', 'Marokko', 'Tunesien', 'Algeriet', 'Egypten', 'Etiopien', 'Kina', 'Japan', 'Sydkorea',
+        'Indien', 'Thailand', 'Israel', 'Libanon', 'Tyrkiet', 'Iran', 'Australien', 'New Zealand'
+      ];
+      saveAllData();
+    }
     
     // Tilføj varenummer og stregkode til alle eksisterende varer der mangler det
     let varenummerUpdated = false;
@@ -10365,6 +10392,9 @@ function showPage(id){
     updateVinlagerStats(); 
     updateVinlagerFilters(); 
   }
+  if(id==='vinlagerOpsaetning') { 
+    renderVinlagerOpsaetning(); 
+  }
   if(id==='vinlagerAdmin') { 
     showVinlagerAdminSection('add'); 
     updateVinlagerFilters(); 
@@ -10832,10 +10862,27 @@ function genVinId(){
   return 'VIN-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
 }
 
+// Generer unikt varenummer til vin (6 cifre, starter ved 200000)
+function generateVinVarenummer(){
+  let maxNum = 200000; // Start ved 200000 for vine
+  
+  vinlager.forEach(v => {
+    if(v.varenummer){
+      const num = parseInt(v.varenummer);
+      if(!isNaN(num) && num >= 200000 && num > maxNum){
+        maxNum = num;
+      }
+    }
+  });
+  
+  return String(maxNum + 1).padStart(6, '0');
+}
+
 // Opret ny vin
 function createVin(data){
   return {
     id: genVinId(),
+    varenummer: data.varenummer || generateVinVarenummer(),
     navn: data.navn || '',
     producent: data.producent || '',
     land: data.land || '',
@@ -11227,13 +11274,87 @@ function deleteVin(vinId){
 
 // Eksport CSV
 function exportVinlagerCSV(){
-  let csv = 'Navn;Producent;Land;Region;Årgang;Druetype;Alkohol%;Flasketype;Indkøbspris;Salgspris;Antal;Placering;Noter\n';
+  let csv = 'Varenummer;Navn;Producent;Land;Region;Årgang;Druetype;Alkohol%;Flasketype;Indkøbspris;Salgspris;Antal;Placering;Noter\n';
   
   vinlager.forEach(vin => {
-    csv += `${vin.navn || ''};${vin.producent || ''};${vin.land || ''};${vin.region || ''};${vin.årgang || ''};${vin.druetype || ''};${vin.alkoholprocent || ''};${vin.flasketype || ''};${vin.indkøbspris || 0};${vin.salgspris || ''};${vin.antal_flasker || 0};${vin.lagerplacering || ''};${(vin.noter || '').replace(/;/g, ',')}\n`;
+    csv += `${vin.varenummer || ''};${vin.navn || ''};${vin.producent || ''};${vin.land || ''};${vin.region || ''};${vin.årgang || ''};${vin.druetype || ''};${vin.alkoholprocent || ''};${vin.flasketype || ''};${vin.indkøbspris || 0};${vin.salgspris || ''};${vin.antal_flasker || 0};${vin.lagerplacering || ''};${(vin.noter || '').replace(/;/g, ',')}\n`;
   });
   
   downloadFile(csv, `vinlager_export_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv;charset=utf-8;');
+}
+
+// Vinlager opsætning funktioner
+function tilfoejVinlagerLand(){
+  const input = $('nytVinlagerLand');
+  if(!input) return;
+  
+  const navn = input.value.trim();
+  if(!navn){
+    alert('Indtast et landnavn');
+    return;
+  }
+  
+  if(vinlagerLande.includes(navn)){
+    alert('Landet findes allerede');
+    return;
+  }
+  
+  vinlagerLande.push(navn);
+  input.value = '';
+  renderVinlagerOpsaetning();
+  saveAllData();
+}
+
+function deleteVinlagerLand(index){
+  if(!confirm('Slet land?')) return;
+  
+  const navn = vinlagerLande[index];
+  vinlagerLande.splice(index, 1);
+  renderVinlagerOpsaetning();
+  saveAllData();
+}
+
+function renderVinlagerOpsaetning(){
+  const ul = $('vinlagerOpsaetningList');
+  if(!ul) return;
+  
+  ul.innerHTML = '';
+  
+  vinlagerLande.forEach((land, i) => {
+    const li = document.createElement('li');
+    li.draggable = true;
+    li.dataset.index = i;
+    li.style.cssText = 'display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border:2px solid #8B0000; border-radius:6px; background:#FFF0F0; margin-bottom:8px; cursor:move;';
+    li.innerHTML = `<strong style="color:#8B0000;">${land}</strong> <button class="secondary small" onclick="deleteVinlagerLand(${i})" style="background:#dc3545; color:white; padding:4px 8px; border:none; border-radius:4px; cursor:pointer; font-size:12px;">🗑️ Slet</button>`;
+    
+    li.addEventListener('dragstart', () => li.classList.add('dragging'));
+    li.addEventListener('dragend', () => li.classList.remove('dragging'));
+    
+    ul.appendChild(li);
+  });
+  
+  ul.addEventListener('dragover', e => {
+    e.preventDefault();
+    const dragging = ul.querySelector('.dragging');
+    if(!dragging) return;
+    
+    const after = getDragAfterElement(ul, e.clientY);
+    if(after == null){
+      ul.appendChild(dragging);
+    } else {
+      ul.insertBefore(dragging, after);
+    }
+  });
+  
+  ul.addEventListener('drop', () => {
+    const newOrder = [];
+    ul.querySelectorAll('li').forEach(li => {
+      newOrder.push(li.querySelector('strong').textContent);
+    });
+    vinlagerLande = newOrder;
+    renderVinlagerOpsaetning();
+    saveAllData();
+  });
 }
 
 // Vis vinlager admin sektion
@@ -11392,8 +11513,10 @@ function downloadVinlagerExcelTemplate(){
     
     const wb = XLSX.utils.book_new();
     
-    // Generer 40 vine per land
-    const lande = ['Frankrig', 'Italien', 'Spanien', 'Tyskland', 'Portugal', 'USA', 'Chile', 'Argentina', 'Australien', 'Sydafrika'];
+    // Generer 40 vine per land fra vinlagerLande
+    const lande = vinlagerLande.length > 0 ? vinlagerLande : [
+      'Frankrig', 'Italien', 'Spanien', 'Tyskland', 'Portugal', 'USA', 'Chile', 'Argentina', 'Australien', 'Sydafrika'
+    ];
     const alleVine = [];
     
     lande.forEach(land => {
@@ -11401,8 +11524,9 @@ function downloadVinlagerExcelTemplate(){
       alleVine.push(...vine);
     });
     
-    // Opret sheet med alle vine
+    // Opret sheet med alle vine - inkluder varenummer
     const ws = XLSX.utils.json_to_sheet(alleVine.map(v => ({
+      'Varenummer': v.varenummer,
       'Navn': v.navn,
       'Producent': v.producent,
       'Land': v.land,
@@ -11418,9 +11542,9 @@ function downloadVinlagerExcelTemplate(){
       'Noter': v.noter || ''
     })));
     
-    // Sæt kolonnebredder
+    // Sæt kolonnebredder (inkluder varenummer)
     ws['!cols'] = [
-      {wch: 25}, {wch: 20}, {wch: 12}, {wch: 15}, {wch: 6}, {wch: 15}, {wch: 8}, 
+      {wch: 10}, {wch: 25}, {wch: 20}, {wch: 12}, {wch: 15}, {wch: 6}, {wch: 15}, {wch: 8}, 
       {wch: 12}, {wch: 12}, {wch: 12}, {wch: 6}, {wch: 15}, {wch: 30}
     ];
     
@@ -11443,7 +11567,21 @@ function downloadVinlagerExcelTemplate(){
 // Generer vine for et specifikt land
 function genererVineForLand(land, antal){
   const vine = [];
-  const landData = VINLAGER_LANDE_DATA[land] || VINLAGER_LANDE_DATA['Frankrig'];
+  let landData = VINLAGER_LANDE_DATA[land];
+  
+  // Hvis landet ikke har specifik data, brug generisk data
+  if(!landData){
+    landData = {
+      producenter: [`${land} Winery`, `${land} Vineyards`, `${land} Estate`, `${land} Cellars`, `${land} Wines`, `${land} Domain`, `${land} Château`, `${land} Bodega`, `${land} Weingut`, `${land} Vinyard`],
+      regioner: [`${land} Region 1`, `${land} Region 2`, `${land} Region 3`, `${land} Valley`, `${land} Hills`, `${land} Coast`, `${land} Mountains`, `${land} Plain`],
+      druetyper: ['Cabernet Sauvignon', 'Merlot', 'Pinot Noir', 'Chardonnay', 'Sauvignon Blanc', 'Syrah', 'Riesling', 'Tempranillo', 'Sangiovese', 'Malbec'],
+      navne: ['Reserve', 'Estate', 'Premium', 'Classic', 'Vintage', 'Selection', 'Special', 'Limited']
+    };
+  }
+  
+  // Find start varenummer for denne land
+  const landIndex = vinlagerLande.indexOf(land);
+  let startVarenummer = 200000 + (landIndex >= 0 ? landIndex * 10000 : 0);
   
   for(let i = 0; i < antal; i++){
     const producent = landData.producenter[i % landData.producenter.length];
@@ -11452,8 +11590,10 @@ function genererVineForLand(land, antal){
     const årgang = 2015 + (i % 10); // 2015-2024
     const indkøbspris = 150 + (i % 20) * 25; // 150-625 kr.
     const salgspris = indkøbspris * 1.5; // 50% markup
+    const varenummer = String(startVarenummer + i).padStart(6, '0');
     
     vine.push({
+      varenummer: varenummer,
       navn: `${producent} ${landData.navne[i % landData.navne.length]}`,
       producent: producent,
       land: land,
@@ -11580,14 +11720,24 @@ function importVinlagerCSV(){
       data.forEach(row => {
         if(!row.Navn || !row.Producent || !row.Land) return;
         
-        const eksisterende = vinlager.find(v => 
-          v.navn === row.Navn && 
-          v.producent === row.Producent && 
-          v.årgang === (row.Årgang ? parseInt(row.Årgang) : null)
-        );
+        // Tjek først på varenummer hvis det findes
+        let eksisterende = null;
+        if(row.Varenummer){
+          eksisterende = vinlager.find(v => v.varenummer === String(row.Varenummer).padStart(6, '0'));
+        }
+        
+        // Ellers tjek på navn, producent og årgang
+        if(!eksisterende){
+          eksisterende = vinlager.find(v => 
+            v.navn === row.Navn && 
+            v.producent === row.Producent && 
+            v.årgang === (row.Årgang ? parseInt(row.Årgang) : null)
+          );
+        }
         
         if(eksisterende){
           // Opdater eksisterende
+          if(row.Varenummer) eksisterende.varenummer = String(row.Varenummer).padStart(6, '0');
           eksisterende.region = row.Region || '';
           eksisterende.druetype = row.Druetype || '';
           eksisterende.alkoholprocent = row['Alkohol%'] ? parseFloat(row['Alkohol%']) : null;
@@ -11602,6 +11752,7 @@ function importVinlagerCSV(){
         } else {
           // Opret ny
           const nyVin = createVin({
+            varenummer: row.Varenummer ? String(row.Varenummer).padStart(6, '0') : undefined,
             navn: row.Navn,
             producent: row.Producent,
             land: row.Land,
