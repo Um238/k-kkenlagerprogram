@@ -2402,16 +2402,22 @@ function loadAllData(){
     if(data.sessionCounter !== undefined) sessionCounter = data.sessionCounter;
     if(data.activeSession) activeSession = data.activeSession;
     
-    // Tilføj varenummer til alle eksisterende varer der mangler det
+    // Tilføj varenummer og stregkode til alle eksisterende varer der mangler det
     let varenummerUpdated = false;
     masterVarelager.forEach(v => {
       if(!v.varenummer){
         v.varenummer = generateVarenummer();
         varenummerUpdated = true;
       }
+      // Sæt stregkode til varenummer hvis den ikke findes eller er baseret på id
+      // Dette sikrer at stregkoder forbliver stabile baseret på varenummer
+      if(!v.stregkode || v.stregkode === v.id){
+        v.stregkode = v.varenummer; // Brug varenummer som permanent stregkode
+        varenummerUpdated = true;
+      }
     });
     
-    // Gem hvis varenumre er tilføjet
+    // Gem hvis varenumre eller stregkoder er opdateret
     if(varenummerUpdated){
       saveAllData();
     }
@@ -3812,7 +3818,23 @@ function tilfoejMasterVare(){
     // Generer unikt varenummer
     const varenummer = generateVarenummer();
     
-    masterVarelager.push({ id: genId(), navn, maaleenhed, pris, placering, reolNr: reolNr || null, hylleNr: hylleNr || null, raekkefoelge: raekkefoelge || 0, billede: billedeData, varenummer: varenummer });
+    // Stregkode skal være baseret på varenummer og aldrig ændres
+    // Dette sikrer at printede stregkoder altid virker, selv efter opdateringer
+    const stregkode = varenummer; // Brug varenummer som permanent stregkode
+    
+    masterVarelager.push({ 
+      id: genId(), 
+      navn, 
+      maaleenhed, 
+      pris, 
+      placering, 
+      reolNr: reolNr || null, 
+      hylleNr: hylleNr || null, 
+      raekkefoelge: raekkefoelge || 0, 
+      billede: billedeData,
+      varenummer: varenummer,
+      stregkode: stregkode // Permanent stregkode baseret på varenummer
+    });
     $('masterVarenavn').value = '';
     $('masterMaaleenhed').value = '';
     $('masterPris').value = '';
@@ -5907,10 +5929,19 @@ function generateLabels(){
         locationInfo += `</div>`;
       }
       
-      d.innerHTML = `${labelText}${locationInfo}<br><svg class="barcode"></svg>`;
+      // Tilføj V. nr. og dato/klokkeslet
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('da-DK', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const timeStr = now.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' });
+      const versionInfo = `<div style="font-size:9px; margin-top:2px; color:#999; text-align:center;">V. nr. ${getAppVersion()} | ${dateStr} ${timeStr}</div>`;
+      
+      d.innerHTML = `${labelText}${locationInfo}${versionInfo}<br><svg class="barcode"></svg>`;
       container.appendChild(d);
-      // Fjern displayValue for at skjule ID nummeret
-      try{ JsBarcode(d.querySelector('.barcode'), v.id, { format:'CODE128', displayValue:false, width:2, height:40 }); }catch(e){}
+      
+      // Brug stregkode (varenummer) i stedet for v.id - dette sikrer at stregkoden ikke ændres ved opdateringer
+      // Stregkode skal være baseret på varenummer, som er permanent
+      const barcodeValue = v.stregkode || v.varenummer || v.id;
+      try{ JsBarcode(d.querySelector('.barcode'), barcodeValue, { format:'CODE128', displayValue:false, width:2, height:40 }); }catch(e){}
     }
   });
 }
@@ -7690,7 +7721,19 @@ function processImportText(text, importType = 'add'){
     masterVarelager = [];
     fileVarer.forEach(v => {
       const varenummer = v.varenummer || generateVarenummer();
-      masterVarelager.push({ id: genId(), navn: v.navn, maaleenhed: v.maaleenhed, pris: v.pris, placering: v.placering, reolNr: v.reolNr || null, hylleNr: v.hylleNr || null, raekkefoelge: v.raekkefoelge || 0, varenummer: varenummer });
+      const stregkode = varenummer; // Brug varenummer som permanent stregkode
+      masterVarelager.push({ 
+        id: genId(), 
+        navn: v.navn, 
+        maaleenhed: v.maaleenhed, 
+        pris: v.pris, 
+        placering: v.placering, 
+        reolNr: v.reolNr || null, 
+        hylleNr: v.hylleNr || null, 
+        raekkefoelge: v.raekkefoelge || 0, 
+        varenummer: varenummer,
+        stregkode: stregkode // Permanent stregkode baseret på varenummer
+      });
       imported++;
     });
   } else if(importType === 'add'){
@@ -7699,7 +7742,19 @@ function processImportText(text, importType = 'add'){
       const exists = masterVarelager.find(existing => existing.navn.toLowerCase() === v.navn.toLowerCase());
       if(!exists){
         const varenummer = v.varenummer || generateVarenummer();
-        masterVarelager.push({ id: genId(), navn: v.navn, maaleenhed: v.maaleenhed, pris: v.pris, placering: v.placering, reolNr: v.reolNr || null, hylleNr: v.hylleNr || null, raekkefoelge: v.raekkefoelge || 0, varenummer: varenummer });
+        const stregkode = varenummer; // Brug varenummer som permanent stregkode
+        masterVarelager.push({ 
+          id: genId(), 
+          navn: v.navn, 
+          maaleenhed: v.maaleenhed, 
+          pris: v.pris, 
+          placering: v.placering, 
+          reolNr: v.reolNr || null, 
+          hylleNr: v.hylleNr || null, 
+          raekkefoelge: v.raekkefoelge || 0, 
+          varenummer: varenummer,
+          stregkode: stregkode // Permanent stregkode baseret på varenummer
+        });
         imported++;
       } else {
         skipped++;
@@ -7724,12 +7779,29 @@ function processImportText(text, importType = 'add'){
         } else if(!existing.varenummer) {
           existing.varenummer = generateVarenummer();
         }
+        // Opdater stregkode til varenummer hvis den ikke allerede er sat korrekt
+        // Dette sikrer at stregkoder forbliver stabile baseret på varenummer
+        if(!existing.stregkode || existing.stregkode === existing.id){
+          existing.stregkode = existing.varenummer;
+        }
         // Billede bevares automatisk (existing.billede forbliver uændret)
         updated++;
       } else {
         // Tilføj ny vare (uden billede - billeder tilføjes via formularen)
         const varenummer = v.varenummer || generateVarenummer();
-        masterVarelager.push({ id: genId(), navn: v.navn, maaleenhed: v.maaleenhed, pris: v.pris, placering: v.placering, reolNr: v.reolNr || null, hylleNr: v.hylleNr || null, raekkefoelge: v.raekkefoelge || 0, varenummer: varenummer });
+        const stregkode = varenummer; // Brug varenummer som permanent stregkode
+        masterVarelager.push({ 
+          id: genId(), 
+          navn: v.navn, 
+          maaleenhed: v.maaleenhed, 
+          pris: v.pris, 
+          placering: v.placering, 
+          reolNr: v.reolNr || null, 
+          hylleNr: v.hylleNr || null, 
+          raekkefoelge: v.raekkefoelge || 0, 
+          varenummer: varenummer,
+          stregkode: stregkode // Permanent stregkode baseret på varenummer
+        });
         imported++;
       }
     });
