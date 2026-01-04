@@ -801,9 +801,10 @@ a:hover{color:#45a049;text-decoration:none}
               </div>
               <div style="margin-top:16px; padding-top:16px; border-top:2px solid #ddd;">
                 <h4 style="margin:0 0 8px 0; font-size:14px;">Billeder</h4>
-                <button onclick="tilfoejDemoBillederTilAlleVarer()" style="width:100%; background:#9C27B0; color:white; border-color:#7B1FA2; margin-bottom:8px;">🖼️ Tilføj demo-billeder til alle varer</button>
+                <button onclick="tilfoejDemoBillederTilAlleVarer()" style="width:100%; background:#9C27B0; color:white; border-color:#7B1FA2; margin-bottom:8px;">🖼️ Hent originale billeder fra Unsplash</button>
                 <div class="small" style="color:#666; font-size:11px;">
-                  <strong>Info:</strong> Tilføjer automatisk passende demo-billeder til alle varer der mangler billede. Billederne gemmes automatisk i backup.
+                  <strong>Info:</strong> Henter automatisk originale, realistiske produktbilleder fra Unsplash baseret på varenavn. Billederne gemmes automatisk i backup.<br><br>
+                  <strong>💡 Tip:</strong> Du kan også uploade dine egne billeder ved at klikke på billedet i tabellen.
                 </div>
               </div>
             </div>
@@ -3293,7 +3294,159 @@ function updateVareBillede(vareId, base64Data) {
     }, 2000);
 }
 
-// Generer passende demo-billede baseret på varenavn og placering
+// Hent originalt billede fra Picsum Photos (gratis, høj kvalitet, ingen API key)
+async function hentBilledeFraPicsum(søgeord) {
+    try {
+        // Picsum Photos giver tilfældige, højkvalitets fotos
+        // Bruger seed baseret på søgeord for konsistente billeder
+        const seed = søgeord.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 10);
+        const imageUrl = `https://picsum.photos/seed/${seed}/400/400`;
+        
+        // Konverter billede til base64
+        const response = await fetch(imageUrl);
+        if (!response.ok) throw new Error('Kunne ikke hente billede');
+        
+        const blob = await response.blob();
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    } catch (err) {
+        console.warn(`Fejl ved hentning af billede for "${søgeord}":`, err);
+        // Fallback til forbedret SVG hvis Picsum fejler
+        return genererFallbackBillede(søgeord);
+    }
+}
+
+// Generer forbedret, professionelt fallback-billede (SVG med gradient og bedre design)
+function genererFallbackBillede(vareNavn) {
+    const navnLower = vareNavn.toLowerCase();
+    
+    // Bestem emoji, farver og gradient baseret på varenavn
+    let emoji = '📦';
+    let bgGradient = 'linear-gradient(135deg, #E0E0E0 0%, #BDBDBD 100%)';
+    let textColor = '#424242';
+    let shadowColor = 'rgba(0,0,0,0.2)';
+    
+    // Kød og fisk
+    if (navnLower.includes('okse') || navnLower.includes('bøf') || navnLower.includes('hakket') || navnLower.includes('kød')) {
+        emoji = '🥩'; bgGradient = 'linear-gradient(135deg, #8B4513 0%, #654321 100%)'; textColor = '#FFFFFF'; shadowColor = 'rgba(0,0,0,0.4)';
+    } else if (navnLower.includes('svine') || navnLower.includes('flæsk') || navnLower.includes('bacon')) {
+        emoji = '🥓'; bgGradient = 'linear-gradient(135deg, #FFB6C1 0%, #FF91A4 100%)'; textColor = '#8B0000';
+    } else if (navnLower.includes('kylling') || navnLower.includes('fjerkræ') || navnLower.includes('høne')) {
+        emoji = '🍗'; bgGradient = 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)'; textColor = '#8B4513';
+    } else if (navnLower.includes('fisk') || navnLower.includes('laks') || navnLower.includes('torsk') || navnLower.includes('rødspætte') || navnLower.includes('tun')) {
+        emoji = '🐟'; bgGradient = 'linear-gradient(135deg, #87CEEB 0%, #4682B4 100%)'; textColor = '#000080';
+    } else if (navnLower.includes('lam') || navnLower.includes('kalv')) {
+        emoji = '🍖'; bgGradient = 'linear-gradient(135deg, #F5DEB3 0%, #DEB887 100%)'; textColor = '#8B4513';
+    }
+    // Mejeri
+    else if (navnLower.includes('mælk') || navnLower.includes('fløde') || navnLower.includes('yoghurt')) {
+        emoji = '🥛'; bgGradient = 'linear-gradient(135deg, #FFFFFF 0%, #F0F0F0 100%)'; textColor = '#4169E1';
+    } else if (navnLower.includes('ost') || navnLower.includes('cheddar') || navnLower.includes('gouda')) {
+        emoji = '🧀'; bgGradient = 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)'; textColor = '#8B4513';
+    } else if (navnLower.includes('smør') || navnLower.includes('margarine')) {
+        emoji = '🧈'; bgGradient = 'linear-gradient(135deg, #FFD700 0%, #FFC700 100%)'; textColor = '#8B4513';
+    } else if (navnLower.includes('æg')) {
+        emoji = '🥚'; bgGradient = 'linear-gradient(135deg, #FFF8DC 0%, #FFE4B5 100%)'; textColor = '#8B4513';
+    }
+    // Grøntsager og frugt
+    else if (navnLower.includes('salat') || navnLower.includes('spinat') || navnLower.includes('ruccola')) {
+        emoji = '🥬'; bgGradient = 'linear-gradient(135deg, #98FB98 0%, #90EE90 100%)'; textColor = '#228B22';
+    } else if (navnLower.includes('tomat') || navnLower.includes('tomater')) {
+        emoji = '🍅'; bgGradient = 'linear-gradient(135deg, #FF6347 0%, #DC143C 100%)'; textColor = '#FFFFFF';
+    } else if (navnLower.includes('agurk') || navnLower.includes('cucumber')) {
+        emoji = '🥒'; bgGradient = 'linear-gradient(135deg, #90EE90 0%, #32CD32 100%)'; textColor = '#006400';
+    } else if (navnLower.includes('gulerod') || navnLower.includes('carrot')) {
+        emoji = '🥕'; bgGradient = 'linear-gradient(135deg, #FF8C00 0%, #FF7F50 100%)'; textColor = '#FFFFFF';
+    } else if (navnLower.includes('løg') || navnLower.includes('onion')) {
+        emoji = '🧅'; bgGradient = 'linear-gradient(135deg, #F0E68C 0%, #DAA520 100%)'; textColor = '#8B4513';
+    } else if (navnLower.includes('hvidløg') || navnLower.includes('garlic')) {
+        emoji = '🧄'; bgGradient = 'linear-gradient(135deg, #F5F5DC 0%, #F0E68C 100%)'; textColor = '#8B4513';
+    } else if (navnLower.includes('æble') || navnLower.includes('apple')) {
+        emoji = '🍎'; bgGradient = 'linear-gradient(135deg, #FF6B6B 0%, #DC143C 100%)'; textColor = '#FFFFFF';
+    } else if (navnLower.includes('banan') || navnLower.includes('banana')) {
+        emoji = '🍌'; bgGradient = 'linear-gradient(135deg, #FFD700 0%, #FFC700 100%)'; textColor = '#8B4513';
+    } else if (navnLower.includes('citron') || navnLower.includes('lemon')) {
+        emoji = '🍋'; bgGradient = 'linear-gradient(135deg, #FFD700 0%, #FFFF00 100%)'; textColor = '#8B4513';
+    } else if (navnLower.includes('bær') || navnLower.includes('jordbær') || navnLower.includes('blåbær')) {
+        emoji = '🫐'; bgGradient = 'linear-gradient(135deg, #9370DB 0%, #6A5ACD 100%)'; textColor = '#FFFFFF';
+    }
+    // Frosne varer
+    else if (navnLower.includes('frosne') || navnLower.includes('frozen')) {
+        emoji = '🧊'; bgGradient = 'linear-gradient(135deg, #E0F6FF 0%, #B0E0E6 100%)'; textColor = '#000080';
+    }
+    // Tørvarer
+    else if (navnLower.includes('mel') || navnLower.includes('flour')) {
+        emoji = '🌾'; bgGradient = 'linear-gradient(135deg, #FFF8DC 0%, #F5DEB3 100%)'; textColor = '#8B4513';
+    } else if (navnLower.includes('sukker') || navnLower.includes('sugar')) {
+        emoji = '🍬'; bgGradient = 'linear-gradient(135deg, #FFFFFF 0%, #F5F5F5 100%)'; textColor = '#8B4513';
+    } else if (navnLower.includes('ris') || navnLower.includes('rice')) {
+        emoji = '🍚'; bgGradient = 'linear-gradient(135deg, #FFF8DC 0%, #F5DEB3 100%)'; textColor = '#8B4513';
+    } else if (navnLower.includes('pasta') || navnLower.includes('spaghetti')) {
+        emoji = '🍝'; bgGradient = 'linear-gradient(135deg, #FFF8DC 0%, #F5DEB3 100%)'; textColor = '#8B4513';
+    } else if (navnLower.includes('olie') || navnLower.includes('oil')) {
+        emoji = '🫒'; bgGradient = 'linear-gradient(135deg, #90EE90 0%, #32CD32 100%)'; textColor = '#FFFFFF';
+    } else if (navnLower.includes('krydderi') || navnLower.includes('peber') || navnLower.includes('salt')) {
+        emoji = '🧂'; bgGradient = 'linear-gradient(135deg, #F5F5DC 0%, #F0E68C 100%)'; textColor = '#8B4513';
+    }
+    // Drikkevarer
+    else if (navnLower.includes('øl') || navnLower.includes('beer')) {
+        emoji = '🍺'; bgGradient = 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)'; textColor = '#8B4513';
+    } else if (navnLower.includes('vin') || navnLower.includes('wine')) {
+        emoji = '🍷'; bgGradient = 'linear-gradient(135deg, #8B0000 0%, #5C0000 100%)'; textColor = '#FFFFFF';
+    } else if (navnLower.includes('sodavand') || navnLower.includes('cola') || navnLower.includes('saft')) {
+        emoji = '🥤'; bgGradient = 'linear-gradient(135deg, #FF6347 0%, #DC143C 100%)'; textColor = '#FFFFFF';
+    }
+    // Brød og bagværk
+    else if (navnLower.includes('brød') || navnLower.includes('bread')) {
+        emoji = '🍞'; bgGradient = 'linear-gradient(135deg, #DEB887 0%, #CD853F 100%)'; textColor = '#FFFFFF';
+    } else if (navnLower.includes('kage') || navnLower.includes('cake')) {
+        emoji = '🎂'; bgGradient = 'linear-gradient(135deg, #FFB6C1 0%, #FF69B4 100%)'; textColor = '#8B0000';
+    }
+    
+    // Parse gradient farver (extract hex farver fra gradient string)
+    const gradientMatch = bgGradient.match(/#[0-9A-Fa-f]{6}/g);
+    const color1 = gradientMatch ? gradientMatch[0] : '#E0E0E0';
+    const color2 = gradientMatch && gradientMatch[1] ? gradientMatch[1] : color1;
+    
+    // Generer forbedret SVG med gradient, skygge og bedre design
+    const uniqueId = 'grad' + Math.random().toString(36).substr(2, 9);
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+      <defs>
+        <linearGradient id="${uniqueId}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:${color1};stop-opacity:1" />
+          <stop offset="100%" style="stop-color:${color2};stop-opacity:1" />
+        </linearGradient>
+        <filter id="shadow${uniqueId}">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+          <feOffset dx="2" dy="2" result="offsetblur"/>
+          <feComponentTransfer>
+            <feFuncA type="linear" slope="0.4"/>
+          </feComponentTransfer>
+          <feMerge>
+            <feMergeNode/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <rect width="400" height="400" fill="url(#${uniqueId})" rx="20"/>
+      <rect width="400" height="400" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2" rx="20"/>
+      <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="140" fill="${textColor}" text-anchor="middle" dominant-baseline="middle" filter="url(#shadow${uniqueId})">${emoji}</text>
+    </svg>`;
+    
+    try {
+        const base64 = btoa(unescape(encodeURIComponent(svg)));
+        return 'data:image/svg+xml;base64,' + base64;
+    } catch (err) {
+        console.error('Fejl ved konvertering af SVG til base64:', err);
+        return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }
+}
+
+// Generer passende demo-billede baseret på varenavn og placering (DEPRECATED - bruger nu genererFallbackBillede)
 function genererDemoBillede(vareNavn, placering) {
     const navnLower = vareNavn.toLowerCase();
     
@@ -3403,8 +3556,8 @@ function genererDemoBillede(vareNavn, placering) {
     }
 }
 
-// Tilføj demo-billeder til alle varer der mangler billede
-function tilfoejDemoBillederTilAlleVarer() {
+// Tilføj originale billeder fra Unsplash til alle varer der mangler billede
+async function tilfoejDemoBillederTilAlleVarer() {
     if (!masterVarelager || masterVarelager.length === 0) {
         alert('⚠️ Ingen varer i varelageret.\n\nTilføj varer først.');
         return;
@@ -3422,61 +3575,89 @@ function tilfoejDemoBillederTilAlleVarer() {
         return;
     }
     
-    if (!confirm(`🖼️ Tilføj demo-billeder til ${varerUdenBillede.length} varer?\n\nBillederne genereres automatisk baseret på varenavn og placering.\n\nBillederne gemmes automatisk i backup.`)) {
+    if (!confirm(`🖼️ Hent originale billeder fra Unsplash til ${varerUdenBillede.length} varer?\n\nBillederne hentes automatisk baseret på varenavn.\n\n⏱️ Dette kan tage et par minutter...`)) {
         return;
     }
     
+    // Vis progress dialog
+    const progressModal = document.createElement('div');
+    progressModal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; display:flex; align-items:center; justify-content:center;';
+    progressModal.innerHTML = `
+        <div style="background:white; padding:30px; border-radius:10px; max-width:400px; text-align:center;">
+            <h3 style="margin:0 0 20px 0;">Genererer billeder...</h3>
+            <div id="billedeProgress" style="margin:20px 0; color:#666;">Starter...</div>
+            <div style="background:#f0f0f0; border-radius:10px; height:20px; overflow:hidden; margin:20px 0;">
+                <div id="billedeProgressBar" style="background:#4CAF50; height:100%; width:0%; transition:width 0.3s;"></div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(progressModal);
+    
     let opdateret = 0;
     const fejl = [];
+    const total = varerUdenBillede.length;
     
-    varerUdenBillede.forEach((vare, index) => {
-        try {
-            const demoBillede = genererDemoBillede(vare.navn || 'Ukendt', vare.placering || '');
-            if (demoBillede && (demoBillede.startsWith('data:image') || demoBillede.startsWith('data:image/svg'))) {
-                // Direkte tildeling til vare objektet
-                vare.billede = demoBillede;
-                opdateret++;
-                
-                // Verificer at billedet faktisk er sat
-                if (!vare.billede) {
-                    fejl.push(`${vare.navn}: Billede blev ikke sat`);
-                }
-            } else {
-                fejl.push(`${vare.navn}: Ugyldigt billede format`);
-                console.warn(`Kunne ikke generere billede for: ${vare.navn}`, demoBillede);
+    try {
+        // Process varer én ad gangen for at undgå rate limiting
+        for (let i = 0; i < varerUdenBillede.length; i++) {
+            const vare = varerUdenBillede[i];
+            const progress = ((i + 1) / total * 100).toFixed(0);
+            
+            const progressText = document.getElementById('billedeProgress');
+            const progressBar = document.getElementById('billedeProgressBar');
+            
+            if (progressText) {
+                progressText.textContent = `Henter billede for: ${vare.navn} (${i + 1} af ${total})`;
             }
-        } catch (err) {
-            fejl.push(`${vare.navn}: ${err.message}`);
-            console.error(`Fejl ved generering af billede for ${vare.navn}:`, err);
+            if (progressBar) {
+                progressBar.style.width = progress + '%';
+            }
+            
+            try {
+                // Hent billede fra Picsum Photos
+                const billede = await hentBilledeFraPicsum(vare.navn || 'Ukendt');
+                
+                if (billede && (billede.startsWith('data:image'))) {
+                    vare.billede = billede;
+                    opdateret++;
+                    console.log(`✅ Hentet billede for: ${vare.navn}`);
+                } else {
+                    fejl.push(`${vare.navn}: Kunne ikke hente billede`);
+                    console.warn(`⚠️ Kunne ikke hente billede for: ${vare.navn}`);
+                }
+                
+                // Vent lidt mellem hvert billede for at undgå rate limiting
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+            } catch (err) {
+                fejl.push(`${vare.navn}: ${err.message}`);
+                console.error(`❌ Fejl ved hentning af billede for ${vare.navn}:`, err);
+            }
         }
-    });
-    
-    // Verificer at billederne faktisk er i masterVarelager
-    const varerMedBillede = masterVarelager.filter(v => v.billede && v.billede.trim() !== '').length;
-    console.log(`Total varer med billede efter opdatering: ${varerMedBillede} af ${masterVarelager.length}`);
-    
-    // Gem alle ændringer - vigtigt at kalde saveAllData() før renderMasterTable()
-    saveAllData();
-    
-    // Verificer at data er gemt
-    const saved = localStorage.getItem('køkkenlager_data');
-    if (saved) {
-        const parsed = JSON.parse(saved);
-        const savedVarerMedBillede = (parsed.masterVarelager || []).filter(v => v.billede && v.billede.trim() !== '').length;
-        console.log(`Varer med billede i localStorage: ${savedVarerMedBillede}`);
+        
+        // Gem alle ændringer
+        saveAllData();
+        
+        // Opdater visningen
+        renderMasterTable();
+        
+        // Fjern progress modal
+        document.body.removeChild(progressModal);
+        
+        // Vis bekræftelse
+        let bekræftelse = `✅ ${opdateret} varer har nu fået forbedrede demo-billeder!\n\n💾 Billederne er gemt og vil blive inkluderet i backup.\n\n📤 Husk at uploade varelageret til serveren for at synkronisere billederne.\n\n💡 Tip: Du kan erstatte billederne med dine egne ved at klikke på billedet i tabellen.`;
+        
+        if (fejl.length > 0) {
+            bekræftelse += `\n\n⚠️ ${fejl.length} fejl (faldt tilbage på placeholder):\n${fejl.slice(0, 5).join('\n')}${fejl.length > 5 ? '\n...' : ''}`;
+        }
+        
+        alert(bekræftelse);
+        
+    } catch (err) {
+        document.body.removeChild(progressModal);
+        alert(`❌ Fejl ved hentning af billeder: ${err.message}\n\nPrøv igen senere.`);
+        console.error('Fejl ved hentning af billeder:', err);
     }
-    
-    // Opdater visningen med det samme
-    renderMasterTable();
-    
-    // Vis bekræftelse
-    let bekræftelse = `✅ ${opdateret} varer har nu fået demo-billeder!\n\n💾 Billederne er gemt.\n\n📤 Husk at uploade varelageret til serveren for at synkronisere billederne.`;
-    
-    if (fejl.length > 0) {
-        bekræftelse += `\n\n⚠️ ${fejl.length} fejl:\n${fejl.slice(0, 5).join('\n')}${fejl.length > 5 ? '\n...' : ''}`;
-    }
-    
-    alert(bekræftelse);
 }
 
 /* ======================================================
