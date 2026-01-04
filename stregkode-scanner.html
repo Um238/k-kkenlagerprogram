@@ -138,6 +138,7 @@ let lastScanTime = 0;
 let selectedLocation = ''; // Selected location for current session
 let availableLocations = []; // Available locations from varelager
 let pendingScannedCode = null; // For quantity dialog
+let pendingScannedItemId = null; // Store item.id when item is found
 const SCAN_COOLDOWN = 1000;
 
 // Load items from main app
@@ -413,32 +414,91 @@ async function startScannerAfterLocation(){
 // Show quantity dialog when barcode is scanned
 function showQuantityDialog(barcode){
   pendingScannedCode = barcode;
+  pendingScannedItemId = null; // Reset
   const modal = document.getElementById('quantityModal');
   const codeDisplay = document.getElementById('scannedCodeDisplay');
   const quantityInput = document.getElementById('quantityInput');
   
-  // Find item to show name
-  // Try to find item - match on both id and stregkode
-  const item = allItems.find(v => 
-    v.id === barcode || 
-    v.stregkode === barcode ||
-    (v.stregkode && String(v.stregkode).trim() === String(barcode).trim())
-  );
+  // Find item to show name - use same matching logic as handleScannedBarcode
+  const barcodeStr = String(barcode).trim();
+  const barcodeNormalized = normalizeBarcode(barcode);
+  
+  // First try exact and case-insensitive matches
+  let item = allItems.find(v => {
+    const vId = String(v.id || '').trim();
+    const vStregkode = String(v.stregkode || '').trim();
+    
+    // Exact matches
+    if (vId === barcodeStr || vStregkode === barcodeStr) return true;
+    
+    // Case-insensitive matches
+    if (vId.toLowerCase() === barcodeStr.toLowerCase() || 
+        vStregkode.toLowerCase() === barcodeStr.toLowerCase()) return true;
+    
+    // Normalized matches
+    const vIdNorm = normalizeBarcode(vId);
+    const vStregkodeNorm = normalizeBarcode(vStregkode);
+    if (vIdNorm === barcodeNormalized || vStregkodeNorm === barcodeNormalized) return true;
+    
+    // Partial matches
+    if (vIdNorm.includes(barcodeNormalized) || barcodeNormalized.includes(vIdNorm)) return true;
+    if (vStregkodeNorm.includes(barcodeNormalized) || barcodeNormalized.includes(vStregkodeNorm)) return true;
+    
+    return false;
+  });
+  
+  // If not found, try fuzzy matching
+  if (!item && barcodeNormalized.length >= 5) {
+    let bestMatch = null;
+    let bestSimilarity = 0.6;
+    
+    for (const v of allItems) {
+      const vId = String(v.id || '').trim();
+      const vStregkode = String(v.stregkode || '').trim();
+      
+      const similarity1 = calculateSimilarity(barcodeStr, vId);
+      const similarity2 = calculateSimilarity(barcodeStr, vStregkode);
+      const maxSimilarity = Math.max(similarity1, similarity2);
+      
+      if (maxSimilarity > bestSimilarity) {
+        bestSimilarity = maxSimilarity;
+        bestMatch = v;
+      }
+    }
+    
+    if (bestMatch) {
+      item = bestMatch;
+    }
+  }
+  
   if (item) {
+    // Gem item.id så vi kan bruge det direkte i handleScannedBarcode
+    pendingScannedItemId = item.id;
+    
     const maaleenhed = item.maaleenhed || 'stk';
     const pris = item.pris !== undefined ? Number(item.pris) : 0;
     const prisText = pris > 0 ? ` • ${pris.toFixed(2)} kr. pr. ${maaleenhed}` : '';
     
-    let displayHTML = '';
+    let displayHTML = '<div style="display:flex; align-items:center; gap:15px;">';
     
-    // Vis billede hvis tilgængelig (lille format til telefon)
+    // Vis billede hvis tilgængelig (større og til højre)
     if (item.billede) {
-      displayHTML += `<div style="text-align:center; margin-bottom:10px;">
-        <img src="${item.billede}" alt="${item.navn}" style="max-width:80px; max-height:80px; border:2px solid #4CAF50; border-radius:6px; object-fit:contain;">
+      displayHTML += `<div style="flex-shrink:0;">
+        <img src="${item.billede}" alt="${item.navn}" style="max-width:120px; max-height:120px; border:2px solid #4CAF50; border-radius:6px; object-fit:contain;">
       </div>`;
     }
     
-    displayHTML += `<strong>${item.navn}</strong><br><span style="font-size:14px; color:#666;">${maaleenhed}${prisText}</span>`;
+    // Vare info til venstre
+    displayHTML += `<div style="flex:1;">
+      <strong style="font-size:18px;">${item.navn}</strong><br>
+      <span style="font-size:14px; color:#666;">${maaleenhed}${prisText}</span>`;
+    
+    // Vis varenummer hvis tilgængelig
+    if (item.varenummer) {
+      displayHTML += `<br><span style="font-size:12px; color:#17a2b8; font-weight:600;">Varenummer: ${item.varenummer}</span>`;
+    }
+    
+    displayHTML += `</div></div>`;
     codeDisplay.innerHTML = displayHTML;
   } else {
     codeDisplay.textContent = 'Stregkode: ' + barcode;
@@ -464,8 +524,14 @@ function confirmQuantityInput(){
   }
   
   if (pendingScannedCode) {
-    handleScannedBarcode(pendingScannedCode, quantity);
+    // Hvis vi har item.id, brug det direkte - ellers brug barcode
+    if (pendingScannedItemId) {
+      handleScannedBarcode(pendingScannedItemId, quantity);
+    } else {
+      handleScannedBarcode(pendingScannedCode, quantity);
+    }
     pendingScannedCode = null;
+    pendingScannedItemId = null;
   }
   
   modal.classList.add('hidden');
@@ -480,6 +546,7 @@ function confirmQuantityInput(){
 function cancelQuantityInput(){
   const modal = document.getElementById('quantityModal');
   pendingScannedCode = null;
+  pendingScannedItemId = null;
   modal.classList.add('hidden');
   
   // Scanner continues automatically - no need to restart
@@ -617,9 +684,10 @@ function handleScannedBarcode(barcode, quantity = 1){
       totalItems: allItems.length
     });
     
-    // Still add it but with limited info
-    if (!scannedItems[barcode]) {
-      scannedItems[barcode] = {
+    // Still add it but with limited info - brug barcode som nøgle når item ikke findes
+    const unknownItemKey = barcode;
+    if (!scannedItems[unknownItemKey]) {
+      scannedItems[unknownItemKey] = {
         vare: {
           id: barcode,
           navn: 'Ukendt vare (' + barcode + ')',
@@ -627,13 +695,15 @@ function handleScannedBarcode(barcode, quantity = 1){
           maaleenhed: 'stk',
           pris: 0,
           reolNr: null, // Explicitly set to null
-          hylleNr: null // Explicitly set to null
+          hylleNr: null, // Explicitly set to null
+          billede: null,
+          varenummer: null
         },
         count: 0
       };
     }
     
-    scannedItems[barcode].count += quantity;
+    scannedItems[unknownItemKey].count += quantity;
     
     // Show more helpful error message
     let errorMsg = '⚠️ Vare ikke fundet: ' + barcode + '\n(Tilføjet: ' + quantity + ')';
