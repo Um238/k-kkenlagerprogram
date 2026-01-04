@@ -1609,6 +1609,31 @@ a:hover{color:#45a049;text-decoration:none}
   </div>
 </div>
 
+<!-- Vinlager import type selection modal -->
+<div id="vinlagerImportModal" class="modal-backdrop hidden" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:500px;">
+    <h3 style="color:#8B0000;">Vælg import type</h3>
+    <p style="margin-bottom:16px;">Hvordan vil du importere vinlager filen?</p>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <button onclick="selectVinlagerImportType('overwrite')" style="text-align:left; padding:12px; background:#fff; border:2px solid #8B0000; border-radius:8px; cursor:pointer;">
+        <strong>Overskriv vinlager</strong><br>
+        <small style="color:#666;">Erstat hele vinlageret med data fra filen</small>
+      </button>
+      <button onclick="selectVinlagerImportType('add')" style="text-align:left; padding:12px; background:#fff; border:2px solid #8B0000; border-radius:8px; cursor:pointer;">
+        <strong>Tilføj til vinlager</strong><br>
+        <small style="color:#666;">Tilføj kun nye vine, ignorer eksisterende</small>
+      </button>
+      <button onclick="selectVinlagerImportType('update')" style="text-align:left; padding:12px; background:#fff; border:2px solid #8B0000; border-radius:8px; cursor:pointer;">
+        <strong>Opdater priser</strong><br>
+        <small style="color:#666;">Opdater priser for eksisterende vine, tilføj nye vine</small>
+      </button>
+    </div>
+    <div class="actions" style="margin-top:16px;">
+      <button class="secondary" onclick="closeVinlagerImportModal()" style="border-color:#8B0000;">Annuller</button>
+    </div>
+  </div>
+</div>
+
 <!-- Server reports modal -->
 <div id="serverReportsModal" class="modal-backdrop hidden" aria-hidden="true" onclick="if(event.target.id === 'serverReportsModal') hideServerReportsModal()">
   <div class="modal" role="dialog" aria-modal="true" style="max-width:700px;" onclick="event.stopPropagation()">
@@ -7224,6 +7249,8 @@ function exportCSV(){
 
 let selectedImportFile = null;
 let selectedImportType = null;
+let selectedVinlagerImportFile = null;
+let selectedVinlagerImportType = null;
 
 function importCSV(){ 
   const f = $('csvImport')?.files[0]; 
@@ -7352,6 +7379,26 @@ function closeImportModal(){
   // Nulstil kun hvis import ikke er i gang
   if(!selectedImportType){
     selectedImportFile = null;
+  }
+}
+
+function showVinlagerImportModal(){
+  const modal = $('vinlagerImportModal');
+  if(!modal) return;
+  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeVinlagerImportModal(){
+  const modal = $('vinlagerImportModal');
+  if(!modal) return;
+  modal.classList.add('hidden');
+  modal.style.display = 'none';
+  modal.setAttribute('aria-hidden', 'true');
+  // Nulstil kun hvis import ikke er i gang
+  if(!selectedVinlagerImportType){
+    selectedVinlagerImportFile = null;
   }
 }
 
@@ -12208,6 +12255,24 @@ function importVinlagerCSV(){
   }
   
   const file = fileInput.files[0];
+  
+  // Gem filen og vis valg-modal
+  selectedVinlagerImportFile = file;
+  showVinlagerImportModal();
+}
+
+function selectVinlagerImportType(type){
+  selectedVinlagerImportType = type;
+  
+  if(!selectedVinlagerImportFile) {
+    closeVinlagerImportModal();
+    alert('Filen blev ikke fundet. Prøv at vælge filen igen.');
+    return;
+  }
+  
+  const file = selectedVinlagerImportFile;
+  closeVinlagerImportModal();
+  
   const reader = new FileReader();
   
   reader.onload = function(e){
@@ -12236,80 +12301,22 @@ function importVinlagerCSV(){
         }
       }
       
-      let importeret = 0;
-      let opdateret = 0;
-      
-      data.forEach(row => {
-        if(!row.Navn || !row.Producent || !row.Land) return;
-        
-        // Tjek først på varenummer hvis det findes
-        let eksisterende = null;
-        if(row.Varenummer){
-          eksisterende = vinlager.find(v => v.varenummer === String(row.Varenummer).padStart(6, '0'));
-        }
-        
-        // Ellers tjek på navn, producent og årgang
-        if(!eksisterende){
-          eksisterende = vinlager.find(v => 
-            v.navn === row.Navn && 
-            v.producent === row.Producent && 
-            v.årgang === (row.Årgang ? parseInt(row.Årgang) : null)
-          );
-        }
-        
-        if(eksisterende){
-          // Opdater eksisterende
-          if(row.Varenummer) eksisterende.varenummer = String(row.Varenummer).padStart(6, '0');
-          eksisterende.region = row.Region || '';
-          eksisterende.druetype = row.Druetype || '';
-          eksisterende.alkoholprocent = row['Alkohol%'] ? parseFloat(row['Alkohol%']) : null;
-          eksisterende.flasketype = row.Flasketype || '75 cl';
-          eksisterende.indkøbspris = parseFloat(row.Indkøbspris) || 0;
-          eksisterende.salgspris = row.Salgspris ? parseFloat(row.Salgspris) : null;
-          eksisterende.antal_flasker = parseInt(row.Antal) || 0;
-          eksisterende.minimum_beholdning = parseInt(row['Minimum beholdning'] || row['Minimum Beholdning'] || row['minimum_beholdning']) || 24;
-          eksisterende.lagerplacering = row.Placering || '';
-          eksisterende.noter = row.Noter || '';
-          eksisterende.sidst_opdateret = Date.now();
-          opdateret++;
-        } else {
-          // Opret ny
-          const nyVin = createVin({
-            varenummer: row.Varenummer ? String(row.Varenummer).padStart(6, '0') : undefined,
-            navn: row.Navn,
-            producent: row.Producent,
-            land: row.Land,
-            region: row.Region || '',
-            årgang: row.Årgang ? parseInt(row.Årgang) : null,
-            druetype: row.Druetype || '',
-            alkoholprocent: row['Alkohol%'] ? parseFloat(row['Alkohol%']) : null,
-            flasketype: row.Flasketype || '75 cl',
-            indkøbspris: parseFloat(row.Indkøbspris) || 0,
-            salgspris: row.Salgspris ? parseFloat(row.Salgspris) : null,
-            antal_flasker: parseInt(row.Antal) || 0,
-            minimum_beholdning: parseInt(row['Minimum beholdning'] || row['Minimum Beholdning'] || row['minimum_beholdning']) || 24,
-            lagerplacering: row.Placering || '',
-            noter: row.Noter || ''
-          });
-          vinlager.push(nyVin);
-          importeret++;
-        }
-      });
-      
-      renderVinlagerTable();
-      renderVinlagerAdminTable();
-      updateVinlagerStats();
-      updateVinlagerFilters();
-      saveAllData();
-      
-      alert(`✅ Import gennemført!\n\n${importeret} nye vine tilføjet\n${opdateret} vine opdateret`);
-      
-      // Ryd file input
-      fileInput.value = '';
-    } catch(err){
+      processVinlagerImport(data, type);
+    } catch(err) {
+      alert('Fejl ved import: ' + err.message);
       console.error('Import fejl:', err);
-      alert('❌ Fejl ved import: ' + err.message);
+    } finally {
+      selectedVinlagerImportFile = null;
+      selectedVinlagerImportType = null;
+      const fileInput = $('vinlagerCsvImport');
+      if(fileInput) fileInput.value = '';
     }
+  };
+  
+  reader.onerror = function(){
+    alert('Kunne ikke læse filen.');
+    selectedVinlagerImportFile = null;
+    selectedVinlagerImportType = null;
   };
   
   if(file.name.endsWith('.xlsx') || file.name.endsWith('.xls')){
@@ -12317,6 +12324,162 @@ function importVinlagerCSV(){
   } else {
     reader.readAsText(file, 'UTF-8');
   }
+}
+
+function processVinlagerImport(data, importType = 'add'){
+  let importeret = 0;
+  let opdateret = 0;
+  let sprungetOver = 0;
+  
+  if(importType === 'overwrite'){
+    // Overskriv hele vinlageret
+    vinlager = [];
+    data.forEach(row => {
+      if(!row.Navn || !row.Producent || !row.Land) return;
+      
+      const nyVin = createVin({
+        varenummer: row.Varenummer ? String(row.Varenummer).padStart(6, '0') : undefined,
+        navn: row.Navn,
+        producent: row.Producent,
+        land: row.Land,
+        region: row.Region || '',
+        årgang: row.Årgang ? parseInt(row.Årgang) : null,
+        druetype: row.Druetype || '',
+        alkoholprocent: row['Alkohol%'] ? parseFloat(row['Alkohol%']) : null,
+        flasketype: row.Flasketype || '75 cl',
+        indkøbspris: parseFloat(row.Indkøbspris) || 0,
+        salgspris: row.Salgspris ? parseFloat(row.Salgspris) : null,
+        antal_flasker: parseInt(row.Antal) || 0,
+        minimum_beholdning: parseInt(row['Minimum beholdning'] || row['Minimum Beholdning'] || row['minimum_beholdning']) || 24,
+        lagerplacering: row.Placering || '',
+        noter: row.Noter || ''
+      });
+      vinlager.push(nyVin);
+      importeret++;
+    });
+  } else if(importType === 'add'){
+    // Tilføj kun nye vine
+    data.forEach(row => {
+      if(!row.Navn || !row.Producent || !row.Land) return;
+      
+      // Tjek på varenummer hvis det findes
+      let eksisterende = null;
+      if(row.Varenummer){
+        eksisterende = vinlager.find(v => v.varenummer === String(row.Varenummer).padStart(6, '0'));
+      }
+      
+      // Ellers tjek på navn, producent og årgang
+      if(!eksisterende){
+        eksisterende = vinlager.find(v => 
+          v.navn === row.Navn && 
+          v.producent === row.Producent && 
+          v.årgang === (row.Årgang ? parseInt(row.Årgang) : null)
+        );
+      }
+      
+      if(!eksisterende){
+        const nyVin = createVin({
+          varenummer: row.Varenummer ? String(row.Varenummer).padStart(6, '0') : undefined,
+          navn: row.Navn,
+          producent: row.Producent,
+          land: row.Land,
+          region: row.Region || '',
+          årgang: row.Årgang ? parseInt(row.Årgang) : null,
+          druetype: row.Druetype || '',
+          alkoholprocent: row['Alkohol%'] ? parseFloat(row['Alkohol%']) : null,
+          flasketype: row.Flasketype || '75 cl',
+          indkøbspris: parseFloat(row.Indkøbspris) || 0,
+          salgspris: row.Salgspris ? parseFloat(row.Salgspris) : null,
+          antal_flasker: parseInt(row.Antal) || 0,
+          minimum_beholdning: parseInt(row['Minimum beholdning'] || row['Minimum Beholdning'] || row['minimum_beholdning']) || 24,
+          lagerplacering: row.Placering || '',
+          noter: row.Noter || ''
+        });
+        vinlager.push(nyVin);
+        importeret++;
+      } else {
+        sprungetOver++;
+      }
+    });
+  } else if(importType === 'update'){
+    // Opdater priser for eksisterende, tilføj nye
+    data.forEach(row => {
+      if(!row.Navn || !row.Producent || !row.Land) return;
+      
+      // Tjek først på varenummer hvis det findes
+      let eksisterende = null;
+      if(row.Varenummer){
+        eksisterende = vinlager.find(v => v.varenummer === String(row.Varenummer).padStart(6, '0'));
+      }
+      
+      // Ellers tjek på navn, producent og årgang
+      if(!eksisterende){
+        eksisterende = vinlager.find(v => 
+          v.navn === row.Navn && 
+          v.producent === row.Producent && 
+          v.årgang === (row.Årgang ? parseInt(row.Årgang) : null)
+        );
+      }
+      
+      if(eksisterende){
+        // Opdater eksisterende
+        if(row.Varenummer) eksisterende.varenummer = String(row.Varenummer).padStart(6, '0');
+        eksisterende.region = row.Region || '';
+        eksisterende.druetype = row.Druetype || '';
+        eksisterende.alkoholprocent = row['Alkohol%'] ? parseFloat(row['Alkohol%']) : null;
+        eksisterende.flasketype = row.Flasketype || '75 cl';
+        eksisterende.indkøbspris = parseFloat(row.Indkøbspris) || 0;
+        eksisterende.salgspris = row.Salgspris ? parseFloat(row.Salgspris) : null;
+        eksisterende.antal_flasker = parseInt(row.Antal) || 0;
+        eksisterende.minimum_beholdning = parseInt(row['Minimum beholdning'] || row['Minimum Beholdning'] || row['minimum_beholdning']) || 24;
+        eksisterende.lagerplacering = row.Placering || '';
+        eksisterende.noter = row.Noter || '';
+        eksisterende.sidst_opdateret = Date.now();
+        opdateret++;
+      } else {
+        // Tilføj ny vin
+        const nyVin = createVin({
+          varenummer: row.Varenummer ? String(row.Varenummer).padStart(6, '0') : undefined,
+          navn: row.Navn,
+          producent: row.Producent,
+          land: row.Land,
+          region: row.Region || '',
+          årgang: row.Årgang ? parseInt(row.Årgang) : null,
+          druetype: row.Druetype || '',
+          alkoholprocent: row['Alkohol%'] ? parseFloat(row['Alkohol%']) : null,
+          flasketype: row.Flasketype || '75 cl',
+          indkøbspris: parseFloat(row.Indkøbspris) || 0,
+          salgspris: row.Salgspris ? parseFloat(row.Salgspris) : null,
+          antal_flasker: parseInt(row.Antal) || 0,
+          minimum_beholdning: parseInt(row['Minimum beholdning'] || row['Minimum Beholdning'] || row['minimum_beholdning']) || 24,
+          lagerplacering: row.Placering || '',
+          noter: row.Noter || ''
+        });
+        vinlager.push(nyVin);
+        importeret++;
+      }
+    });
+  } else {
+    alert('Ukendt import-type: ' + importType);
+    return;
+  }
+  
+  renderVinlagerTable();
+  renderVinlagerAdminTable();
+  updateVinlagerStats();
+  updateVinlagerFilters();
+  updateVinlagerDiagram();
+  saveAllData();
+  
+  let message = '✅ Import gennemført!\n\n';
+  if(importType === 'overwrite'){
+    message += `Importeret: ${importeret}`;
+  } else if(importType === 'add'){
+    message += `Importeret: ${importeret}\nSprunget over: ${sprungetOver}`;
+  } else if(importType === 'update'){
+    message += `Importeret: ${importeret}\nOpdateret: ${opdateret}`;
+  }
+  alert(message);
 }
 
 // Opdater renderVinlagerHistorik til også at vise i rapporter
