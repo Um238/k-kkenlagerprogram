@@ -3294,33 +3294,78 @@ function updateVareBillede(vareId, base64Data) {
     }, 2000);
 }
 
-// Hent originalt billede fra Picsum Photos (gratis, høj kvalitet, ingen API key)
-async function hentBilledeFraPicsum(søgeord) {
+// Generer ét ensartet, professionelt demo-billede (placeholder) til alle varer
+// Dette er et gratis, copyright-frit SVG-billede der kan bruges på alle varer
+// Billedet viser en kasse med madvarer - ligner det billede brugeren viste
+function genererDemoPlaceholderBillede() {
+    // Professionelt SVG-billede af en kasse med madvarer
+    // Gratis at bruge, ingen copyright issues
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+      <defs>
+        <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#F5F5F5;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#E8E8E8;stop-opacity:1" />
+        </linearGradient>
+        <filter id="shadow">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+          <feOffset dx="1" dy="1" result="offsetblur"/>
+          <feComponentTransfer>
+            <feFuncA type="linear" slope="0.3"/>
+          </feComponentTransfer>
+          <feMerge>
+            <feMergeNode/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <!-- Hvid baggrund -->
+      <rect width="400" height="400" fill="#FFFFFF" rx="8"/>
+      
+      <!-- Kasse/karton -->
+      <rect x="80" y="120" width="240" height="180" fill="#D4A574" rx="4" filter="url(#shadow)"/>
+      <rect x="85" y="125" width="230" height="170" fill="#E8C9A0" rx="3"/>
+      
+      <!-- Kasse åbning -->
+      <path d="M 80 120 L 320 120 L 310 135 L 90 135 Z" fill="#C89A6B"/>
+      
+      <!-- Madvarer i kassen -->
+      <!-- Pasta/nudler -->
+      <ellipse cx="150" cy="200" rx="35" ry="8" fill="#FFF8DC" opacity="0.9"/>
+      <ellipse cx="150" cy="200" rx="30" ry="6" fill="#F5DEB3"/>
+      
+      <!-- Dåse -->
+      <rect x="200" y="190" width="25" height="30" fill="#C0C0C0" rx="2"/>
+      <rect x="202" y="192" width="21" height="26" fill="#E0E0E0"/>
+      
+      <!-- Flaske -->
+      <rect x="250" y="175" width="20" height="40" fill="#FFD700" rx="3"/>
+      <rect x="252" y="177" width="16" height="36" fill="#FFE55C"/>
+      
+      <!-- Glas -->
+      <ellipse cx="180" cy="250" rx="15" ry="20" fill="#FFE4E1" opacity="0.8"/>
+      <ellipse cx="180" cy="250" rx="12" ry="15" fill="#FFB6C1"/>
+      
+      <!-- Æbler -->
+      <circle cx="120" cy="260" r="18" fill="#FF6B6B"/>
+      <circle cx="105" cy="255" r="15" fill="#FFD93D"/>
+      
+      <!-- Pose -->
+      <ellipse cx="220" cy="260" rx="20" ry="25" fill="#FFF8DC" opacity="0.7"/>
+      
+      <!-- Tekst "Klik for billede" -->
+      <text x="200" y="340" font-family="Arial, sans-serif" font-size="16" fill="#666" text-anchor="middle" font-weight="500">Klik for billede</text>
+    </svg>`;
+    
     try {
-        // Picsum Photos giver tilfældige, højkvalitets fotos
-        // Bruger seed baseret på søgeord for konsistente billeder
-        const seed = søgeord.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 10);
-        const imageUrl = `https://picsum.photos/seed/${seed}/400/400`;
-        
-        // Konverter billede til base64
-        const response = await fetch(imageUrl);
-        if (!response.ok) throw new Error('Kunne ikke hente billede');
-        
-        const blob = await response.blob();
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
+        const base64 = btoa(unescape(encodeURIComponent(svg)));
+        return 'data:image/svg+xml;base64,' + base64;
     } catch (err) {
-        console.warn(`Fejl ved hentning af billede for "${søgeord}":`, err);
-        // Fallback til forbedret SVG hvis Picsum fejler
-        return genererFallbackBillede(søgeord);
+        console.error('Fejl ved konvertering af SVG til base64:', err);
+        return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
     }
 }
 
-// Generer forbedret, professionelt fallback-billede (SVG med gradient og bedre design)
+// DEPRECATED - gammel funktion (beholdes for kompatibilitet)
 function genererFallbackBillede(vareNavn) {
     const navnLower = vareNavn.toLowerCase();
     
@@ -3328,7 +3373,6 @@ function genererFallbackBillede(vareNavn) {
     let emoji = '📦';
     let bgGradient = 'linear-gradient(135deg, #E0E0E0 0%, #BDBDBD 100%)';
     let textColor = '#424242';
-    let shadowColor = 'rgba(0,0,0,0.2)';
     
     // Kød og fisk
     if (navnLower.includes('okse') || navnLower.includes('bøf') || navnLower.includes('hakket') || navnLower.includes('kød')) {
@@ -3575,7 +3619,7 @@ async function tilfoejDemoBillederTilAlleVarer() {
         return;
     }
     
-    if (!confirm(`🖼️ Hent originale billeder fra Unsplash til ${varerUdenBillede.length} varer?\n\nBillederne hentes automatisk baseret på varenavn.\n\n⏱️ Dette kan tage et par minutter...`)) {
+    if (!confirm(`🖼️ Tilføj demo-placeholder til ${varerUdenBillede.length} varer?\n\nAlle varer får det samme professionelle placeholder-billede.\n\n💡 Du kan senere erstatte dem med dine egne billeder ved at klikke på billedet.`)) {
         return;
     }
     
