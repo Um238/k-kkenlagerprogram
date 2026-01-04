@@ -127,7 +127,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 // Versionsnummer - opdateres automatisk
-const APP_VERSION = '4.1';
+const APP_VERSION = '4.2';
 
 let scannerActive = false;
 let html5QrCode = null;
@@ -599,57 +599,66 @@ function calculateSimilarity(str1, str2) {
 }
 
 function handleScannedBarcode(barcode, quantity = 1){
-  // Try to find item in varelager - match on both id and stregkode
-  // Also try case-insensitive matching, partial matching, and fuzzy matching
-  const barcodeStr = String(barcode).trim();
-  const barcodeNormalized = normalizeBarcode(barcode);
+  // Hvis barcode er en item.id (fra pendingScannedItemId), find item direkte
+  let item = null;
+  if (barcode && typeof barcode === 'string') {
+    item = allItems.find(v => v.id === barcode);
+  }
   
-  // First try exact and case-insensitive matches
-  let item = allItems.find(v => {
-    const vId = String(v.id || '').trim();
-    const vStregkode = String(v.stregkode || '').trim();
+  // Hvis item ikke blev fundet direkte, prøv matching-logik
+  if (!item) {
+    // Try to find item in varelager - match on both id and stregkode
+    // Also try case-insensitive matching, partial matching, and fuzzy matching
+    const barcodeStr = String(barcode).trim();
+    const barcodeNormalized = normalizeBarcode(barcode);
     
-    // Exact matches
-    if (vId === barcodeStr || vStregkode === barcodeStr) return true;
-    
-    // Case-insensitive matches
-    if (vId.toLowerCase() === barcodeStr.toLowerCase() || 
-        vStregkode.toLowerCase() === barcodeStr.toLowerCase()) return true;
-    
-    // Normalized matches (handles special characters)
-    const vIdNorm = normalizeBarcode(vId);
-    const vStregkodeNorm = normalizeBarcode(vStregkode);
-    if (vIdNorm === barcodeNormalized || vStregkodeNorm === barcodeNormalized) return true;
-    
-    // Partial matches (one contains the other)
-    if (vIdNorm.includes(barcodeNormalized) || barcodeNormalized.includes(vIdNorm)) return true;
-    if (vStregkodeNorm.includes(barcodeNormalized) || barcodeNormalized.includes(vStregkodeNorm)) return true;
-    
-    return false;
-  });
-  
-  // If not found, try fuzzy matching (similarity-based)
-  if (!item && barcodeNormalized.length >= 5) { // Only fuzzy match if barcode is reasonably long
-    let bestMatch = null;
-    let bestSimilarity = 0.6; // Minimum similarity threshold
-    
-    for (const v of allItems) {
+    // First try exact and case-insensitive matches
+    item = allItems.find(v => {
       const vId = String(v.id || '').trim();
       const vStregkode = String(v.stregkode || '').trim();
       
-      const similarity1 = calculateSimilarity(barcodeStr, vId);
-      const similarity2 = calculateSimilarity(barcodeStr, vStregkode);
-      const maxSimilarity = Math.max(similarity1, similarity2);
+      // Exact matches
+      if (vId === barcodeStr || vStregkode === barcodeStr) return true;
       
-      if (maxSimilarity > bestSimilarity) {
-        bestSimilarity = maxSimilarity;
-        bestMatch = v;
-      }
-    }
+      // Case-insensitive matches
+      if (vId.toLowerCase() === barcodeStr.toLowerCase() || 
+          vStregkode.toLowerCase() === barcodeStr.toLowerCase()) return true;
+      
+      // Normalized matches (handles special characters)
+      const vIdNorm = normalizeBarcode(vId);
+      const vStregkodeNorm = normalizeBarcode(vStregkode);
+      if (vIdNorm === barcodeNormalized || vStregkodeNorm === barcodeNormalized) return true;
+      
+      // Partial matches (one contains the other)
+      if (vIdNorm.includes(barcodeNormalized) || barcodeNormalized.includes(vIdNorm)) return true;
+      if (vStregkodeNorm.includes(barcodeNormalized) || barcodeNormalized.includes(vStregkodeNorm)) return true;
+      
+      return false;
+    });
     
-    if (bestMatch) {
-      console.log(`Fuzzy match found: "${barcodeStr}" matched "${bestMatch.id}" or "${bestMatch.stregkode}" with similarity ${(bestSimilarity * 100).toFixed(1)}%`);
-      item = bestMatch;
+    // If not found, try fuzzy matching (similarity-based)
+    if (!item && barcodeNormalized.length >= 5) { // Only fuzzy match if barcode is reasonably long
+      let bestMatch = null;
+      let bestSimilarity = 0.6; // Minimum similarity threshold
+      
+      for (const v of allItems) {
+        const vId = String(v.id || '').trim();
+        const vStregkode = String(v.stregkode || '').trim();
+        
+        const similarity1 = calculateSimilarity(barcodeStr, vId);
+        const similarity2 = calculateSimilarity(barcodeStr, vStregkode);
+        const maxSimilarity = Math.max(similarity1, similarity2);
+        
+        if (maxSimilarity > bestSimilarity) {
+          bestSimilarity = maxSimilarity;
+          bestMatch = v;
+        }
+      }
+      
+      if (bestMatch) {
+        console.log(`Fuzzy match found: "${barcodeStr}" matched "${bestMatch.id}" or "${bestMatch.stregkode}" with similarity ${(bestSimilarity * 100).toFixed(1)}%`);
+        item = bestMatch;
+      }
     }
   }
   
