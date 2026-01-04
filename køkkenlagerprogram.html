@@ -3387,13 +3387,20 @@ function genererDemoBillede(vareNavn, placering) {
         emoji = '🎂'; bgColor = '#FFB6C1'; textColor = '#8B0000';
     }
     
-    // Generer SVG
+    // Generer SVG - sikr at SVG er korrekt formateret
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
       <rect width="200" height="200" fill="${bgColor}" rx="10"/>
       <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="60" fill="${textColor}" text-anchor="middle" dominant-baseline="middle">${emoji}</text>
     </svg>`;
     
-    return 'data:image/svg+xml;base64,' + btoa(svg);
+    try {
+        const base64 = btoa(unescape(encodeURIComponent(svg)));
+        return 'data:image/svg+xml;base64,' + base64;
+    } catch (err) {
+        console.error('Fejl ved konvertering af SVG til base64:', err);
+        // Fallback: brug direkte data URI
+        return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }
 }
 
 // Tilføj demo-billeder til alle varer der mangler billede
@@ -3403,7 +3410,12 @@ function tilfoejDemoBillederTilAlleVarer() {
         return;
     }
     
-    const varerUdenBillede = masterVarelager.filter(v => !v.billede || v.billede.trim() === '');
+    // Filtrer varer uden billede - håndter både null, undefined og tom string
+    const varerUdenBillede = masterVarelager.filter(v => {
+        if (!v.billede) return true;
+        if (typeof v.billede === 'string' && v.billede.trim() === '') return true;
+        return false;
+    });
     
     if (varerUdenBillede.length === 0) {
         alert('✅ Alle varer har allerede billeder!');
@@ -3415,18 +3427,56 @@ function tilfoejDemoBillederTilAlleVarer() {
     }
     
     let opdateret = 0;
-    varerUdenBillede.forEach(vare => {
-        const demoBillede = genererDemoBillede(vare.navn, vare.placering);
-        vare.billede = demoBillede;
-        opdateret++;
+    const fejl = [];
+    
+    varerUdenBillede.forEach((vare, index) => {
+        try {
+            const demoBillede = genererDemoBillede(vare.navn || 'Ukendt', vare.placering || '');
+            if (demoBillede && (demoBillede.startsWith('data:image') || demoBillede.startsWith('data:image/svg'))) {
+                // Direkte tildeling til vare objektet
+                vare.billede = demoBillede;
+                opdateret++;
+                
+                // Verificer at billedet faktisk er sat
+                if (!vare.billede) {
+                    fejl.push(`${vare.navn}: Billede blev ikke sat`);
+                }
+            } else {
+                fejl.push(`${vare.navn}: Ugyldigt billede format`);
+                console.warn(`Kunne ikke generere billede for: ${vare.navn}`, demoBillede);
+            }
+        } catch (err) {
+            fejl.push(`${vare.navn}: ${err.message}`);
+            console.error(`Fejl ved generering af billede for ${vare.navn}:`, err);
+        }
     });
     
-    // Gem alle ændringer
+    // Verificer at billederne faktisk er i masterVarelager
+    const varerMedBillede = masterVarelager.filter(v => v.billede && v.billede.trim() !== '').length;
+    console.log(`Total varer med billede efter opdatering: ${varerMedBillede} af ${masterVarelager.length}`);
+    
+    // Gem alle ændringer - vigtigt at kalde saveAllData() før renderMasterTable()
     saveAllData();
+    
+    // Verificer at data er gemt
+    const saved = localStorage.getItem('køkkenlager_data');
+    if (saved) {
+        const parsed = JSON.parse(saved);
+        const savedVarerMedBillede = (parsed.masterVarelager || []).filter(v => v.billede && v.billede.trim() !== '').length;
+        console.log(`Varer med billede i localStorage: ${savedVarerMedBillede}`);
+    }
+    
+    // Opdater visningen med det samme
     renderMasterTable();
     
     // Vis bekræftelse
-    alert(`✅ ${opdateret} varer har nu fået demo-billeder!\n\n💾 Billederne er gemt og vil blive inkluderet i backup.\n\n📤 Husk at uploade varelageret til serveren for at synkronisere billederne.`);
+    let bekræftelse = `✅ ${opdateret} varer har nu fået demo-billeder!\n\n💾 Billederne er gemt.\n\n📤 Husk at uploade varelageret til serveren for at synkronisere billederne.`;
+    
+    if (fejl.length > 0) {
+        bekræftelse += `\n\n⚠️ ${fejl.length} fejl:\n${fejl.slice(0, 5).join('\n')}${fejl.length > 5 ? '\n...' : ''}`;
+    }
+    
+    alert(bekræftelse);
 }
 
 /* ======================================================
