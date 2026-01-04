@@ -10296,7 +10296,9 @@ async function uploadVarelagerToServer(){
       };
     });
     
-    const varelagerData = {
+    // Tjek filstørrelse før upload - GitHub Gist har 1MB grænse
+    // Lav en test JSON string for at tjekke størrelse
+    const testVarelagerData = {
       masterVarelager: validatedVarelager,
       lagerLokationer: lagerLokationer || [],
       mainInstallationId: mainInstallationId || null,
@@ -10306,6 +10308,37 @@ async function uploadVarelagerToServer(){
       itemCount: validatedVarelager.length,
       locationCount: (lagerLokationer || []).length
     };
+    
+    const testJsonString = JSON.stringify(testVarelagerData, null, 2);
+    const testSizeBytes = new Blob([testJsonString]).size;
+    const testSizeMB = testSizeBytes / (1024 * 1024);
+    
+    // Hvis filen er større end 900KB, fjern billeder (GitHub Gist grænse er 1MB)
+    let varelagerData = testVarelagerData;
+    let imagesRemoved = false;
+    if (testSizeMB > 0.9) {
+      // Fjern billeder for at reducere størrelse
+      const varelagerWithoutImages = validatedVarelager.map(item => {
+        const { billede, ...itemWithoutImage } = item;
+        return itemWithoutImage;
+      });
+      
+      varelagerData = {
+        masterVarelager: varelagerWithoutImages,
+        lagerLokationer: lagerLokationer || [],
+        mainInstallationId: mainInstallationId || null,
+        exportedAt: Date.now(),
+        version: '1.0',
+        source: 'køkkenlagerprogram',
+        itemCount: validatedVarelager.length,
+        locationCount: (lagerLokationer || []).length,
+        imagesExcluded: true // Marker at billeder er ekskluderet
+      };
+      
+      imagesRemoved = true;
+      const newTestSize = new Blob([JSON.stringify(varelagerData, null, 2)]).size / (1024 * 1024);
+      console.log(`Filen var ${testSizeMB.toFixed(2)}MB - billeder fjernet. Ny størrelse: ${newTestSize.toFixed(2)}MB`);
+    }
     
     // Debug: Log sample item to verify all fields
     if (validatedVarelager.length > 0) {
@@ -10440,9 +10473,14 @@ async function uploadVarelagerToServer(){
       }, 5000);
     }
     
+    const imageWarning = imagesRemoved 
+      ? `\n⚠️ BEMÆRK: Billeder er ikke inkluderet i upload (filen ville være for stor).\n   Billeder gemmes kun lokalt i hovedprogrammet.\n\n`
+      : '';
+    
     alert(`✅ Varelager uploadet til server!\n\n` +
       `📦 ${masterVarelager.length} varer\n` +
-      `📍 ${(lagerLokationer || []).length} lokationer\n\n` +
+      `📍 ${(lagerLokationer || []).length} lokationer\n` +
+      imageWarning +
       `🔗 Gist URL: ${gistUrl}\n\n` +
       `💡 I scanner-appen:\n` +
       `1. Klik "☁️ Hent varelager fra server"\n` +
