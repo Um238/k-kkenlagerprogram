@@ -496,14 +496,23 @@ a:hover{color:#45a049;text-decoration:none}
      [HTML 2] NAVIGATION
      ========================= -->
 <nav id="topnav">
-  <span class="menu-item active" data-target="lageropt" onclick="navClick(event)">📦 Lager optælling</span>
-  <span class="menu-item" data-target="opsaetning" onclick="navClick(event)">⚙️ Opsætning Lager</span>
-  <span class="menu-item" data-target="master" onclick="navClick(event)">📋 Varelager administration</span>
-  <span class="menu-item" data-target="rapporter" onclick="navClick(event)">📊 Rapporter</span>
-  <span class="menu-item" data-target="labels" onclick="navClick(event)">🏷️ Labels</span>
-  <span class="menu-item" data-target="leverandor" onclick="navClick(event)">🚚 Leverandører</span>
-  <span class="menu-item" data-target="systemOpsaetning" onclick="navClick(event)">⚙️ Opsætning</span>
-  <span class="menu-item" data-target="vinlager" onclick="navClick(event)">🍷 Vinlager optælling</span>
+  <!-- Køkkenlager menuer (skjules i vinlager mode) -->
+  <span class="menu-item active kokkenlager-menu" data-target="lageropt" onclick="navClick(event)">📦 Lager optælling</span>
+  <span class="menu-item kokkenlager-menu" data-target="opsaetning" onclick="navClick(event)">⚙️ Opsætning Lager</span>
+  <span class="menu-item kokkenlager-menu" data-target="master" onclick="navClick(event)">📋 Varelager administration</span>
+  <span class="menu-item kokkenlager-menu" data-target="rapporter" onclick="navClick(event)">📊 Rapporter</span>
+  <span class="menu-item kokkenlager-menu" data-target="labels" onclick="navClick(event)">🏷️ Labels</span>
+  <span class="menu-item kokkenlager-menu" data-target="leverandor" onclick="navClick(event)">🚚 Leverandører</span>
+  <span class="menu-item kokkenlager-menu" data-target="systemOpsaetning" onclick="navClick(event)">⚙️ Opsætning</span>
+  
+  <!-- Skift mode knap -->
+  <span class="menu-item" data-target="vinlager" onclick="navClick(event)" style="background:#8B0000; color:white; border:2px solid #A00000;">🍷 Vinlager</span>
+  
+  <!-- Vinlager menuer (skjules i køkkenlager mode) -->
+  <span class="menu-item vinlager-menu hidden" data-target="vinlager" onclick="navClick(event)">🍷 Vinlager optælling</span>
+  <span class="menu-item vinlager-menu hidden" data-target="vinlagerAdmin" onclick="navClick(event)">📋 Vinlager administration</span>
+  <span class="menu-item vinlager-menu hidden" data-target="vinlagerRapporter" onclick="navClick(event)">📊 Vinlager rapporter</span>
+  <span class="menu-item vinlager-menu hidden" data-target="systemOpsaetning" onclick="navClick(event)">⚙️ Opsætning</span>
 </nav>
 
 <!-- =========================
@@ -842,6 +851,123 @@ a:hover{color:#45a049;text-decoration:none}
             </tr>
           </thead>
           <tbody id="vinlagerHistorikTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- [HTML 3.6.1] VINLAGER ADMINISTRATION -->
+  <section id="vinlagerAdmin" class="page hidden">
+    <div class="settings-page">
+      <div class="settings-sidebar" id="vinlagerAdminSidebar">
+        <div class="settings-category">Vinlager</div>
+        <div class="settings-item active" onclick="showVinlagerAdminSection('add')">
+          <span class="settings-item-icon">➕</span>
+          <span>Tilføj ny vin</span>
+        </div>
+        <div class="settings-item" onclick="showVinlagerAdminSection('view')">
+          <span class="settings-item-icon">🔍</span>
+          <span>Søg & Se hele Vinlager</span>
+        </div>
+      </div>
+      <div class="settings-content">
+        <button class="settings-sidebar-toggle" id="vinlagerAdminToggleBtn" onclick="toggleSidebar('vinlagerAdminSidebar')" title="Skjul/Vis sidebar"></button>
+        <h2 style="color:#8B0000;">Vinlager administration</h2>
+        <div class="settings-description">Administrer vinlager, tilføj nye vine, og importer/eksporter Excel filer.</div>
+        
+        <!-- Add New Wine Section -->
+        <div id="vinlagerAdmin-section-add" class="settings-section active">
+          <h3 style="margin-top:0; margin-bottom:16px; color:#8B0000;">Tilføj ny vin</h3>
+          <div style="display:flex; gap:120px; align-items:flex-start; flex-wrap:wrap;">
+            <div style="min-width:300px; max-width:460px;">
+              <input id="vinNavn" placeholder="Vin navn" style="font-size:16px; padding:12px; border:2px solid #8B0000; border-radius:6px; font-weight:600;" />
+              <input id="vinProducent" placeholder="Producent" style="font-size:16px; padding:12px; border:2px solid #8B0000; border-radius:6px; font-weight:600; margin-top:10px;" />
+              <input id="vinLand" placeholder="Land" style="font-size:16px; padding:12px; border:2px solid #8B0000; border-radius:6px; font-weight:600; margin-top:10px;" />
+              <input id="vinRegion" placeholder="Region (valgfrit)" style="font-size:16px; padding:12px; border:2px solid #8B0000; border-radius:6px; font-weight:600; margin-top:10px;" />
+              <input id="vinÅrgang" type="number" placeholder="Årgang (valgfrit)" style="font-size:16px; padding:12px; border:2px solid #8B0000; border-radius:6px; font-weight:600; margin-top:10px;" />
+              <input id="vinDruetype" placeholder="Druetype (valgfrit)" style="font-size:16px; padding:12px; border:2px solid #8B0000; border-radius:6px; font-weight:600; margin-top:10px;" />
+              <input id="vinAlkohol" type="number" step="0.1" placeholder="Alkoholprocent (valgfrit)" style="font-size:16px; padding:12px; border:2px solid #8B0000; border-radius:6px; font-weight:600; margin-top:10px;" />
+              <input id="vinFlasketype" placeholder="Flasketype (fx 75 cl, magnum)" value="75 cl" style="font-size:16px; padding:12px; border:2px solid #8B0000; border-radius:6px; font-weight:600; margin-top:10px;" />
+              <input id="vinIndkøbspris" type="text" inputmode="decimal" placeholder="Indkøbspris pr. flaske" style="font-size:16px; padding:12px; border:2px solid #8B0000; border-radius:6px; font-weight:600; margin-top:10px;" />
+              <input id="vinSalgspris" type="text" inputmode="decimal" placeholder="Salgspris pr. flaske (valgfrit)" style="font-size:16px; padding:12px; border:2px solid #8B0000; border-radius:6px; font-weight:600; margin-top:10px;" />
+              <input id="vinAntal" type="number" placeholder="Antal flasker" value="0" style="font-size:16px; padding:12px; border:2px solid #8B0000; border-radius:6px; font-weight:600; margin-top:10px;" />
+              <input id="vinPlacering" placeholder="Lagerplacering" style="font-size:16px; padding:12px; border:2px solid #8B0000; border-radius:6px; font-weight:600; margin-top:10px;" />
+              <textarea id="vinNoter" placeholder="Noter (valgfrit)" style="font-size:16px; padding:12px; border:2px solid #8B0000; border-radius:6px; font-weight:600; margin-top:10px; width:100%; min-height:80px; resize:vertical;"></textarea>
+              <div style="margin-top:12px;"><button onclick="tilfoejVin()" style="background:#8B0000; color:white;">➕ Tilføj vin</button></div>
+            </div>
+            <div style="width:320px; margin-left:60px;">
+              <h3 style="margin:0; color:#8B0000;">Import/Export Excel/CSV</h3>
+              <div style="margin-bottom:8px;">
+                <button onclick="downloadVinlagerExcelTemplate()" style="width:100%; margin-bottom:8px; background:#8B0000; color:white; border-color:#A00000;">Hent Excel skabelon</button>
+              </div>
+              <input type="file" id="vinlagerCsvImport" accept=".csv,.xlsx,.xls" />
+              <div style="display:flex; gap:8px; margin-top:8px;">
+                <button onclick="importVinlagerCSV()" style="background:#8B0000; color:white;">📥 Importer Excel/CSV</button>
+                <button onclick="exportVinlagerCSV()" class="secondary">📤 Eksport CSV</button>
+              </div>
+              <div class="small" style="margin-top:8px; color:#666;">
+                <strong>Tip:</strong> Download skabelonen, udfyld den i Excel, og importer den igen.
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- View All Wines Section -->
+        <div id="vinlagerAdmin-section-view" class="settings-section">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="margin:0; color:#8B0000;">Søg & Se hele Vinlager</h3>
+          </div>
+          <div style="display:flex; gap:12px; align-items:center; justify-content:flex-end; flex-wrap:wrap; margin-bottom:12px;">
+            <label class="small">Søg vin:</label>
+            <input type="text" id="vinlagerSearchInput" placeholder="Søg efter navn, producent, årgang..." style="width:250px; padding:6px; border:2px solid #8B0000; border-radius:4px;" oninput="renderVinlagerAdminTable()" />
+            <label class="small">Filtrer land:</label>
+            <select id="vinlagerFilterLandAdmin" style="width:auto; min-width:120px; border:2px solid #8B0000; border-radius:4px;" onchange="renderVinlagerAdminTable()"><option value="">Alle</option></select>
+            <label class="small">Filtrer placering:</label>
+            <select id="vinlagerFilterPlaceringAdmin" style="width:auto; min-width:120px; border:2px solid #8B0000; border-radius:4px;" onchange="renderVinlagerAdminTable()"><option value="">Alle</option></select>
+            <span class="small" id="vinlagerAdminTableInfo" style="color:#666;"></span>
+          </div>
+
+          <div style="overflow-x:auto; max-height:600px; overflow-y:auto; position:relative; border:2px solid #8B0000; border-radius:4px;">
+            <table style="width:100%; border-collapse:collapse;">
+              <thead style="position:sticky; top:0; z-index:10; background:#8B0000; color:white;">
+                <tr>
+                  <th style="padding:12px; text-align:left; border:1px solid #A00000; font-weight:bold;">Navn</th>
+                  <th style="padding:12px; text-align:left; border:1px solid #A00000; font-weight:bold;">Producent</th>
+                  <th style="padding:12px; text-align:left; border:1px solid #A00000; font-weight:bold;">Land/Region</th>
+                  <th style="padding:12px; text-align:left; border:1px solid #A00000; font-weight:bold;">Årgang</th>
+                  <th style="padding:12px; text-align:left; border:1px solid #A00000; font-weight:bold;">Druetype</th>
+                  <th style="padding:12px; text-align:center; border:1px solid #A00000; font-weight:bold;">Flasketype</th>
+                  <th style="padding:12px; text-align:center; border:1px solid #A00000; font-weight:bold;">Antal</th>
+                  <th style="padding:12px; text-align:right; border:1px solid #A00000; font-weight:bold;">Indkøbspris</th>
+                  <th style="padding:12px; text-align:right; border:1px solid #A00000; font-weight:bold;">Salgspris</th>
+                  <th style="padding:12px; text-align:left; border:1px solid #A00000; font-weight:bold;">Placering</th>
+                  <th style="padding:12px; text-align:center; border:1px solid #A00000; font-weight:bold;">Handling</th>
+                </tr>
+              </thead>
+              <tbody id="vinlagerAdminTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- [HTML 3.6.2] VINLAGER RAPPORTER -->
+  <section id="vinlagerRapporter" class="page hidden">
+    <div class="card">
+      <h2 style="color:#8B0000; margin:0 0 20px 0;">📊 Vinlager Rapporter</h2>
+      <div style="max-height:600px; overflow-y:auto;">
+        <table style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr style="background:#8B0000; color:white;">
+              <th style="padding:12px; text-align:left; border:1px solid #A00000;">Dato/Tid</th>
+              <th style="padding:12px; text-align:left; border:1px solid #A00000;">Vin</th>
+              <th style="padding:12px; text-align:center; border:1px solid #A00000;">Ændring</th>
+              <th style="padding:12px; text-align:left; border:1px solid #A00000;">Årsag</th>
+              <th style="padding:12px; text-align:left; border:1px solid #A00000;">Kommentar</th>
+            </tr>
+          </thead>
+          <tbody id="vinlagerRapporterTableBody"></tbody>
         </table>
       </div>
     </div>
@@ -10206,13 +10332,19 @@ function showScannerInstallationId(){
 function navClick(e){ document.querySelectorAll('nav .menu-item').forEach(it=>it.classList.remove('active')); e.target.classList.add('active'); showPage(e.target.dataset.target); }
 function showPage(id){ 
   // Tjek om det er vinlager sektionen
-  const isVinlager = id === 'vinlager';
+  const isVinlager = id === 'vinlager' || id === 'vinlagerAdmin' || id === 'vinlagerRapporter';
   
   // Tilføj/fjern vinlager-mode klasse på body
   if(isVinlager) {
     document.body.classList.add('vinlager-mode');
+    // Skjul køkkenlager menuer, vis vinlager menuer
+    document.querySelectorAll('.kokkenlager-menu').forEach(m => m.classList.add('hidden'));
+    document.querySelectorAll('.vinlager-menu').forEach(m => m.classList.remove('hidden'));
   } else {
     document.body.classList.remove('vinlager-mode');
+    // Vis køkkenlager menuer, skjul vinlager menuer
+    document.querySelectorAll('.kokkenlager-menu').forEach(m => m.classList.remove('hidden'));
+    document.querySelectorAll('.vinlager-menu').forEach(m => m.classList.add('hidden'));
   }
   
   document.querySelectorAll('#content section').forEach(s=>s.classList.add('hidden')); 
@@ -10232,7 +10364,14 @@ function showPage(id){
     renderVinlagerHistorik(); 
     updateVinlagerStats(); 
     updateVinlagerFilters(); 
-  } 
+  }
+  if(id==='vinlagerAdmin') { 
+    showVinlagerAdminSection('add'); 
+    updateVinlagerFilters(); 
+  }
+  if(id==='vinlagerRapporter') { 
+    renderVinlagerHistorik(); 
+  }
 }
 function toggleSidebar(sidebarId){
   try {
@@ -11095,6 +11234,452 @@ function exportVinlagerCSV(){
   });
   
   downloadFile(csv, `vinlager_export_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv;charset=utf-8;');
+}
+
+// Vis vinlager admin sektion
+function showVinlagerAdminSection(section){
+  document.querySelectorAll('#vinlagerAdmin .settings-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('#vinlagerAdminSidebar .settings-item').forEach(i => i.classList.remove('active'));
+  
+  const sectionEl = $(`vinlagerAdmin-section-${section}`);
+  if(sectionEl) sectionEl.classList.add('active');
+  
+  const itemEl = document.querySelector(`#vinlagerAdminSidebar .settings-item[onclick*="${section}"]`);
+  if(itemEl) itemEl.classList.add('active');
+  
+  if(section === 'view'){
+    renderVinlagerAdminTable();
+  }
+}
+
+// Tilføj vin fra form
+function tilfoejVin(){
+  const navn = $('vinNavn')?.value.trim();
+  const producent = $('vinProducent')?.value.trim();
+  const land = $('vinLand')?.value.trim();
+  const region = $('vinRegion')?.value.trim();
+  const årgangStr = $('vinÅrgang')?.value.trim();
+  const druetype = $('vinDruetype')?.value.trim();
+  const alkoholStr = $('vinAlkohol')?.value.trim();
+  const flasketype = $('vinFlasketype')?.value.trim() || '75 cl';
+  const indkøbsprisStr = $('vinIndkøbspris')?.value.trim();
+  const salgsprisStr = $('vinSalgspris')?.value.trim();
+  const antalStr = $('vinAntal')?.value.trim();
+  const placering = $('vinPlacering')?.value.trim();
+  const noter = $('vinNoter')?.value.trim();
+  
+  if(!navn || !producent || !land || !indkøbsprisStr){
+    alert('Udfyld venligst: Navn, Producent, Land og Indkøbspris');
+    return;
+  }
+  
+  const nyVin = createVin({
+    navn, producent, land, region,
+    årgang: årgangStr ? parseInt(årgangStr) : null,
+    druetype, alkoholprocent: alkoholStr ? parseFloat(alkoholStr) : null,
+    flasketype, indkøbspris: parseFloat(indkøbsprisStr) || 0,
+    salgspris: salgsprisStr ? parseFloat(salgsprisStr) : null,
+    antal_flasker: parseInt(antalStr) || 0,
+    lagerplacering: placering, noter
+  });
+  
+  vinlager.push(nyVin);
+  if(nyVin.antal_flasker > 0){
+    logVinlagerÆndring(nyVin.id, nyVin.antal_flasker, 'indkøb', 'Første registrering');
+  }
+  
+  // Ryd form
+  ['vinNavn','vinProducent','vinLand','vinRegion','vinÅrgang','vinDruetype','vinAlkohol','vinFlasketype','vinIndkøbspris','vinSalgspris','vinAntal','vinPlacering','vinNoter'].forEach(id => {
+    const el = $(id);
+    if(el) el.value = id === 'vinFlasketype' ? '75 cl' : id === 'vinAntal' ? '0' : '';
+  });
+  
+  renderVinlagerTable();
+  renderVinlagerAdminTable();
+  updateVinlagerStats();
+  updateVinlagerFilters();
+  saveAllData();
+  
+  alert('✅ Vin tilføjet!');
+}
+
+// Render vinlager admin tabel
+function renderVinlagerAdminTable(){
+  const tbody = $('vinlagerAdminTable');
+  if(!tbody) return;
+  
+  tbody.innerHTML = '';
+  
+  const searchText = ($('vinlagerSearchInput')?.value || '').toLowerCase();
+  const filterLand = $('vinlagerFilterLandAdmin')?.value || '';
+  const filterPlacering = $('vinlagerFilterPlaceringAdmin')?.value || '';
+  
+  let filtered = vinlager.filter(vin => {
+    if(searchText && !vin.navn.toLowerCase().includes(searchText) && 
+       !vin.producent.toLowerCase().includes(searchText) && 
+       !String(vin.årgang || '').includes(searchText)){
+      return false;
+    }
+    if(filterLand && vin.land !== filterLand) return false;
+    if(filterPlacering && vin.lagerplacering !== filterPlacering) return false;
+    return true;
+  });
+  
+  const infoEl = $('vinlagerAdminTableInfo');
+  if(infoEl){
+    if(searchText || filterLand || filterPlacering){
+      infoEl.textContent = `Viser ${filtered.length} af ${vinlager.length} vine`;
+    } else {
+      infoEl.textContent = `Total: ${vinlager.length} vine`;
+    }
+  }
+  
+  // Opdater filter dropdowns
+  const lande = [...new Set(vinlager.map(v => v.land).filter(l => l))].sort();
+  const placeringer = [...new Set(vinlager.map(v => v.lagerplacering).filter(p => p))].sort();
+  
+  const landSelect = $('vinlagerFilterLandAdmin');
+  const placeringSelect = $('vinlagerFilterPlaceringAdmin');
+  
+  if(landSelect){
+    const currentValue = landSelect.value;
+    landSelect.innerHTML = '<option value="">Alle</option>';
+    lande.forEach(l => landSelect.add(new Option(l, l)));
+    landSelect.value = currentValue;
+  }
+  
+  if(placeringSelect){
+    const currentValue = placeringSelect.value;
+    placeringSelect.innerHTML = '<option value="">Alle</option>';
+    placeringer.forEach(p => placeringSelect.add(new Option(p, p)));
+    placeringSelect.value = currentValue;
+  }
+  
+  if(filtered.length === 0){
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding:40px; color:#666;">Ingen vine fundet</td></tr>';
+    return;
+  }
+  
+  filtered.forEach(vin => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="padding:10px; border:1px solid #ddd;">${vin.navn || '-'}</td>
+      <td style="padding:10px; border:1px solid #ddd;">${vin.producent || '-'}</td>
+      <td style="padding:10px; border:1px solid #ddd;">${vin.land || '-'}${vin.region ? ', ' + vin.region : ''}</td>
+      <td style="padding:10px; border:1px solid #ddd;">${vin.årgang || '-'}</td>
+      <td style="padding:10px; border:1px solid #ddd;">${vin.druetype || '-'}</td>
+      <td style="padding:10px; border:1px solid #ddd; text-align:center;">${vin.flasketype || '-'}</td>
+      <td style="padding:10px; border:1px solid #ddd; text-align:center; font-weight:bold;">${vin.antal_flasker}</td>
+      <td style="padding:10px; border:1px solid #ddd; text-align:right;">${vin.indkøbspris.toFixed(2)} kr.</td>
+      <td style="padding:10px; border:1px solid #ddd; text-align:right;">${vin.salgspris ? vin.salgspris.toFixed(2) + ' kr.' : '-'}</td>
+      <td style="padding:10px; border:1px solid #ddd;">${vin.lagerplacering || '-'}</td>
+      <td style="padding:10px; border:1px solid #ddd; text-align:center;">
+        <button onclick="showVinlagerModal('edit', '${vin.id}')" style="background:#8B0000; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; margin:2px; font-size:12px;">✏️</button>
+        <button onclick="deleteVin('${vin.id}')" style="background:#dc3545; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; margin:2px; font-size:12px;">🗑️</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Download Excel skabelon med 40 vine per land
+function downloadVinlagerExcelTemplate(){
+  try {
+    if(typeof XLSX === 'undefined'){
+      alert('❌ Excel bibliotek ikke indlæst.\n\nPrøv at genindlæse siden (Ctrl+F5).');
+      return;
+    }
+    
+    const wb = XLSX.utils.book_new();
+    
+    // Generer 40 vine per land
+    const lande = ['Frankrig', 'Italien', 'Spanien', 'Tyskland', 'Portugal', 'USA', 'Chile', 'Argentina', 'Australien', 'Sydafrika'];
+    const alleVine = [];
+    
+    lande.forEach(land => {
+      const vine = genererVineForLand(land, 40);
+      alleVine.push(...vine);
+    });
+    
+    // Opret sheet med alle vine
+    const ws = XLSX.utils.json_to_sheet(alleVine.map(v => ({
+      'Navn': v.navn,
+      'Producent': v.producent,
+      'Land': v.land,
+      'Region': v.region || '',
+      'Årgang': v.årgang || '',
+      'Druetype': v.druetype || '',
+      'Alkohol%': v.alkoholprocent || '',
+      'Flasketype': v.flasketype,
+      'Indkøbspris': v.indkøbspris,
+      'Salgspris': v.salgspris || '',
+      'Antal': v.antal_flasker,
+      'Placering': v.lagerplacering || '',
+      'Noter': v.noter || ''
+    })));
+    
+    // Sæt kolonnebredder
+    ws['!cols'] = [
+      {wch: 25}, {wch: 20}, {wch: 12}, {wch: 15}, {wch: 6}, {wch: 15}, {wch: 8}, 
+      {wch: 12}, {wch: 12}, {wch: 12}, {wch: 6}, {wch: 15}, {wch: 30}
+    ];
+    
+    // Lås første række
+    ws['!freeze'] = {xSplit: 0, ySplit: 1, topLeftCell: 'A2', activePane: 'bottomLeft'};
+    
+    XLSX.utils.book_append_sheet(wb, ws, 'Alle vine');
+    
+    // Download
+    const filename = `vinlager_skabelon_v${APP_VERSION}.xlsx`;
+    XLSX.writeFile(wb, filename);
+    
+    alert(`✅ Excel skabelon downloadet!\n\nSkabelonen indeholder ${alleVine.length} demo vine (40 fra hvert land).\n\nDu kan nu redigere skabelonen og importere den igen.`);
+  } catch(err){
+    console.error('Fejl ved download af Excel skabelon:', err);
+    alert('❌ Fejl ved download: ' + err.message);
+  }
+}
+
+// Generer vine for et specifikt land
+function genererVineForLand(land, antal){
+  const vine = [];
+  const landData = VINLAGER_LANDE_DATA[land] || VINLAGER_LANDE_DATA['Frankrig'];
+  
+  for(let i = 0; i < antal; i++){
+    const producent = landData.producenter[i % landData.producenter.length];
+    const region = landData.regioner[i % landData.regioner.length];
+    const druetype = landData.druetyper[i % landData.druetyper.length];
+    const årgang = 2015 + (i % 10); // 2015-2024
+    const indkøbspris = 150 + (i % 20) * 25; // 150-625 kr.
+    const salgspris = indkøbspris * 1.5; // 50% markup
+    
+    vine.push({
+      navn: `${producent} ${landData.navne[i % landData.navne.length]}`,
+      producent: producent,
+      land: land,
+      region: region,
+      årgang: årgang,
+      druetype: druetype,
+      alkoholprocent: 12.5 + (i % 5) * 0.5, // 12.5-15%
+      flasketype: i % 3 === 0 ? '75 cl' : i % 3 === 1 ? 'Magnum' : '37.5 cl',
+      indkøbspris: indkøbspris,
+      salgspris: salgspris,
+      antal_flasker: Math.floor(Math.random() * 20) + 1,
+      lagerplacering: `Vinkælder ${Math.floor(i / 10) + 1}`,
+      noter: ''
+    });
+  }
+  
+  return vine;
+}
+
+// Data for vine per land
+const VINLAGER_LANDE_DATA = {
+  'Frankrig': {
+    producenter: ['Château Margaux', 'Château Latour', 'Domaine de la Romanée-Conti', 'Château Mouton Rothschild', 'Domaine Leflaive', 'Château Haut-Brion', 'Domaine Comte Georges de Vogüé', 'Château Pétrus', 'Domaine Armand Rousseau', 'Château Cheval Blanc'],
+    regioner: ['Bordeaux', 'Burgund', 'Champagne', 'Loire', 'Rhône', 'Alsace', 'Provence', 'Languedoc'],
+    druetyper: ['Cabernet Sauvignon', 'Merlot', 'Pinot Noir', 'Chardonnay', 'Sauvignon Blanc', 'Syrah', 'Grenache'],
+    navne: ['Grand Cru', 'Premier Cru', 'Cuvée', 'Reserve', 'Vintage', 'Classic', 'Estate', 'Selection']
+  },
+  'Italien': {
+    producenter: ['Antinori', 'Gaja', 'Sassicaia', 'Ornellaia', 'Masseto', 'Brunello di Montalcino', 'Barolo', 'Amarone', 'Chianti Classico', 'Super Tuscan'],
+    regioner: ['Toscana', 'Piemonte', 'Veneto', 'Sicilien', 'Puglia', 'Lombardiet', 'Emilia-Romagna'],
+    druetyper: ['Sangiovese', 'Nebbiolo', 'Barbera', 'Corvina', 'Nero d\'Avola', 'Montepulciano', 'Trebbiano'],
+    navne: ['Riserva', 'Classico', 'Superiore', 'Gran Selezione', 'Vigna', 'Cru', 'Selezione', 'Estate']
+  },
+  'Spanien': {
+    producenter: ['Vega Sicilia', 'Marqués de Riscal', 'Torres', 'La Rioja Alta', 'Bodegas Muga', 'Dominio de Pingus', 'Alvaro Palacios', 'Bodegas Ysios', 'Bodegas López de Heredia', 'Bodegas Faustino'],
+    regioner: ['Rioja', 'Ribera del Duero', 'Priorat', 'Rías Baixas', 'Jerez', 'Penedès', 'Rueda'],
+    druetyper: ['Tempranillo', 'Garnacha', 'Albariño', 'Verdejo', 'Monastrell', 'Cariñena', 'Macabeo'],
+    navne: ['Reserva', 'Gran Reserva', 'Crianza', 'Joven', 'Selección', 'Especial', 'Vendimia', 'Estate']
+  },
+  'Tyskland': {
+    producenter: ['Dr. Loosen', 'Weingut Egon Müller', 'Weingut Joh. Jos. Prüm', 'Weingut Robert Weil', 'Weingut Gunderloch', 'Weingut Schloss Johannisberg', 'Weingut Maximin Grünhaus', 'Weingut Fritz Haag', 'Weingut Willi Schaefer', 'Weingut Markus Molitor'],
+    regioner: ['Mosel', 'Rheingau', 'Rheinhessen', 'Pfalz', 'Nahe', 'Baden', 'Württemberg'],
+    druetyper: ['Riesling', 'Gewürztraminer', 'Müller-Thurgau', 'Silvaner', 'Grauburgunder', 'Spätburgunder', 'Dornfelder'],
+    navne: ['Kabinett', 'Spätlese', 'Auslese', 'Beerenauslese', 'Trockenbeerenauslese', 'Eiswein', 'Trocken', 'Halbtrocken']
+  },
+  'Portugal': {
+    producenter: ['Quinta do Noval', 'Taylor\'s', 'Graham\'s', 'Fonseca', 'Dow\'s', 'Warre\'s', 'Quinta do Crasto', 'Quinta do Vallado', 'Quinta da Romaneira', 'Quinta do Vesúvio'],
+    regioner: ['Douro', 'Alentejo', 'Dão', 'Bairrada', 'Vinho Verde', 'Setúbal', 'Lisboa'],
+    druetyper: ['Touriga Nacional', 'Tinta Roriz', 'Touriga Franca', 'Tinta Barroca', 'Alvarinho', 'Arinto', 'Encruzado'],
+    navne: ['Vintage', 'Reserve', 'LBV', 'Colheita', 'Tawny', 'Ruby', 'White', 'Rosé']
+  },
+  'USA': {
+    producenter: ['Opus One', 'Screaming Eagle', 'Harlan Estate', 'Dominus', 'Caymus', 'Silver Oak', 'Ridge', 'Stag\'s Leap', 'Robert Mondavi', 'Kendall-Jackson'],
+    regioner: ['Napa Valley', 'Sonoma', 'Paso Robles', 'Willamette Valley', 'Columbia Valley', 'Finger Lakes', 'Central Coast'],
+    druetyper: ['Cabernet Sauvignon', 'Chardonnay', 'Pinot Noir', 'Zinfandel', 'Merlot', 'Sauvignon Blanc', 'Syrah'],
+    navne: ['Reserve', 'Estate', 'Private Reserve', 'Signature', 'Limited', 'Special Selection', 'Vintage', 'Classic']
+  },
+  'Chile': {
+    producenter: ['Concha y Toro', 'Santa Rita', 'Montes', 'Errazuriz', 'Casa Lapostolle', 'Almaviva', 'Seña', 'Viña Vik', 'Lapostolle', 'Undurraga'],
+    regioner: ['Maipo', 'Casablanca', 'Colchagua', 'Aconcagua', 'Leyda', 'Maule', 'Curicó'],
+    druetyper: ['Cabernet Sauvignon', 'Carménère', 'Merlot', 'Chardonnay', 'Sauvignon Blanc', 'Syrah', 'Pinot Noir'],
+    navne: ['Reserva', 'Gran Reserva', 'Estate', 'Special Selection', 'Premium', 'Classic', 'Vintage', 'Limited']
+  },
+  'Argentina': {
+    producenter: ['Catena Zapata', 'Bodega Norton', 'Trapiche', 'Luigi Bosca', 'Achával-Ferrer', 'Zuccardi', 'Terrazas', 'Rutini', 'Salentein', 'Alamos'],
+    regioner: ['Mendoza', 'Salta', 'La Rioja', 'San Juan', 'Patagonia', 'Uco Valley', 'Luján de Cuyo'],
+    druetyper: ['Malbec', 'Cabernet Sauvignon', 'Torrontés', 'Bonarda', 'Syrah', 'Chardonnay', 'Merlot'],
+    navne: ['Reserva', 'Gran Reserva', 'Estate', 'Single Vineyard', 'Premium', 'Classic', 'Vintage', 'Selection']
+  },
+  'Australien': {
+    producenter: ['Penfolds', 'Grange', 'Henschke', 'Leeuwin Estate', 'Clarendon Hills', 'Torbreck', 'Two Hands', 'Mollydooker', 'Yalumba', 'Wolf Blass'],
+    regioner: ['Barossa Valley', 'Hunter Valley', 'Margaret River', 'Coonawarra', 'McLaren Vale', 'Yarra Valley', 'Adelaide Hills'],
+    druetyper: ['Shiraz', 'Cabernet Sauvignon', 'Chardonnay', 'Riesling', 'Grenache', 'Pinot Noir', 'Semillon'],
+    navne: ['Reserve', 'Estate', 'Premium', 'Classic', 'Vintage', 'Limited', 'Selection', 'Signature']
+  },
+  'Sydafrika': {
+    producenter: ['Kanonkop', 'Meerlust', 'Klein Constantia', 'Boekenhoutskloof', 'Thelema', 'Rustenberg', 'Vergelegen', 'De Toren', 'Glenelly', 'Hamilton Russell'],
+    regioner: ['Stellenbosch', 'Constantia', 'Franschhoek', 'Paarl', 'Walker Bay', 'Robertson', 'Swartland'],
+    druetyper: ['Pinotage', 'Chenin Blanc', 'Cabernet Sauvignon', 'Shiraz', 'Sauvignon Blanc', 'Chardonnay', 'Merlot'],
+    navne: ['Reserve', 'Estate', 'Premium', 'Classic', 'Vintage', 'Limited', 'Selection', 'Signature']
+  }
+};
+
+// Import vinlager CSV/Excel
+function importVinlagerCSV(){
+  const fileInput = $('vinlagerCsvImport');
+  if(!fileInput || !fileInput.files || !fileInput.files[0]){
+    alert('Vælg venligst en fil først.');
+    return;
+  }
+  
+  const file = fileInput.files[0];
+  const reader = new FileReader();
+  
+  reader.onload = function(e){
+    try {
+      let data = [];
+      
+      if(file.name.endsWith('.xlsx') || file.name.endsWith('.xls')){
+        // Excel fil
+        const workbook = XLSX.read(e.target.result, {type: 'binary'});
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        data = XLSX.utils.sheet_to_json(worksheet);
+      } else {
+        // CSV fil
+        const text = e.target.result;
+        const lines = text.split('\n').filter(l => l.trim());
+        const headers = lines[0].split(';').map(h => h.trim());
+        
+        for(let i = 1; i < lines.length; i++){
+          const values = lines[i].split(';');
+          const obj = {};
+          headers.forEach((h, idx) => {
+            obj[h] = values[idx] ? values[idx].trim() : '';
+          });
+          data.push(obj);
+        }
+      }
+      
+      let importeret = 0;
+      let opdateret = 0;
+      
+      data.forEach(row => {
+        if(!row.Navn || !row.Producent || !row.Land) return;
+        
+        const eksisterende = vinlager.find(v => 
+          v.navn === row.Navn && 
+          v.producent === row.Producent && 
+          v.årgang === (row.Årgang ? parseInt(row.Årgang) : null)
+        );
+        
+        if(eksisterende){
+          // Opdater eksisterende
+          eksisterende.region = row.Region || '';
+          eksisterende.druetype = row.Druetype || '';
+          eksisterende.alkoholprocent = row['Alkohol%'] ? parseFloat(row['Alkohol%']) : null;
+          eksisterende.flasketype = row.Flasketype || '75 cl';
+          eksisterende.indkøbspris = parseFloat(row.Indkøbspris) || 0;
+          eksisterende.salgspris = row.Salgspris ? parseFloat(row.Salgspris) : null;
+          eksisterende.antal_flasker = parseInt(row.Antal) || 0;
+          eksisterende.lagerplacering = row.Placering || '';
+          eksisterende.noter = row.Noter || '';
+          eksisterende.sidst_opdateret = Date.now();
+          opdateret++;
+        } else {
+          // Opret ny
+          const nyVin = createVin({
+            navn: row.Navn,
+            producent: row.Producent,
+            land: row.Land,
+            region: row.Region || '',
+            årgang: row.Årgang ? parseInt(row.Årgang) : null,
+            druetype: row.Druetype || '',
+            alkoholprocent: row['Alkohol%'] ? parseFloat(row['Alkohol%']) : null,
+            flasketype: row.Flasketype || '75 cl',
+            indkøbspris: parseFloat(row.Indkøbspris) || 0,
+            salgspris: row.Salgspris ? parseFloat(row.Salgspris) : null,
+            antal_flasker: parseInt(row.Antal) || 0,
+            lagerplacering: row.Placering || '',
+            noter: row.Noter || ''
+          });
+          vinlager.push(nyVin);
+          importeret++;
+        }
+      });
+      
+      renderVinlagerTable();
+      renderVinlagerAdminTable();
+      updateVinlagerStats();
+      updateVinlagerFilters();
+      saveAllData();
+      
+      alert(`✅ Import gennemført!\n\n${importeret} nye vine tilføjet\n${opdateret} vine opdateret`);
+      
+      // Ryd file input
+      fileInput.value = '';
+    } catch(err){
+      console.error('Import fejl:', err);
+      alert('❌ Fejl ved import: ' + err.message);
+    }
+  };
+  
+  if(file.name.endsWith('.xlsx') || file.name.endsWith('.xls')){
+    reader.readAsBinaryString(file);
+  } else {
+    reader.readAsText(file, 'UTF-8');
+  }
+}
+
+// Opdater renderVinlagerHistorik til også at vise i rapporter
+function renderVinlagerHistorik(){
+  const tbody = $('vinlagerHistorikTableBody');
+  const tbodyRapporter = $('vinlagerRapporterTableBody');
+  
+  const recent = vinlagerHistorik.slice(0, 100);
+  
+  const renderTable = (tbodyEl) => {
+    if(!tbodyEl) return;
+    tbodyEl.innerHTML = '';
+    
+    if(recent.length === 0){
+      tbodyEl.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#666;">Ingen historik endnu</td></tr>';
+      return;
+    }
+    
+    recent.forEach(entry => {
+      const tr = document.createElement('tr');
+      const date = new Date(entry.dato_tid);
+      const dateStr = date.toLocaleDateString('da-DK') + ' ' + date.toLocaleTimeString('da-DK', {hour:'2-digit', minute:'2-digit'});
+      const ændringStr = entry.ændring > 0 ? `+${entry.ændring}` : String(entry.ændring);
+      const ændringColor = entry.ændring > 0 ? '#28a745' : entry.ændring < 0 ? '#dc3545' : '#666';
+      
+      tr.innerHTML = `
+        <td style="padding:8px; border:1px solid #ddd;">${dateStr}</td>
+        <td style="padding:8px; border:1px solid #ddd;">${entry.vin_navn || '-'}</td>
+        <td style="padding:8px; border:1px solid #ddd; text-align:center; color:${ændringColor}; font-weight:bold;">${ændringStr}</td>
+        <td style="padding:8px; border:1px solid #ddd;">${entry.årsag || '-'}</td>
+        <td style="padding:8px; border:1px solid #ddd;">${entry.kommentar || '-'}</td>
+      `;
+      tbodyEl.appendChild(tr);
+    });
+  };
+  
+  renderTable(tbody);
+  renderTable(tbodyRapporter);
 }
 
 /* =============
