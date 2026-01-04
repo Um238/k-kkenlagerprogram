@@ -28,7 +28,7 @@
      [CSS 1..] STYLES (nummereret)
      ========================= -->
 <style>
-:root{ --green:#0078D4; --accent:#E3F2FD; --bg:#f9f9f9; --muted:#f6f6f6; --danger:#e74c3c; --mono:"Segoe UI", Roboto, Arial, sans-serif; }
+:root{ --green:#0078D4; --accent:#E3F2FD; --bg:#f9f9f9; --muted:#f6f6f6; --danger:#e74c3c; --mono:"Segoe UI", Roboto, Arial, sans-serif; --vin-accent:#8B0000; --vin-accent-hover:#A00000; --vin-accent-light:#FFF0F0; }
 *{box-sizing:border-box}
 body{font-family:var(--mono); margin:0; background:var(--bg); color:#222;-webkit-font-smoothing:antialiased}
 header{background:var(--green); color:#fff; padding:12px 20px; display:flex; gap:16px; align-items:center; flex-wrap:wrap; border-bottom:4px solid rgba(0,0,0,0.03)}
@@ -43,6 +43,11 @@ header p{margin:4px 0 0 0;font-size:13px;font-weight:600;opacity:0.95}
 nav{background:#eee;padding:10px 18px;display:flex;gap:12px;flex-wrap:wrap;border-bottom:1px solid #e6e6e6}
 nav .menu-item{cursor:pointer;padding:8px 12px;border-radius:8px;font-weight:700;color:#333}
 nav .menu-item.active{background:var(--accent);border:1px solid #93c5fd}
+body.vinlager-mode{--green:var(--vin-accent);--accent:var(--vin-accent-light)}
+body.vinlager-mode nav .menu-item.active{background:var(--vin-accent);border-color:#A00000}
+body.vinlager-mode button:not(.secondary){background:var(--vin-accent)}
+body.vinlager-mode button:not(.secondary):hover{background:var(--vin-accent-hover)}
+body.vinlager-mode header{background:var(--vin-accent)}
 
 /* [CSS 4] Layout */
 #content{padding:18px}
@@ -493,6 +498,7 @@ a:hover{color:#45a049;text-decoration:none}
 <nav id="topnav">
   <span class="menu-item active" data-target="lageropt" onclick="navClick(event)">📦 Lager optælling</span>
   <span class="menu-item" data-target="opsaetning" onclick="navClick(event)">⚙️ Opsætning Lager</span>
+  <span class="menu-item" data-target="vinlager" onclick="navClick(event)">🍷 Vinlager optælling</span>
   <span class="menu-item" data-target="master" onclick="navClick(event)">📋 Varelager administration</span>
   <span class="menu-item" data-target="rapporter" onclick="navClick(event)">📊 Rapporter</span>
   <span class="menu-item" data-target="labels" onclick="navClick(event)">🏷️ Labels</span>
@@ -739,7 +745,26 @@ a:hover{color:#45a049;text-decoration:none}
     </div>
   </section>
 
-  <!-- [HTML 3.6] MASTER VARELAGER -->
+  <!-- [HTML 3.6] VINLAGER OPTÆLLING -->
+  <section id="vinlager" class="page hidden">
+    <div style="text-align:center; padding:60px 20px; background:linear-gradient(135deg, #8B0000 0%, #5C0000 100%); border-radius:12px; margin-bottom:30px; position:relative; overflow:hidden; box-shadow:0 8px 24px rgba(139,0,0,0.3);">
+      <!-- Dekorativ grafik - Vin flaske -->
+      <div style="position:absolute; top:20px; left:50%; transform:translateX(-50%); width:200px; height:200px; opacity:0.15;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" style="width:100%; height:100%;">
+          <path d="M 100 20 L 120 60 L 160 60 L 130 85 L 140 125 L 100 105 L 60 125 L 70 85 L 40 60 L 80 60 Z" fill="#FFFFFF"/>
+          <circle cx="100" cy="140" r="40" fill="none" stroke="#FFFFFF" stroke-width="3"/>
+          <circle cx="100" cy="180" r="15" fill="#FFFFFF"/>
+        </svg>
+      </div>
+      <h1 style="color:#FFFFFF; font-size:48px; margin:0 0 20px 0; text-shadow:2px 2px 4px rgba(0,0,0,0.3); position:relative; z-index:1;">🍷 Vinlager Optælling</h1>
+      <p style="color:#FFE4E1; font-size:20px; margin:0; position:relative; z-index:1; font-weight:500;">Administrer og tæl dit vinlager</p>
+      <div style="margin-top:40px; padding:30px; background:rgba(255,255,255,0.1); border-radius:10px; backdrop-filter:blur(10px); position:relative; z-index:1;">
+        <p style="color:#FFFFFF; font-size:16px; margin:0;">Menuer og funktioner kommer snart...</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- [HTML 3.7] MASTER VARELAGER -->
   <section id="master" class="page hidden">
     <div class="settings-page">
       <div class="settings-sidebar" id="masterSidebar">
@@ -3651,31 +3676,27 @@ async function tilfoejDemoBillederTilAlleVarer() {
             const progressBar = document.getElementById('billedeProgressBar');
             
             if (progressText) {
-                progressText.textContent = `Henter billede for: ${vare.navn} (${i + 1} af ${total})`;
+                progressText.textContent = `Tilføjer placeholder til: ${vare.navn} (${i + 1} af ${total})`;
             }
             if (progressBar) {
                 progressBar.style.width = progress + '%';
             }
             
             try {
-                // Hent billede fra Picsum Photos
-                const billede = await hentBilledeFraPicsum(vare.navn || 'Ukendt');
+                // Brug samme placeholder-billede til alle varer
+                const billede = genererDemoPlaceholderBillede();
                 
                 if (billede && (billede.startsWith('data:image'))) {
                     vare.billede = billede;
                     opdateret++;
-                    console.log(`✅ Hentet billede for: ${vare.navn}`);
                 } else {
-                    fejl.push(`${vare.navn}: Kunne ikke hente billede`);
-                    console.warn(`⚠️ Kunne ikke hente billede for: ${vare.navn}`);
+                    fejl.push(`${vare.navn}: Kunne ikke generere billede`);
+                    console.warn(`⚠️ Kunne ikke generere billede for: ${vare.navn}`);
                 }
-                
-                // Vent lidt mellem hvert billede for at undgå rate limiting
-                await new Promise(resolve => setTimeout(resolve, 300));
                 
             } catch (err) {
                 fejl.push(`${vare.navn}: ${err.message}`);
-                console.error(`❌ Fejl ved hentning af billede for ${vare.navn}:`, err);
+                console.error(`❌ Fejl ved generering af billede for ${vare.navn}:`, err);
             }
         }
         
@@ -10015,6 +10036,16 @@ function showScannerInstallationId(){
    ================================ */
 function navClick(e){ document.querySelectorAll('nav .menu-item').forEach(it=>it.classList.remove('active')); e.target.classList.add('active'); showPage(e.target.dataset.target); }
 function showPage(id){ 
+  // Tjek om det er vinlager sektionen
+  const isVinlager = id === 'vinlager';
+  
+  // Tilføj/fjern vinlager-mode klasse på body
+  if(isVinlager) {
+    document.body.classList.add('vinlager-mode');
+  } else {
+    document.body.classList.remove('vinlager-mode');
+  }
+  
   document.querySelectorAll('#content section').forEach(s=>s.classList.add('hidden')); 
   const el = $(id); 
   if(el) el.classList.remove('hidden'); 
