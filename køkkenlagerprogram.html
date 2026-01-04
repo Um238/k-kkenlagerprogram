@@ -512,6 +512,7 @@ a:hover{color:#45a049;text-decoration:none}
   <span class="menu-item vinlager-menu hidden" data-target="vinlager" onclick="navClick(event)">🍷 Vinlager optælling</span>
   <span class="menu-item vinlager-menu hidden" data-target="vinlagerOpsaetning" onclick="navClick(event)">⚙️ Opsætning Vinlager</span>
   <span class="menu-item vinlager-menu hidden" data-target="vinlagerAdmin" onclick="navClick(event)">📋 Vinlager administration</span>
+  <span class="menu-item vinlager-menu hidden" data-target="vinlagerLabels" onclick="navClick(event)">🏷️ Vinlager Labels</span>
   <span class="menu-item vinlager-menu hidden" data-target="vinlagerRapporter" onclick="navClick(event)">📊 Vinlager rapporter</span>
   <span class="menu-item vinlager-menu hidden" data-target="systemOpsaetning" onclick="navClick(event)">⚙️ Opsætning</span>
 </nav>
@@ -866,6 +867,34 @@ a:hover{color:#45a049;text-decoration:none}
     </div>
     <p class="small" style="margin-top:10px; color:#666;">Træk og slip for at ændre rækkefølge — rækkefølgen opdateres i hele systemet.</p>
     <ul id="vinlagerOpsaetningList" style="margin-top:12px; list-style:none; padding:0;"></ul>
+  </section>
+
+  <!-- [HTML 3.6.0.5] VINLAGER LABELS -->
+  <section id="vinlagerLabels" class="page hidden">
+    <h2 style="color:#8B0000;">Print Vinlager Labels</h2>
+    <div class="label-controls" style="position:sticky; top:0; background:#fff; z-index:100; padding:15px 0; margin-bottom:15px; border-bottom:2px solid #8B0000; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <label class="small" style="color:#8B0000; font-weight:bold;">Vælg land</label>
+        <select id="vinlagerLabelLand" style="border:2px solid #8B0000; padding:6px 12px; border-radius:4px;" onchange="updateVinlagerLabelProducent()">
+          <option value="">Alle lande</option>
+        </select>
+        <label class="small" id="vinlagerLabelProducentLabel" style="display:none; color:#8B0000; font-weight:bold;">Vælg producent</label>
+        <select id="vinlagerLabelProducent" style="display:none; border:2px solid #8B0000; padding:6px 12px; border-radius:4px; min-width:120px;" onchange="updateVinlagerLabelSingle()">
+          <option value="">Alle producenter</option>
+        </select>
+        <label class="small" style="color:#8B0000; font-weight:bold;">Eller vælg enkelt vin</label>
+        <select id="vinlagerLabelSingle" style="border:2px solid #8B0000; padding:6px 12px; border-radius:4px; min-width:200px;">
+          <option value="">--- Ingen ---</option>
+        </select>
+        <label class="small" style="color:#8B0000; font-weight:bold;">Antal labels pr. vin</label>
+        <input type="number" id="vinlagerLabelCount" value="1" min="1" style="width:100px; border:2px solid #8B0000; padding:6px; border-radius:4px;" />
+        <div class="right">
+          <button onclick="generateVinlagerLabels()" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">🏷️ Generer labels</button>
+          <button onclick="window.print()" style="background:#A00000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">🖨️ Print labels</button>
+        </div>
+      </div>
+    </div>
+    <div id="vinlagerLabelContainer" class="label-container" style="padding:30px 60px;"></div>
   </section>
 
   <!-- [HTML 3.6.1] VINLAGER ADMINISTRATION -->
@@ -10359,7 +10388,7 @@ function showScannerInstallationId(){
 function navClick(e){ document.querySelectorAll('nav .menu-item').forEach(it=>it.classList.remove('active')); e.target.classList.add('active'); showPage(e.target.dataset.target); }
 function showPage(id){ 
   // Tjek om det er vinlager sektionen
-  const isVinlager = id === 'vinlager' || id === 'vinlagerAdmin' || id === 'vinlagerRapporter';
+  const isVinlager = id === 'vinlager' || id === 'vinlagerOpsaetning' || id === 'vinlagerAdmin' || id === 'vinlagerRapporter' || id === 'vinlagerLabels';
   
   // Tilføj/fjern vinlager-mode klasse på body
   if(isVinlager) {
@@ -10401,6 +10430,9 @@ function showPage(id){
   }
   if(id==='vinlagerRapporter') { 
     renderVinlagerHistorik(); 
+  }
+  if(id==='vinlagerLabels') { 
+    updateVinlagerLabelDropdowns(); 
   }
 }
 function toggleSidebar(sidebarId){
@@ -11554,7 +11586,8 @@ function downloadVinlagerExcelTemplate(){
     XLSX.utils.book_append_sheet(wb, ws, 'Alle vine');
     
     // Download
-    const filename = `vinlager_skabelon_v${APP_VERSION}.xlsx`;
+    const version = getAppVersion();
+    const filename = `vinlager_skabelon_v${version}.xlsx`;
     XLSX.writeFile(wb, filename);
     
     alert(`✅ Excel skabelon downloadet!\n\nSkabelonen indeholder ${alleVine.length} demo vine (40 fra hvert land).\n\nDu kan nu redigere skabelonen og importere den igen.`);
@@ -11831,6 +11864,150 @@ function renderVinlagerHistorik(){
   
   renderTable(tbody);
   renderTable(tbodyRapporter);
+}
+
+// Vinlager Labels funktioner
+function updateVinlagerLabelDropdowns(){
+  const landSelect = $('vinlagerLabelLand');
+  const singleSelect = $('vinlagerLabelSingle');
+  
+  if(landSelect){
+    const currentValue = landSelect.value;
+    landSelect.innerHTML = '<option value="">Alle lande</option>';
+    const lande = [...new Set(vinlager.map(v => v.land).filter(l => l))].sort();
+    lande.forEach(land => landSelect.add(new Option(land, land)));
+    landSelect.value = currentValue;
+  }
+  
+  if(singleSelect){
+    const currentValue = singleSelect.value;
+    singleSelect.innerHTML = '<option value="">--- Ingen ---</option>';
+    vinlager.forEach(vin => {
+      const label = `${vin.navn} (${vin.producent}, ${vin.årgang || 'N/A'})`;
+      singleSelect.add(new Option(label, vin.id));
+    });
+    singleSelect.value = currentValue;
+  }
+  
+  updateVinlagerLabelProducent();
+}
+
+function updateVinlagerLabelProducent(){
+  const landSelect = $('vinlagerLabelLand');
+  const producentSelect = $('vinlagerLabelProducent');
+  const producentLabel = $('vinlagerLabelProducentLabel');
+  
+  if(!landSelect || !producentSelect || !producentLabel) return;
+  
+  const selectedLand = landSelect.value;
+  
+  if(!selectedLand){
+    producentSelect.style.display = 'none';
+    producentLabel.style.display = 'none';
+    producentSelect.value = '';
+    return;
+  }
+  
+  const vine = vinlager.filter(v => v.land === selectedLand && v.producent);
+  const producenter = [...new Set(vine.map(v => v.producent).filter(p => p))].sort();
+  
+  if(producenter.length > 0){
+    producentSelect.style.display = 'inline-block';
+    producentLabel.style.display = 'inline-block';
+    producentSelect.innerHTML = '<option value="">Alle producenter</option>';
+    producenter.forEach(p => producentSelect.add(new Option(p, p)));
+  } else {
+    producentSelect.style.display = 'none';
+    producentLabel.style.display = 'none';
+  }
+  
+  updateVinlagerLabelSingle();
+}
+
+function updateVinlagerLabelSingle(){
+  const singleSelect = $('vinlagerLabelSingle');
+  if(!singleSelect) return;
+  
+  const selectedLand = $('vinlagerLabelLand')?.value || '';
+  const selectedProducent = $('vinlagerLabelProducent')?.value || '';
+  
+  const currentValue = singleSelect.value;
+  singleSelect.innerHTML = '<option value="">--- Ingen ---</option>';
+  
+  let filtered = vinlager;
+  if(selectedLand) filtered = filtered.filter(v => v.land === selectedLand);
+  if(selectedProducent) filtered = filtered.filter(v => v.producent === selectedProducent);
+  
+  filtered.forEach(vin => {
+    const label = `${vin.navn} (${vin.producent}, ${vin.årgang || 'N/A'})`;
+    singleSelect.add(new Option(label, vin.id));
+  });
+  
+  singleSelect.value = currentValue;
+}
+
+function generateVinlagerLabels(){
+  const container = $('vinlagerLabelContainer');
+  if(!container) return;
+  
+  container.innerHTML = '';
+  const count = parseInt($('vinlagerLabelCount')?.value) || 1;
+  const selectedLand = $('vinlagerLabelLand')?.value || '';
+  const selectedProducent = $('vinlagerLabelProducent')?.value || '';
+  const single = $('vinlagerLabelSingle')?.value || '';
+  
+  let items = [];
+  
+  if(single){
+    const found = vinlager.find(v => v.id === single);
+    if(found) items = [found];
+  } else if(selectedLand){
+    items = vinlager.filter(v => {
+      if(v.land !== selectedLand) return false;
+      if(selectedProducent && v.producent !== selectedProducent) return false;
+      return true;
+    });
+  } else {
+    items = vinlager;
+  }
+  
+  if(items.length === 0){
+    container.innerHTML = '<p style="text-align:center; padding:40px; color:#666;">Ingen vine fundet. Vælg et land eller en specifik vin.</p>';
+    return;
+  }
+  
+  items.forEach(vin => {
+    for(let i = 0; i < count; i++){
+      const d = document.createElement('div');
+      d.className = 'label';
+      d.style.cssText = 'width:90mm; height:50mm; border:2px solid #8B0000; padding:8px; margin:5px; display:inline-block; page-break-inside:avoid; background:#fff;';
+      
+      const labelText = `<strong style="font-size:14px; color:#8B0000;">${vin.navn}</strong>`;
+      const producentInfo = vin.producent ? `<div style="font-size:11px; margin-top:4px; color:#666;">${vin.producent}</div>` : '';
+      const landInfo = vin.land ? `<div style="font-size:10px; margin-top:2px; color:#999;">${vin.land}${vin.region ? ', ' + vin.region : ''}</div>` : '';
+      const årgangInfo = vin.årgang ? `<div style="font-size:10px; margin-top:2px; color:#999;">Årgang: ${vin.årgang}</div>` : '';
+      const druetypeInfo = vin.druetype ? `<div style="font-size:10px; margin-top:2px; color:#999;">${vin.druetype}</div>` : '';
+      const flasketypeInfo = vin.flasketype ? `<div style="font-size:10px; margin-top:2px; color:#999;">${vin.flasketype}</div>` : '';
+      const placeringInfo = vin.lagerplacering ? `<div style="font-size:9px; margin-top:4px; color:#666;">Placering: ${vin.lagerplacering}</div>` : '';
+      const varenummerInfo = vin.varenummer ? `<div style="font-size:9px; margin-top:2px; color:#999;">Varenummer: ${vin.varenummer}</div>` : '';
+      
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('da-DK', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const timeStr = now.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' });
+      const version = getAppVersion();
+      const versionInfo = `<div style="font-size:9px; margin-top:2px; color:#999; text-align:center;">V. nr. ${version} | ${dateStr} ${timeStr}</div>`;
+      
+      d.innerHTML = `${labelText}${producentInfo}${landInfo}${årgangInfo}${druetypeInfo}${flasketypeInfo}${placeringInfo}${varenummerInfo}${versionInfo}<br><svg class="barcode" style="margin-top:4px;"></svg>`;
+      container.appendChild(d);
+      
+      const barcodeValue = vin.varenummer || vin.id;
+      try {
+        JsBarcode(d.querySelector('.barcode'), barcodeValue, { format:'CODE128', displayValue:false, width:2, height:40 });
+      } catch(e){
+        console.warn('Kunne ikke generere stregkode:', e);
+      }
+    }
+  });
 }
 
 /* =============
