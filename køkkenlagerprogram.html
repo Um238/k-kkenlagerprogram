@@ -778,8 +778,8 @@ a:hover{color:#45a049;text-decoration:none}
         <div id="vinlagerAntalVine" style="font-size:28px; font-weight:bold; color:#8B0000;">0</div>
       </div>
       <div class="card" style="background:#FFF0F0; border:2px solid #8B0000;">
-        <div style="font-size:14px; color:#666; margin-bottom:5px;">Lav lager (< 6 flasker)</div>
-        <div id="vinlagerLavLager" style="font-size:28px; font-weight:bold; color:#dc3545;">0</div>
+        <div style="font-size:14px; color:#666; margin-bottom:5px;">Lav lager</div>
+        <div id="vinlagerLavLager" style="font-size:28px; font-weight:bold; color:#dc3545; cursor:pointer; text-decoration:underline;" onclick="showLavLagerPopup()" title="Klik for at se detaljer">0</div>
       </div>
     </div>
 
@@ -10942,6 +10942,7 @@ function createVin(data){
     indkøbspris: parseFloat(data.indkøbspris) || 0,
     salgspris: data.salgspris ? parseFloat(data.salgspris) : null,
     antal_flasker: parseInt(data.antal_flasker) || 0,
+    minimum_beholdning: parseInt(data.minimum_beholdning) || 24,
     lagerplacering: data.lagerplacering || '',
     noter: data.noter || '',
     oprettet_dato: Date.now(),
@@ -11102,7 +11103,10 @@ function updateVinlagerStats(){
   const totalAntal = vinlager.reduce((sum, v) => sum + v.antal_flasker, 0);
   const totalVærdi = vinlager.reduce((sum, v) => sum + (v.antal_flasker * v.indkøbspris), 0);
   const antalVine = vinlager.length;
-  const lavLager = vinlager.filter(v => v.antal_flasker < 6).length;
+  const lavLager = vinlager.filter(v => {
+    const minBeholdning = v.minimum_beholdning || 24;
+    return v.antal_flasker < minBeholdning;
+  }).length;
   
   const totalAntalEl = $('vinlagerTotalAntal');
   const totalVærdiEl = $('vinlagerTotalVærdi');
@@ -11112,7 +11116,14 @@ function updateVinlagerStats(){
   if(totalAntalEl) totalAntalEl.textContent = totalAntal;
   if(totalVærdiEl) totalVærdiEl.textContent = totalVærdi.toFixed(2) + ' kr.';
   if(antalVineEl) antalVineEl.textContent = antalVine;
-  if(lavLagerEl) lavLagerEl.textContent = lavLager;
+  if(lavLagerEl) {
+    lavLagerEl.textContent = lavLager;
+    // Gør klikbar
+    lavLagerEl.style.cursor = 'pointer';
+    lavLagerEl.style.textDecoration = 'underline';
+    lavLagerEl.title = 'Klik for at se detaljer';
+    lavLagerEl.onclick = showLavLagerPopup;
+  }
 }
 
 // Opdater filter dropdowns
@@ -11322,10 +11333,10 @@ function deleteVin(vinId){
 
 // Eksport CSV
 function exportVinlagerCSV(){
-  let csv = 'Varenummer;Navn;Producent;Land;Region;Årgang;Druetype;Alkohol%;Flasketype;Indkøbspris;Salgspris;Antal;Placering;Noter\n';
+  let csv = 'Varenummer;Navn;Producent;Land;Region;Årgang;Druetype;Alkohol%;Flasketype;Indkøbspris;Salgspris;Antal;Minimum beholdning;Placering;Noter\n';
   
   vinlager.forEach(vin => {
-    csv += `${vin.varenummer || ''};${vin.navn || ''};${vin.producent || ''};${vin.land || ''};${vin.region || ''};${vin.årgang || ''};${vin.druetype || ''};${vin.alkoholprocent || ''};${vin.flasketype || ''};${vin.indkøbspris || 0};${vin.salgspris || ''};${vin.antal_flasker || 0};${vin.lagerplacering || ''};${(vin.noter || '').replace(/;/g, ',')}\n`;
+    csv += `${vin.varenummer || ''};${vin.navn || ''};${vin.producent || ''};${vin.land || ''};${vin.region || ''};${vin.årgang || ''};${vin.druetype || ''};${vin.alkoholprocent || ''};${vin.flasketype || ''};${vin.indkøbspris || 0};${vin.salgspris || ''};${vin.antal_flasker || 0};${vin.minimum_beholdning || 24};${vin.lagerplacering || ''};${(vin.noter || '').replace(/;/g, ',')}\n`;
   });
   
   downloadFile(csv, `vinlager_export_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv;charset=utf-8;');
@@ -11526,9 +11537,9 @@ function tilfoejVin(){
   }
   
   // Ryd form
-  ['vinNavn','vinProducent','vinLand','vinRegion','vinÅrgang','vinDruetype','vinAlkohol','vinFlasketype','vinIndkøbspris','vinSalgspris','vinAntal','vinPlacering','vinNoter'].forEach(id => {
+  ['vinNavn','vinProducent','vinLand','vinRegion','vinÅrgang','vinDruetype','vinAlkohol','vinFlasketype','vinIndkøbspris','vinSalgspris','vinAntal','vinMinimumBeholdning','vinPlacering','vinNoter'].forEach(id => {
     const el = $(id);
-    if(el) el.value = id === 'vinFlasketype' ? '75 cl' : id === 'vinAntal' ? '0' : '';
+    if(el) el.value = id === 'vinFlasketype' ? '75 cl' : id === 'vinAntal' ? '0' : id === 'vinMinimumBeholdning' ? '24' : '';
   });
   
   renderVinlagerTable();
@@ -11942,6 +11953,7 @@ function genererVineForLand(land, antal){
       indkøbspris: indkøbspris,
       salgspris: salgspris,
       antal_flasker: Math.floor(Math.random() * 20) + 1,
+      minimum_beholdning: 24,
       lagerplacering: `Vinkælder ${Math.floor(i / 10) + 1}`,
       noter: ''
     });
