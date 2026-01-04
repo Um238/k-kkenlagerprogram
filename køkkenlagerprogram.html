@@ -2839,12 +2839,13 @@ function renderMasterTable(){
     paginatedItems.forEach(v => {
         const tr = document.createElement("tr");
         
-        // Billede cell - mini format
-        let imageCell = '<td style="text-align:center; padding:8px;">';
+        // Billede cell - mini format - klikbar for at uploade/opdatere
+        // Højreklik eller dobbeltklik viser større billede, venstreklik uploader
+        let imageCell = '<td style="text-align:center; padding:8px; cursor:pointer;" onclick="uploadVareBillede(\'' + v.id + '\')" ondblclick="if(event.target.tagName === \'IMG\') {event.stopPropagation(); showVareImage(\'' + v.id + '\');}" title="Klik: Tilføj/opdater billede | Dobbeltklik: Se større">';
         if(v.billede) {
-            imageCell += `<img src="${v.billede}" alt="${v.navn}" style="width:60px; height:60px; object-fit:contain; border:1px solid #ddd; border-radius:4px; cursor:pointer;" onclick="showVareImage('${v.id}')" title="Klik for at se større">`;
+            imageCell += `<img src="${v.billede}" alt="${v.navn}" style="width:60px; height:60px; object-fit:contain; border:1px solid #0078D4; border-radius:4px; pointer-events:auto;" ondblclick="event.stopPropagation(); showVareImage('${v.id}');" title="Dobbeltklik for at se større">`;
         } else {
-            imageCell += '<span style="color:#999; font-size:12px;">Ingen billede</span>';
+            imageCell += '<div style="width:60px; height:60px; border:2px dashed #999; border-radius:4px; display:flex; align-items:center; justify-content:center; margin:0 auto;"><span style="color:#999; font-size:10px;">+ Billede</span></div>';
         }
         imageCell += '</td>';
 
@@ -3009,29 +3010,81 @@ function handleImageUpload(event) {
         return;
     }
 
-    // Tjek filstørrelse (max 2MB for at undgå for store base64 strings)
-    if (file.size > 2 * 1024 * 1024) {
-        alert('⚠️ Billedet er for stort. Maksimal størrelse er 2MB. Komprimer billedet og prøv igen.');
+    // Tjek filstørrelse (max 5MB før komprimering)
+    if (file.size > 5 * 1024 * 1024) {
+        alert('⚠️ Billedet er for stort. Maksimal størrelse er 5MB. Komprimer billedet og prøv igen.');
         event.target.value = '';
         return;
     }
 
+    // Komprimer billede før preview
+    compressImageForPreview(file, event.target);
+}
+
+// Komprimer billede til preview (samme funktion som upload)
+function compressImageForPreview(file, inputElement) {
     const reader = new FileReader();
     reader.onload = function(e) {
-        const base64 = e.target.result;
-        window.currentImageData = base64;
-        
-        // Vis preview
-        const preview = $('masterBilledePreview');
-        const previewImg = $('masterBilledePreviewImg');
-        if (preview && previewImg) {
-            previewImg.src = base64;
-            preview.style.display = 'block';
-        }
+        const img = new Image();
+        img.onload = function() {
+            // Beregn ny størrelse (max 800px bredde/højde)
+            const maxDimension = 800;
+            let width = img.width;
+            let height = img.height;
+            
+            if (width > maxDimension || height > maxDimension) {
+                if (width > height) {
+                    height = (height / width) * maxDimension;
+                    width = maxDimension;
+                } else {
+                    width = (width / height) * maxDimension;
+                    height = maxDimension;
+                }
+            }
+            
+            // Opret canvas og komprimer
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Konverter til base64 med kvalitet 0.85
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+            
+            // Tjek komprimeret størrelse (max 500KB)
+            const base64Size = (compressedBase64.length * 3) / 4;
+            if (base64Size > 500 * 1024) {
+                // Prøv med lavere kvalitet
+                const compressedBase64Low = canvas.toDataURL('image/jpeg', 0.7);
+                const lowSize = (compressedBase64Low.length * 3) / 4;
+                if (lowSize > 500 * 1024) {
+                    alert('⚠️ Billedet er stadig for stort efter komprimering. Prøv med et mindre billede.');
+                    inputElement.value = '';
+                    return;
+                }
+                window.currentImageData = compressedBase64Low;
+            } else {
+                window.currentImageData = compressedBase64;
+            }
+            
+            // Vis preview
+            const preview = $('masterBilledePreview');
+            const previewImg = $('masterBilledePreviewImg');
+            if (preview && previewImg) {
+                previewImg.src = window.currentImageData;
+                preview.style.display = 'block';
+            }
+        };
+        img.onerror = function() {
+            alert('❌ Fejl ved indlæsning af billede. Prøv igen.');
+            inputElement.value = '';
+        };
+        img.src = e.target.result;
     };
     reader.onerror = function() {
-        alert('❌ Fejl ved indlæsning af billede. Prøv igen.');
-        event.target.value = '';
+        alert('❌ Fejl ved læsning af fil. Prøv igen.');
+        inputElement.value = '';
     };
     reader.readAsDataURL(file);
 }
@@ -3074,6 +3127,130 @@ function closeVareImageModal() {
         modal.style.display = 'none';
         modal.setAttribute('aria-hidden', 'true');
     }
+}
+
+// Upload/opdater billede for en eksisterende vare
+function uploadVareBillede(vareId) {
+    const vare = masterVarelager.find(v => v.id === vareId);
+    if (!vare) {
+        alert('Vare ikke fundet');
+        return;
+    }
+
+    // Opret skjult file input
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.style.display = 'none';
+    
+    input.onchange = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Tjek filtype
+        if (!file.type.startsWith('image/')) {
+            alert('⚠️ Vælg venligst en billedfil (jpg, png, etc.)');
+            return;
+        }
+
+        // Tjek filstørrelse (max 5MB før komprimering)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('⚠️ Billedet er for stort. Maksimal størrelse er 5MB. Komprimer billedet og prøv igen.');
+            return;
+        }
+
+        // Komprimer og konverter til base64
+        compressAndUploadImage(file, vareId);
+        
+        // Fjern input element
+        document.body.removeChild(input);
+    };
+    
+    document.body.appendChild(input);
+    input.click();
+}
+
+// Komprimer billede før upload
+function compressAndUploadImage(file, vareId) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            // Beregn ny størrelse (max 800px bredde/højde, beholder aspect ratio)
+            const maxDimension = 800;
+            let width = img.width;
+            let height = img.height;
+            
+            if (width > maxDimension || height > maxDimension) {
+                if (width > height) {
+                    height = (height / width) * maxDimension;
+                    width = maxDimension;
+                } else {
+                    width = (width / height) * maxDimension;
+                    height = maxDimension;
+                }
+            }
+            
+            // Opret canvas og komprimer
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Konverter til base64 med kvalitet 0.85 (85% kvalitet for mindre filstørrelse)
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+            
+            // Tjek komprimeret størrelse (max 500KB)
+            const base64Size = (compressedBase64.length * 3) / 4;
+            if (base64Size > 500 * 1024) {
+                // Prøv med lavere kvalitet hvis stadig for stor
+                const compressedBase64Low = canvas.toDataURL('image/jpeg', 0.7);
+                const lowSize = (compressedBase64Low.length * 3) / 4;
+                if (lowSize > 500 * 1024) {
+                    alert('⚠️ Billedet er stadig for stort efter komprimering. Prøv med et mindre billede.');
+                    return;
+                }
+                updateVareBillede(vareId, compressedBase64Low);
+            } else {
+                updateVareBillede(vareId, compressedBase64);
+            }
+        };
+        img.onerror = function() {
+            alert('❌ Fejl ved indlæsning af billede. Prøv igen.');
+        };
+        img.src = e.target.result;
+    };
+    reader.onerror = function() {
+        alert('❌ Fejl ved læsning af fil. Prøv igen.');
+    };
+    reader.readAsDataURL(file);
+}
+
+// Opdater vare med nyt billede
+function updateVareBillede(vareId, base64Data) {
+    const vare = masterVarelager.find(v => v.id === vareId);
+    if (!vare) {
+        alert('Vare ikke fundet');
+        return;
+    }
+    
+    vare.billede = base64Data;
+    renderMasterTable();
+    saveAllData();
+    
+    // Vis bekræftelse
+    const vareNavn = vare.navn;
+    const notification = document.createElement('div');
+    notification.style.cssText = 'position:fixed; top:20px; right:20px; background:#4CAF50; color:white; padding:15px 20px; border-radius:8px; z-index:10000; box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+    notification.textContent = `✅ Billede opdateret for "${vareNavn}"`;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transition = 'opacity 0.3s';
+        setTimeout(() => document.body.removeChild(notification), 300);
+    }, 2000);
 }
 
 /* ======================================================
@@ -9470,11 +9647,18 @@ function updateLogPreview(){ const p=$('logPreview'); if(!p) return; if(reports.
    [JS 11] Demo seed (starter indhold)
    ================================ */
 function seedDemo(){
+  // Opret simple demo billeder (SVG som base64)
+  // Disse er meget små og fungerer som placeholder billeder
+  const smorBillede = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="#FFD700"/><text x="50%" y="50%" font-family="Arial" font-size="40" fill="#8B4513" text-anchor="middle" dominant-baseline="middle">🧈</text></svg>');
+  const melBillede = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="#FFF8DC"/><text x="50%" y="50%" font-family="Arial" font-size="40" fill="#8B4513" text-anchor="middle" dominant-baseline="middle">🌾</text></svg>');
+  const aerterBillede = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="#90EE90"/><text x="50%" y="50%" font-family="Arial" font-size="40" fill="#228B22" text-anchor="middle" dominant-baseline="middle">🫛</text></svg>');
+  const salatBillede = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="#98FB98"/><text x="50%" y="50%" font-family="Arial" font-size="40" fill="#228B22" text-anchor="middle" dominant-baseline="middle">🥬</text></svg>');
+  
   masterVarelager = [
-    {id:genId(), navn:'Smør', maaleenhed:'stk', pris:12.5, placering:'Køl'},
-    {id:genId(), navn:'Mel 1kg', maaleenhed:'kg', pris:6.9, placering:'Tørevare'},
-    {id:genId(), navn:'Frosne ærter', maaleenhed:'stk', pris:20, placering:'Frost'},
-    {id:genId(), navn:'Salat', maaleenhed:'kg', pris:15, placering:'Grønt'}
+    {id:genId(), navn:'Smør', maaleenhed:'stk', pris:12.5, placering:'Køl', billede:smorBillede},
+    {id:genId(), navn:'Mel 1kg', maaleenhed:'kg', pris:6.9, placering:'Tørevare', billede:melBillede},
+    {id:genId(), navn:'Frosne ærter', maaleenhed:'stk', pris:20, placering:'Frost', billede:aerterBillede},
+    {id:genId(), navn:'Salat', maaleenhed:'kg', pris:15, placering:'Grønt', billede:salatBillede}
   ];
   lagerData = {}; lagerLokationer.forEach(l=> lagerData[l] = {});
   if(masterVarelager[0]) lagerData['Køl'][masterVarelager[0].id] = 10;
