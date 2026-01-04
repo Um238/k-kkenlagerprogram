@@ -660,9 +660,12 @@ function handleScannedBarcode(barcode, quantity = 1){
   }
   
   // Item found - add normally
+  // VIGTIGT: Brug item.id som nøgle, ikke barcode, for at undgå at samme vare bliver gemt flere gange med forskellige barcodes
+  const itemKey = item.id || barcode;
+  
   // Ensure all fields are present from varelager - explicitly get all fields
-  if (!scannedItems[barcode]) {
-    scannedItems[barcode] = {
+  if (!scannedItems[itemKey]) {
+    scannedItems[itemKey] = {
       vare: {
         id: item.id || barcode,
         navn: item.navn || 'Ukendt vare',
@@ -671,23 +674,25 @@ function handleScannedBarcode(barcode, quantity = 1){
         pris: item.pris !== undefined ? Number(item.pris) : 0,
         reolNr: item.reolNr !== undefined && item.reolNr !== null && item.reolNr !== '' ? item.reolNr : null,
         hylleNr: item.hylleNr !== undefined && item.hylleNr !== null && item.hylleNr !== '' ? item.hylleNr : null,
-        billede: item.billede || null
+        billede: item.billede || null,
+        varenummer: item.varenummer || null
       },
       count: 0
     };
     
     // Debug log to verify all fields are captured
     console.log('Item scanned and stored:', {
-      id: scannedItems[barcode].vare.id,
-      navn: scannedItems[barcode].vare.navn,
-      reolNr: scannedItems[barcode].vare.reolNr,
-      hylleNr: scannedItems[barcode].vare.hylleNr,
-      pris: scannedItems[barcode].vare.pris,
-      placering: scannedItems[barcode].vare.placering
+      id: scannedItems[itemKey].vare.id,
+      navn: scannedItems[itemKey].vare.navn,
+      varenummer: scannedItems[itemKey].vare.varenummer,
+      reolNr: scannedItems[itemKey].vare.reolNr,
+      hylleNr: scannedItems[itemKey].vare.hylleNr,
+      pris: scannedItems[itemKey].vare.pris,
+      placering: scannedItems[itemKey].vare.placering
     });
   }
   
-  scannedItems[barcode].count += quantity;
+  scannedItems[itemKey].count += quantity;
   
   const itemName = item.navn || 'Ukendt vare';
   updateStatus('✅ ' + itemName + ' tilføjet: ' + quantity, 'success');
@@ -750,7 +755,7 @@ function renderList(){
           ${imageHTML}
           <div class="info" style="flex:1;">
             <div class="name">${v.navn}</div>
-            <div class="details">${maaleenhed}${prisText}${v.reolNr ? ' • Reol ' + v.reolNr : ''}${v.hylleNr ? ' • Hylle ' + v.hylleNr : ''}</div>
+            <div class="details">${maaleenhed}${prisText}${v.reolNr ? ' • Reol ' + v.reolNr : ''}${v.hylleNr ? ' • Hylle ' + v.hylleNr : ''}${v.varenummer ? ' • Varenr: ' + v.varenummer : ''}</div>
           </div>
           <div class="count">${item.count}</div>
           <button class="remove" onclick="removeItem('${key}')">Slet</button>
@@ -1820,9 +1825,9 @@ async function fetchVarelagerFromServer(){
       });
     }
     
-    // Validate that all items have required fields (inkluder billeder)
+    // Validate that all items have required fields (inkluder billeder og varenummer)
     const validatedItems = importedData.masterVarelager.map(item => {
-      // Ensure all required fields are present, including stregkode and billede
+      // Ensure all required fields are present, including stregkode, billede and varenummer
       return {
         id: item.id || '',
         navn: item.navn || 'Ukendt vare',
@@ -1833,7 +1838,8 @@ async function fetchVarelagerFromServer(){
         hylleNr: item.hylleNr !== undefined ? item.hylleNr : null,
         raekkefoelge: item.raekkefoelge !== undefined ? item.raekkefoelge : null,
         stregkode: item.stregkode || item.id || '', // Include stregkode - use id as fallback
-        billede: item.billede || null // Inkluder billede hvis tilgængelig
+        billede: item.billede || null, // Inkluder billede hvis tilgængelig
+        varenummer: item.varenummer || null // Inkluder varenummer hvis tilgængelig
       };
     });
     
