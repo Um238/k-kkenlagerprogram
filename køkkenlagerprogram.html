@@ -509,7 +509,7 @@ a:hover{color:#45a049;text-decoration:none}
   <span class="menu-item" data-target="vinlager" onclick="navClick(event)" style="background:#8B0000; color:white; border:2px solid #A00000;">🍷 Vinlager</span>
   
   <!-- Vinlager menuer (skjules i køkkenlager mode) -->
-  <span class="menu-item vinlager-menu hidden" data-target="vinlager" onclick="navClick(event)">🍷 Vinlager optælling</span>
+  <span class="menu-item vinlager-menu hidden" data-target="vinlager" onclick="navClick(event)">🍷 Vinlager overblik</span>
   <span class="menu-item vinlager-menu hidden" data-target="vinlagerOpsaetning" onclick="navClick(event)">⚙️ Opsætning Vinlager</span>
   <span class="menu-item vinlager-menu hidden" data-target="vinlagerAdmin" onclick="navClick(event)">📋 Vinlager administration</span>
   <span class="menu-item vinlager-menu hidden" data-target="vinlagerLabels" onclick="navClick(event)">🏷️ Vinlager Labels</span>
@@ -820,21 +820,21 @@ a:hover{color:#45a049;text-decoration:none}
     </div>
 
     <!-- Vinlager tabel -->
-    <div class="card" style="overflow-x:auto;">
+    <div class="card" style="overflow-x:auto; border:1px solid #ddd; border-radius:4px;">
       <table style="width:100%; border-collapse:collapse;">
-        <thead>
+        <thead style="position:sticky; top:0; z-index:10;">
           <tr style="background:#8B0000; color:white;">
-            <th style="padding:12px; text-align:left; border:1px solid #A00000;">Navn</th>
-            <th style="padding:12px; text-align:left; border:1px solid #A00000;">Producent</th>
-            <th style="padding:12px; text-align:left; border:1px solid #A00000;">Land/Region</th>
-            <th style="padding:12px; text-align:left; border:1px solid #A00000;">Årgang</th>
-            <th style="padding:12px; text-align:left; border:1px solid #A00000;">Druetype</th>
-            <th style="padding:12px; text-align:center; border:1px solid #A00000;">Flasketype</th>
-            <th style="padding:12px; text-align:center; border:1px solid #A00000;">Antal</th>
-            <th style="padding:12px; text-align:right; border:1px solid #A00000;">Indkøbspris</th>
-            <th style="padding:12px; text-align:right; border:1px solid #A00000;">Værdi</th>
-            <th style="padding:12px; text-align:left; border:1px solid #A00000;">Placering</th>
-            <th style="padding:12px; text-align:center; border:1px solid #A00000;">Handling</th>
+            <th style="padding:12px; text-align:left; border:1px solid #A00000; font-weight:bold;">Navn</th>
+            <th style="padding:12px; text-align:left; border:1px solid #A00000; font-weight:bold;">Producent</th>
+            <th style="padding:12px; text-align:left; border:1px solid #A00000; font-weight:bold;">Land/Region</th>
+            <th style="padding:12px; text-align:center; border:1px solid #A00000; font-weight:bold;">Årgang</th>
+            <th style="padding:12px; text-align:left; border:1px solid #A00000; font-weight:bold;">Druetype</th>
+            <th style="padding:12px; text-align:center; border:1px solid #A00000; font-weight:bold;">Flasketype</th>
+            <th style="padding:12px; text-align:center; border:1px solid #A00000; font-weight:bold;">Antal</th>
+            <th style="padding:12px; text-align:right; border:1px solid #A00000; font-weight:bold;">Indkøbspris</th>
+            <th style="padding:12px; text-align:right; border:1px solid #A00000; font-weight:bold;">Værdi</th>
+            <th style="padding:12px; text-align:left; border:1px solid #A00000; font-weight:bold;">Placering</th>
+            <th style="padding:12px; text-align:center; border:1px solid #A00000; font-weight:bold;">Handling</th>
           </tr>
         </thead>
         <tbody id="vinlagerTableBody"></tbody>
@@ -865,8 +865,8 @@ a:hover{color:#45a049;text-decoration:none}
   <section id="vinlagerOpsaetning" class="page hidden">
     <h2 style="color:#8B0000;">Opsætning Vinlager</h2>
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:20px;">
-      <input id="nytVinlagerLand" placeholder="Nyt land" style="border:2px solid #8B0000; padding:8px 12px; border-radius:6px;" />
-      <select id="nytVinlagerLandGruppe" style="border:2px solid #8B0000; padding:8px 12px; border-radius:6px;">
+      <input id="nytVinlagerLand" placeholder="Nyt land" style="border:2px solid #8B0000; padding:8px 12px; border-radius:6px; width:200px;" />
+      <select id="nytVinlagerLandGruppe" style="border:2px solid #8B0000; padding:8px 12px; border-radius:6px; width:180px;">
         <option value="Europa">🌍 Europa</option>
         <option value="Amerika">🌎 Amerika</option>
         <option value="Afrika">🌏 Afrika</option>
@@ -11114,9 +11114,10 @@ function renderVinlagerTable(){
     sortedGroups.forEach(groupKey => {
       // Gruppe header
       const headerRow = document.createElement('tr');
-      headerRow.style.background = '#f0f0f0';
+      headerRow.style.background = '#f5f5f5';
       headerRow.style.fontWeight = 'bold';
-      headerRow.innerHTML = `<td colspan="11" style="padding:12px; border:1px solid #ddd;">${filterGruppering === 'land' ? '🌍' : filterGruppering === 'producent' ? '🏭' : filterGruppering === 'årgang' ? '📅' : '📍'} ${groupKey} (${groups[groupKey].length} vine)</td>`;
+      headerRow.style.borderTop = '2px solid #8B0000';
+      headerRow.innerHTML = `<td colspan="11" style="padding:12px 16px; border:1px solid #ddd; background:#f5f5f5; font-size:14px; color:#8B0000;">${filterGruppering === 'land' ? '🌍' : filterGruppering === 'producent' ? '🏭' : filterGruppering === 'årgang' ? '📅' : '📍'} ${groupKey} (${groups[groupKey].length} vine)</td>`;
       tbody.appendChild(headerRow);
       
       // Gruppe varer
@@ -11144,18 +11145,19 @@ function createVinRow(vin){
   const lavLager = vin.antal_flasker < minBeholdning;
   
   tr.style.background = lavLager ? '#fff5f5' : '';
+  tr.style.borderBottom = '1px solid #e0e0e0';
   tr.innerHTML = `
-    <td style="padding:10px; border:1px solid #ddd;">${vin.navn || '-'}</td>
-    <td style="padding:10px; border:1px solid #ddd;">${vin.producent || '-'}</td>
-    <td style="padding:10px; border:1px solid #ddd;">${vin.land || '-'}${vin.region ? ', ' + vin.region : ''}</td>
-    <td style="padding:10px; border:1px solid #ddd;">${vin.årgang || '-'}</td>
-    <td style="padding:10px; border:1px solid #ddd;">${vin.druetype || '-'}</td>
-    <td style="padding:10px; border:1px solid #ddd; text-align:center;">${vin.flasketype || '-'}</td>
-    <td style="padding:10px; border:1px solid #ddd; text-align:center; font-weight:bold; ${lavLager ? 'color:#dc3545;' : ''}">${vin.antal_flasker}</td>
-    <td style="padding:10px; border:1px solid #ddd; text-align:right;">${vin.indkøbspris.toFixed(2)} kr.</td>
-    <td style="padding:10px; border:1px solid #ddd; text-align:right; font-weight:bold;">${værdi.toFixed(2)} kr.</td>
-    <td style="padding:10px; border:1px solid #ddd;">${vin.lagerplacering || '-'}</td>
-    <td style="padding:10px; border:1px solid #ddd; text-align:center;">
+    <td style="padding:12px; border:1px solid #ddd; background:${lavLager ? '#fff5f5' : '#fff'}; border-bottom:1px solid #e0e0e0;">${vin.navn || '-'}</td>
+    <td style="padding:12px; border:1px solid #ddd; background:${lavLager ? '#fff5f5' : '#fff'}; border-bottom:1px solid #e0e0e0;">${vin.producent || '-'}</td>
+    <td style="padding:12px; border:1px solid #ddd; background:${lavLager ? '#fff5f5' : '#fff'}; border-bottom:1px solid #e0e0e0;">${vin.land || '-'}${vin.region ? ', ' + vin.region : ''}</td>
+    <td style="padding:12px; border:1px solid #ddd; background:${lavLager ? '#fff5f5' : '#fff'}; border-bottom:1px solid #e0e0e0; text-align:center;">${vin.årgang || '-'}</td>
+    <td style="padding:12px; border:1px solid #ddd; background:${lavLager ? '#fff5f5' : '#fff'}; border-bottom:1px solid #e0e0e0;">${vin.druetype || '-'}</td>
+    <td style="padding:12px; border:1px solid #ddd; background:${lavLager ? '#fff5f5' : '#fff'}; border-bottom:1px solid #e0e0e0; text-align:center;">${vin.flasketype || '-'}</td>
+    <td style="padding:12px; border:1px solid #ddd; background:${lavLager ? '#fff5f5' : '#fff'}; border-bottom:1px solid #e0e0e0; text-align:center; font-weight:bold; ${lavLager ? 'color:#dc3545;' : ''}">${vin.antal_flasker}</td>
+    <td style="padding:12px; border:1px solid #ddd; background:${lavLager ? '#fff5f5' : '#fff'}; border-bottom:1px solid #e0e0e0; text-align:right;">${vin.indkøbspris.toFixed(2)} kr.</td>
+    <td style="padding:12px; border:1px solid #ddd; background:${lavLager ? '#fff5f5' : '#fff'}; border-bottom:1px solid #e0e0e0; text-align:right; font-weight:bold;">${værdi.toFixed(2)} kr.</td>
+    <td style="padding:12px; border:1px solid #ddd; background:${lavLager ? '#fff5f5' : '#fff'}; border-bottom:1px solid #e0e0e0;">${vin.lagerplacering || '-'}</td>
+    <td style="padding:12px; border:1px solid #ddd; background:${lavLager ? '#fff5f5' : '#fff'}; border-bottom:1px solid #e0e0e0; text-align:center;">
       <button onclick="showVinlagerModal('edit', '${vin.id}')" style="background:#8B0000; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; margin:2px; font-size:12px;">✏️</button>
       <button onclick="showVinlagerLagerModal('${vin.id}')" style="background:#28a745; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; margin:2px; font-size:12px;">📦</button>
       <button onclick="deleteVin('${vin.id}')" style="background:#dc3545; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; margin:2px; font-size:12px;">🗑️</button>
@@ -11637,15 +11639,27 @@ function renderVinlagerOpsaetning(){
     gruppeHeader.innerHTML = `<span>${emoji} ${gruppe}</span><span style="font-size:12px;">▼</span>`;
     gruppeHeader.dataset.gruppe = gruppe;
     gruppeHeader.onclick = function(){
+      const clickedGruppe = this;
       const landeList = this.nextElementSibling;
       const isHidden = landeList.style.display === 'none';
+      
+      // Luk alle andre grupper
+      container.querySelectorAll('ul[id^="vinlagerGruppe_"]').forEach(list => {
+        if(list !== landeList){
+          list.style.display = 'none';
+          const header = list.previousElementSibling;
+          if(header) header.querySelector('span:last-child').textContent = '▶';
+        }
+      });
+      
+      // Toggle denne gruppe
       landeList.style.display = isHidden ? 'block' : 'none';
       this.querySelector('span:last-child').textContent = isHidden ? '▼' : '▶';
     };
     
     const landeList = document.createElement('ul');
     landeList.id = `vinlagerGruppe_${gruppe}`;
-    landeList.style.cssText = 'list-style:none; padding:10px; margin:0; display:block;';
+    landeList.style.cssText = 'list-style:none; padding:10px; margin:0; display:none;';
     
     const gruppeLande = VINLAGER_GRUPPER[gruppe].filter(land => vinlagerLande.includes(land));
     
