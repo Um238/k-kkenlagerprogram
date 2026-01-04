@@ -1867,7 +1867,15 @@ async function fetchVarelagerFromServer(){
     }
     
     const fileContent = files[0].content;
-    const importedData = JSON.parse(fileContent);
+    
+    // Forbedret JSON parsing med bedre fejlhåndtering for store filer
+    let importedData;
+    try {
+      importedData = JSON.parse(fileContent);
+    } catch (parseError) {
+      console.error('JSON parse fejl:', parseError);
+      throw new Error(`Fejl ved læsning af varelager data: ${parseError.message}. Filen er muligvis for stor eller korrupt. Prøv at uploade varelageret igen fra hovedprogrammet.`);
+    }
     
     if (!importedData || !importedData.masterVarelager || !Array.isArray(importedData.masterVarelager)) {
       throw new Error('Filen indeholder ikke varelager data i korrekt format.');

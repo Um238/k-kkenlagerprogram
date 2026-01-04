@@ -498,12 +498,12 @@ a:hover{color:#45a049;text-decoration:none}
 <nav id="topnav">
   <span class="menu-item active" data-target="lageropt" onclick="navClick(event)">📦 Lager optælling</span>
   <span class="menu-item" data-target="opsaetning" onclick="navClick(event)">⚙️ Opsætning Lager</span>
-  <span class="menu-item" data-target="vinlager" onclick="navClick(event)">🍷 Vinlager optælling</span>
   <span class="menu-item" data-target="master" onclick="navClick(event)">📋 Varelager administration</span>
   <span class="menu-item" data-target="rapporter" onclick="navClick(event)">📊 Rapporter</span>
   <span class="menu-item" data-target="labels" onclick="navClick(event)">🏷️ Labels</span>
   <span class="menu-item" data-target="leverandor" onclick="navClick(event)">🚚 Leverandører</span>
   <span class="menu-item" data-target="systemOpsaetning" onclick="navClick(event)">⚙️ Opsætning</span>
+  <span class="menu-item" data-target="vinlager" onclick="navClick(event)">🍷 Vinlager optælling</span>
 </nav>
 
 <!-- =========================
@@ -2424,17 +2424,25 @@ function loadAllData(){
 }
 
 /* Ensure modals hidden at load og setup event listeners */
-// Versionsnummer - opdateres automatisk
-const APP_VERSION = '4.3';
+// Versionsnummer - opdateres automatisk med dato og tid
+function getAppVersion(){
+  const baseVersion = '4.3';
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('da-DK', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const timeStr = now.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' });
+  return `${baseVersion} (${dateStr} ${timeStr})`;
+}
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
   const versionDisplay = document.getElementById('versionDisplay');
   if(versionDisplay){
-    versionDisplay.textContent = `v${APP_VERSION}`;
+    const version = getAppVersion();
+    versionDisplay.textContent = `v${version}`;
   }
   // Opdater også i title
-  document.title = `Lager optælling — Færdig version v${APP_VERSION}`;
+  const baseVersion = '4.3';
+  document.title = `Lager optælling — Færdig version v${baseVersion}`;
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{
