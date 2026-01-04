@@ -984,21 +984,21 @@ a:hover{color:#45a049;text-decoration:none}
             <span class="small" id="vinlagerAdminTableInfo" style="color:#666; font-weight:bold;"></span>
           </div>
 
-          <div style="overflow-x:auto; max-height:700px; overflow-y:auto; position:relative; border:2px solid #8B0000; border-radius:4px; background:#fff;">
-            <table style="width:100%; border-collapse:collapse; min-width:1200px;">
-              <thead style="position:sticky; top:0; z-index:10; background:#8B0000; color:white;">
+          <div style="overflow-x:auto; max-height:600px; overflow-y:auto; position:relative; border:1px solid #ddd; border-radius:4px;">
+            <table style="width:100%; border-collapse:collapse;">
+              <thead style="position:sticky; top:0; z-index:10; background:#fff;">
                 <tr>
-                  <th style="padding:14px 10px; text-align:left; border:1px solid #A00000; font-weight:bold; white-space:nowrap;">Navn</th>
-                  <th style="padding:14px 10px; text-align:left; border:1px solid #A00000; font-weight:bold; white-space:nowrap;">Producent</th>
-                  <th style="padding:14px 10px; text-align:left; border:1px solid #A00000; font-weight:bold; white-space:nowrap;">Land/Region</th>
-                  <th style="padding:14px 10px; text-align:center; border:1px solid #A00000; font-weight:bold; white-space:nowrap;">Årgang</th>
-                  <th style="padding:14px 10px; text-align:left; border:1px solid #A00000; font-weight:bold; white-space:nowrap;">Druetype</th>
-                  <th style="padding:14px 10px; text-align:center; border:1px solid #A00000; font-weight:bold; white-space:nowrap;">Flasketype</th>
-                  <th style="padding:14px 10px; text-align:center; border:1px solid #A00000; font-weight:bold; white-space:nowrap;">Antal</th>
-                  <th style="padding:14px 10px; text-align:right; border:1px solid #A00000; font-weight:bold; white-space:nowrap;">Indkøbspris</th>
-                  <th style="padding:14px 10px; text-align:right; border:1px solid #A00000; font-weight:bold; white-space:nowrap;">Salgspris</th>
-                  <th style="padding:14px 10px; text-align:left; border:1px solid #A00000; font-weight:bold; white-space:nowrap;">Placering</th>
-                  <th style="padding:14px 10px; text-align:center; border:1px solid #A00000; font-weight:bold; white-space:nowrap;">Handling</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold; width:80px;">Billede</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Navn</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Producent</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Land/Region</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:center; border-bottom:2px solid #ddd; font-weight:bold;">Årgang</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Druetype</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:center; border-bottom:2px solid #ddd; font-weight:bold;">Flasketype</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:center; border-bottom:2px solid #ddd; font-weight:bold;">Antal</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:right; border-bottom:2px solid #ddd; font-weight:bold;">Indkøbspris</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Placering</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Handling</th>
                 </tr>
               </thead>
               <tbody id="vinlagerAdminTable"></tbody>
@@ -11622,30 +11622,215 @@ function renderVinlagerAdminTable(){
     return;
   }
   
-  filtered.forEach(vin => {
+  // Pagination - vis kun første 30 vine ad gangen for bedre performance
+  const itemsPerPage = 30;
+  const currentPage = window.vinlagerAdminTablePage || 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedItems = filtered.slice(startIndex, endIndex);
+  
+  paginatedItems.forEach(vin => {
     const tr = document.createElement('tr');
-    tr.style.cssText = 'border-bottom:1px solid #eee;';
+    
+    // Billede cell - mini format - klikbar for at uploade/opdatere
+    let imageCell = '<td style="text-align:center; padding:8px; cursor:pointer;" onclick="uploadVinBillede(\'' + vin.id + '\')" ondblclick="if(event.target.tagName === \'IMG\') {event.stopPropagation(); showVinImage(\'' + vin.id + '\');}" title="Klik: Tilføj/opdater billede | Dobbeltklik: Se større">';
+    if(vin.billede) {
+      imageCell += `<img src="${vin.billede}" alt="${vin.navn}" style="width:60px; height:60px; object-fit:contain; border:1px solid #8B0000; border-radius:4px; pointer-events:auto;" ondblclick="event.stopPropagation(); showVinImage('${vin.id}');" title="Dobbeltklik for at se større">`;
+    } else {
+      imageCell += '<div style="width:60px; height:60px; border:2px dashed #999; border-radius:4px; display:flex; align-items:center; justify-content:center; margin:0 auto;"><span style="color:#999; font-size:10px;">+ Billede</span></div>';
+    }
+    imageCell += '</td>';
+    
     tr.innerHTML = `
-      <td style="padding:12px 10px; border:1px solid #ddd; white-space:nowrap; font-weight:500;">${vin.navn || '-'}</td>
-      <td style="padding:12px 10px; border:1px solid #ddd; white-space:nowrap;">${vin.producent || '-'}</td>
-      <td style="padding:12px 10px; border:1px solid #ddd; white-space:nowrap;">${vin.land || '-'}${vin.region ? ', ' + vin.region : ''}</td>
-      <td style="padding:12px 10px; border:1px solid #ddd; text-align:center; white-space:nowrap;">${vin.årgang || '-'}</td>
-      <td style="padding:12px 10px; border:1px solid #ddd; white-space:nowrap;">${vin.druetype || '-'}</td>
-      <td style="padding:12px 10px; border:1px solid #ddd; text-align:center; white-space:nowrap;">${vin.flasketype || '-'}</td>
-      <td style="padding:12px 10px; border:1px solid #ddd; text-align:center; font-weight:bold; white-space:nowrap;">${vin.antal_flasker}</td>
-      <td style="padding:12px 10px; border:1px solid #ddd; text-align:right; white-space:nowrap;">${vin.indkøbspris.toFixed(2)} kr.</td>
-      <td style="padding:12px 10px; border:1px solid #ddd; text-align:right; white-space:nowrap;">${vin.salgspris ? vin.salgspris.toFixed(2) + ' kr.' : '-'}</td>
-      <td style="padding:12px 10px; border:1px solid #ddd; white-space:nowrap;">${vin.lagerplacering || '-'}</td>
-      <td style="padding:12px 10px; border:1px solid #ddd; text-align:center; white-space:nowrap;">
-        <button onclick="showVinlagerModal('edit', '${vin.id}')" style="background:#8B0000; color:white; padding:6px 12px; border:none; border-radius:4px; cursor:pointer; margin:2px; font-size:12px; font-weight:bold;">✏️</button>
-        <button onclick="deleteVin('${vin.id}')" style="background:#dc3545; color:white; padding:6px 12px; border:none; border-radius:4px; cursor:pointer; margin:2px; font-size:12px; font-weight:bold;">🗑️</button>
+      ${imageCell}
+      <td onclick="showVinlagerModal('edit', '${vin.id}')" style="cursor:pointer; padding:12px;">${vin.navn || '-'}</td>
+      <td style="padding:12px;">${vin.producent || '-'}</td>
+      <td style="padding:12px;">${vin.land || '-'}${vin.region ? ', ' + vin.region : ''}</td>
+      <td style="padding:12px; text-align:center;">${vin.årgang || '-'}</td>
+      <td style="padding:12px;">${vin.druetype || '-'}</td>
+      <td style="padding:12px; text-align:center;">${vin.flasketype || '-'}</td>
+      <td style="padding:12px; text-align:center; font-weight:bold;">${vin.antal_flasker}</td>
+      <td style="padding:12px; text-align:right;">${vin.indkøbspris.toFixed(2)} kr.</td>
+      <td style="padding:12px;">${vin.lagerplacering || '-'}</td>
+      <td style="padding:12px;">
+        <button class="secondary small" onclick="showVinlagerModal('edit', '${vin.id}')">✏️</button>
+        <button class="secondary small" onclick="deleteVin('${vin.id}')">🗑️</button>
       </td>
     `;
     tbody.appendChild(tr);
   });
+  
+  // Tilføj pagination controls hvis der er flere sider
+  if (filtered.length > itemsPerPage) {
+    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+    const tableContainer = tbody.parentElement.parentElement;
+    
+    // Fjern eksisterende pagination hvis den findes
+    const existingPagination = tableContainer.querySelector('.vinlager-pagination-controls');
+    if (existingPagination) {
+      existingPagination.remove();
+    }
+    
+    const paginationDiv = document.createElement('div');
+    paginationDiv.className = 'vinlager-pagination-controls';
+    paginationDiv.style.cssText = 'display:flex; justify-content:center; align-items:center; gap:8px; margin-top:15px; padding:10px;';
+    paginationDiv.innerHTML = `
+      <button onclick="window.vinlagerAdminTablePage = Math.max(1, (window.vinlagerAdminTablePage || 1) - 1); renderVinlagerAdminTable();" ${currentPage === 1 ? 'disabled' : ''} style="padding:6px 12px; border:1px solid #8B0000; background:${currentPage === 1 ? '#ccc' : '#8B0000'}; color:white; border-radius:4px; cursor:${currentPage === 1 ? 'not-allowed' : 'pointer'};" ${currentPage === 1 ? 'disabled' : ''}>◀ Forrige</button>
+      <span style="padding:6px 12px; color:#8B0000; font-weight:bold;">Side ${currentPage} af ${totalPages}</span>
+      <button onclick="window.vinlagerAdminTablePage = Math.min(${totalPages}, (window.vinlagerAdminTablePage || 1) + 1); renderVinlagerAdminTable();" ${currentPage === totalPages ? 'disabled' : ''} style="padding:6px 12px; border:1px solid #8B0000; background:${currentPage === totalPages ? '#ccc' : '#8B0000'}; color:white; border-radius:4px; cursor:${currentPage === totalPages ? 'not-allowed' : 'pointer'};" ${currentPage === totalPages ? 'disabled' : ''}>Næste ▶</button>
+    `;
+    
+    tableContainer.appendChild(paginationDiv);
+  } else {
+    // Fjern pagination hvis der ikke er flere sider
+    const tableContainer = tbody.parentElement.parentElement;
+    const existingPagination = tableContainer.querySelector('.vinlager-pagination-controls');
+    if (existingPagination) {
+      existingPagination.remove();
+    }
+    window.vinlagerAdminTablePage = 1;
+  }
 }
 
-// Download Excel skabelon med 40 vine per land
+// Upload vin billede
+function uploadVinBillede(vinId) {
+  const vin = vinlager.find(v => v.id === vinId);
+  if (!vin) {
+    alert('Vin ikke fundet');
+    return;
+  }
+
+  // Opret skjult file input
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.style.display = 'none';
+  
+  input.onchange = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Tjek filtype
+    if (!file.type.startsWith('image/')) {
+      alert('⚠️ Vælg venligst en billedfil (jpg, png, etc.)');
+      return;
+    }
+
+    // Tjek filstørrelse (max 5MB før komprimering)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('⚠️ Billedet er for stort. Maksimal størrelse er 5MB. Komprimer billedet og prøv igen.');
+      return;
+    }
+
+    // Komprimer og konverter til base64
+    compressAndUploadVinImage(file, vinId);
+    
+    // Fjern input element
+    document.body.removeChild(input);
+  };
+  
+  document.body.appendChild(input);
+  input.click();
+}
+
+// Komprimer vin billede før upload
+function compressAndUploadVinImage(file, vinId) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      // Beregn ny størrelse (max 800px bredde/højde, beholder aspect ratio)
+      const maxDimension = 800;
+      let width = img.width;
+      let height = img.height;
+      
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = (height / width) * maxDimension;
+          width = maxDimension;
+        } else {
+          width = (width / height) * maxDimension;
+          height = maxDimension;
+        }
+      }
+      
+      // Opret canvas og komprimer
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Konverter til base64 med kvalitet 0.85
+      const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+      
+      // Tjek komprimeret størrelse (max 500KB)
+      const base64Size = (compressedBase64.length * 3) / 4;
+      if (base64Size > 500 * 1024) {
+        // Prøv med lavere kvalitet hvis stadig for stor
+        const compressedBase64Low = canvas.toDataURL('image/jpeg', 0.7);
+        const lowSize = (compressedBase64Low.length * 3) / 4;
+        if (lowSize > 500 * 1024) {
+          alert('⚠️ Billedet er stadig for stort efter komprimering. Prøv med et mindre billede.');
+          return;
+        }
+        updateVinBillede(vinId, compressedBase64Low);
+      } else {
+        updateVinBillede(vinId, compressedBase64);
+      }
+    };
+    img.onerror = function() {
+      alert('❌ Fejl ved indlæsning af billede. Prøv igen.');
+    };
+    img.src = e.target.result;
+  };
+  reader.onerror = function() {
+    alert('❌ Fejl ved læsning af fil. Prøv igen.');
+  };
+  reader.readAsDataURL(file);
+}
+
+// Opdater vin med nyt billede
+function updateVinBillede(vinId, base64Data) {
+  const vin = vinlager.find(v => v.id === vinId);
+  if (!vin) {
+    alert('Vin ikke fundet');
+    return;
+  }
+
+  vin.billede = base64Data;
+  vin.sidst_opdateret = new Date().toISOString();
+  
+  saveAllData();
+  renderVinlagerAdminTable();
+  renderVinlagerTable();
+  
+  alert('✅ Billede opdateret!');
+}
+
+// Vis vin billede i modal
+function showVinImage(vinId) {
+  const vin = vinlager.find(v => v.id === vinId);
+  if (!vin || !vin.billede) {
+    alert('Ingen billede fundet for denne vin');
+    return;
+  }
+
+  // Brug samme modal som vare billeder, men med vin info
+  const modal = $('vareImageModal');
+  const modalImg = $('vareImageModalImg');
+  const modalTitle = $('vareImageModalTitle');
+  
+  if (modal && modalImg && modalTitle) {
+    modalTitle.textContent = vin.navn || 'Vin Billede';
+    modalImg.src = vin.billede;
+    modalImg.alt = vin.navn || 'Vin billede';
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+}
+
+// Download Excel skabelon med maksimalt 300 vine
 function downloadVinlagerExcelTemplate(){
   try {
     if(typeof XLSX === 'undefined'){
@@ -11655,19 +11840,28 @@ function downloadVinlagerExcelTemplate(){
     
     const wb = XLSX.utils.book_new();
     
-    // Generer 40 vine per land fra vinlagerLande
+    // Generer maksimalt 300 vine totalt
+    const MAX_VINE = 300;
     const lande = vinlagerLande.length > 0 ? vinlagerLande : [
       'Frankrig', 'Italien', 'Spanien', 'Tyskland', 'Portugal', 'USA', 'Chile', 'Argentina', 'Australien', 'Sydafrika'
     ];
     const alleVine = [];
     
-    lande.forEach(land => {
-      const vine = genererVineForLand(land, 40);
+    // Beregn antal vine per land (jævnt fordelt)
+    const vinePerLand = Math.floor(MAX_VINE / lande.length);
+    const restVine = MAX_VINE % lande.length;
+    
+    lande.forEach((land, index) => {
+      const antal = vinePerLand + (index < restVine ? 1 : 0);
+      const vine = genererVineForLand(land, antal);
       alleVine.push(...vine);
     });
     
+    // Begræns til maksimalt 300
+    const finalVine = alleVine.slice(0, MAX_VINE);
+    
     // Opret sheet med alle vine - inkluder varenummer
-    const ws = XLSX.utils.json_to_sheet(alleVine.map(v => ({
+    const ws = XLSX.utils.json_to_sheet(finalVine.map(v => ({
       'Varenummer': v.varenummer,
       'Navn': v.navn,
       'Producent': v.producent,
@@ -11700,7 +11894,7 @@ function downloadVinlagerExcelTemplate(){
     const filename = `vinlager_skabelon_v${version}.xlsx`;
     XLSX.writeFile(wb, filename);
     
-    alert(`✅ Excel skabelon downloadet!\n\nSkabelonen indeholder ${alleVine.length} demo vine (40 fra hvert land).\n\nDu kan nu redigere skabelonen og importere den igen.`);
+    alert(`✅ Excel skabelon downloadet!\n\nSkabelonen indeholder ${finalVine.length} demo vine (maksimalt 300 totalt, jævnt fordelt på ${lande.length} lande).\n\nDu kan nu redigere skabelonen og importere den igen.`);
   } catch(err){
     console.error('Fejl ved download af Excel skabelon:', err);
     alert('❌ Fejl ved download: ' + err.message);
