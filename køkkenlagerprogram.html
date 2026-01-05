@@ -481,6 +481,7 @@ a:hover{color:#45a049;text-decoration:none}
   <span class="menu-item active" data-target="lageropt" onclick="navClick(event)">📦 Lager optælling</span>
   <span class="menu-item" data-target="opsaetning" onclick="navClick(event)">⚙️ Opsætning Lager</span>
   <span class="menu-item" data-target="rapporter" onclick="navClick(event)">📊 Rapporter</span>
+  <span class="menu-item" data-target="vinlager" onclick="navClick(event)">🍷 Vinlager</span>
   <span class="menu-item" data-target="labels" onclick="navClick(event)">🏷️ Labels</span>
   <span class="menu-item" data-target="leverandor" onclick="navClick(event)">🚚 Leverandører</span>
   <span class="menu-item" data-target="master" onclick="navClick(event)">📋 Varelager administration</span>
@@ -690,7 +691,76 @@ a:hover{color:#45a049;text-decoration:none}
     </div>
   </section>
 
-  <!-- [HTML 3.4] LABELS -->
+  <!-- [HTML 3.4] VINLAGER -->
+  <section id="vinlager" class="page hidden">
+    <div class="settings-page">
+      <div class="settings-content">
+        <h2>🍷 Vinlager</h2>
+        <div class="settings-description">Oversigt over vinlager med statistikberegning.</div>
+        
+        <!-- Statistik Kort -->
+        <div id="vinlagerStats" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin:20px 0;">
+          <div style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; padding:20px; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size:14px; opacity:0.9; margin-bottom:8px;">Total Værdi</div>
+            <div style="font-size:32px; font-weight:bold;" id="vinlagerTotalValue">0,00 kr.</div>
+          </div>
+          <div style="background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color:white; padding:20px; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size:14px; opacity:0.9; margin-bottom:8px;">Antal Flasker</div>
+            <div style="font-size:32px; font-weight:bold;" id="vinlagerTotalBottles">0</div>
+          </div>
+          <div style="background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color:white; padding:20px; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size:14px; opacity:0.9; margin-bottom:8px;">Antal Varer</div>
+            <div style="font-size:32px; font-weight:bold;" id="vinlagerTotalItems">0</div>
+          </div>
+          <div style="background:linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color:white; padding:20px; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size:14px; opacity:0.9; margin-bottom:8px;">Gennemsnitspris</div>
+            <div style="font-size:32px; font-weight:bold;" id="vinlagerAvgPrice">0,00 kr.</div>
+          </div>
+        </div>
+
+        <!-- Filtrering -->
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px; padding:12px; background:#f5f5f5; border-radius:6px;">
+          <label class="small">Søg vare:</label>
+          <input type="text" id="vinlagerSearch" placeholder="Søg efter varenavn..." style="flex:1; min-width:200px; padding:8px; border:1px solid #ddd; border-radius:4px;" oninput="renderVinlager()" />
+          <label class="small">Sorter efter:</label>
+          <select id="vinlagerSort" onchange="renderVinlager()" style="padding:8px; border:1px solid #ddd; border-radius:4px;">
+            <option value="name">Navn (A-Z)</option>
+            <option value="name-desc">Navn (Z-A)</option>
+            <option value="value">Værdi (Højeste først)</option>
+            <option value="value-asc">Værdi (Laveste først)</option>
+            <option value="antal">Antal (Højeste først)</option>
+            <option value="antal-asc">Antal (Laveste først)</option>
+          </select>
+        </div>
+
+        <!-- Vinlager Tabel -->
+        <div style="overflow-x:auto; border:1px solid #ddd; border-radius:4px; background:#fff;">
+          <table style="width:100%; border-collapse:collapse;">
+            <thead style="background:#f5f5f5; position:sticky; top:0; z-index:10;">
+              <tr>
+                <th style="padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Varenavn</th>
+                <th style="padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Måleenhed</th>
+                <th style="padding:12px; text-align:right; border-bottom:2px solid #ddd; font-weight:bold;">Antal</th>
+                <th style="padding:12px; text-align:right; border-bottom:2px solid #ddd; font-weight:bold;">Pris pr. enhed</th>
+                <th style="padding:12px; text-align:right; border-bottom:2px solid #ddd; font-weight:bold;">Total Værdi</th>
+                <th style="padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Reol / Hylle</th>
+              </tr>
+            </thead>
+            <tbody id="vinlagerTable"></tbody>
+          </table>
+        </div>
+
+        <!-- Ingen varer besked -->
+        <div id="vinlagerEmpty" style="display:none; text-align:center; padding:40px; color:#666;">
+          <div style="font-size:48px; margin-bottom:16px;">🍷</div>
+          <div style="font-size:18px; font-weight:bold; margin-bottom:8px;">Ingen varer i Vinlager</div>
+          <div style="font-size:14px;">Tilføj varer til Vinlager i "Varelager administration" med placering "Vinlager"</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- [HTML 3.5] LABELS -->
   <section id="labels" class="page hidden">
     <h2>Print Labels</h2>
     <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
@@ -1367,7 +1437,7 @@ function attemptLogin(){
     let loginValid = false;
     if(!storedUsername) {
       // Backward compatibility: Kun password (gammel konto)
-      const inputHash = hashPassword(password);
+    const inputHash = hashPassword(password);
       loginValid = (storedHash === inputHash);
       console.log('Backward compatibility login (kun password)');
     } else {
@@ -1571,8 +1641,8 @@ function showLoginModal(){
         }
       } catch(e) {
         console.warn('Fejl ved pre-fill af brugernavn:', e);
-        if(passwordInput) {
-          setTimeout(() => passwordInput.focus(), 100);
+      if(passwordInput) {
+        setTimeout(() => passwordInput.focus(), 100);
         }
       }
     }
@@ -2849,6 +2919,10 @@ function editMasterLocation(id){
     renderMasterTable();
     renderLagerTable();
     updateAllSelects();
+    // Opdater vinlager hvis varen er i Vinlager
+    if(v.placering === 'Vinlager' && $('vinlager') && !$('vinlager').classList.contains('hidden')){
+      renderVinlager();
+    }
     // Opdater hylle dropdowns hvis det aktuelle lager er valgt
     if($('hylleLagerSelect') && $('hylleLagerSelect').value === v.placering){
       updateHylleReolSelect();
@@ -2988,6 +3062,10 @@ function tilfoejMasterVare(){
       renderHylleRaekkefoelge();
     }
     updateAllSelects();
+    // Opdater vinlager hvis varen er i Vinlager
+    if(placering === 'Vinlager' && $('vinlager') && !$('vinlager').classList.contains('hidden')){
+      renderVinlager();
+    }
     saveAllData();
 }
 
@@ -3993,6 +4071,10 @@ function addToSessionOrWarn(lokation, vareId, antal){
     lagerData[loc][vareId] = (Number(lagerData[loc][vareId])||0) + Number(antal);
     reports.unshift({ ts: Date.now(), handling: 'Tilføjet permanent', vare: v ? v.navn : ('id:'+vareId), antal, placering: loc, type:'single', total: (v ? (Number(v.pris)||0)*antal : 0) });
     renderLagerTable(); renderReports(); updateLogPreview();
+    // Opdater vinlager hvis sektionen er aktiv
+    if($('vinlager') && !$('vinlager').classList.contains('hidden')){
+      renderVinlager();
+    }
     saveAllData();
     return true;
   }
@@ -4061,6 +4143,153 @@ function renderLagerTable(){
     const cancelBtn = $('cancelSessionBtn'); if(cancelBtn) cancelBtn.disabled = true;
   }
   $('totalLager').textContent = total.toFixed(2) + ' kr.';
+}
+
+/* ================================
+   [JS 7.1] RENDER VINLAGER MED STATISTIK
+   ================================ */
+function calculateVinlagerStats(){
+  const vinlagerVarer = masterVarelager.filter(v => v.placering === 'Vinlager');
+  const vinlagerData = lagerData['Vinlager'] || {};
+  
+  let totalValue = 0;
+  let totalBottles = 0;
+  let totalItems = 0;
+  let totalPrice = 0;
+  let itemsWithPrice = 0;
+  
+  vinlagerVarer.forEach(v => {
+    const antal = Number(vinlagerData[v.id] || 0);
+    if(antal > 0){
+      totalItems++;
+      const pris = Number(v.pris) || 0;
+      const værdi = antal * pris;
+      totalValue += værdi;
+      
+      // Tæl flasker (hvis måleenhed er "stk", "flaske", "fl", eller lignende)
+      const maaleenhed = (v.maaleenhed || '').toLowerCase();
+      if(maaleenhed.includes('stk') || maaleenhed.includes('flaske') || maaleenhed.includes('fl') || maaleenhed === 'stk' || maaleenhed === ''){
+        totalBottles += antal;
+      }
+      
+      if(pris > 0){
+        totalPrice += pris;
+        itemsWithPrice++;
+      }
+    }
+  });
+  
+  const avgPrice = itemsWithPrice > 0 ? totalPrice / itemsWithPrice : 0;
+  
+  return {
+    totalValue,
+    totalBottles,
+    totalItems,
+    avgPrice
+  };
+}
+
+function renderVinlager(){
+  const tbody = $('vinlagerTable');
+  const emptyDiv = $('vinlagerEmpty');
+  if(!tbody) return;
+  
+  // Hent alle varer i Vinlager
+  let vinlagerVarer = masterVarelager.filter(v => v.placering === 'Vinlager');
+  const vinlagerData = lagerData['Vinlager'] || {};
+  
+  // Filtrer baseret på søgning
+  const searchTerm = ($('vinlagerSearch')?.value || '').toLowerCase().trim();
+  if(searchTerm){
+    vinlagerVarer = vinlagerVarer.filter(v => 
+      (v.navn || '').toLowerCase().includes(searchTerm)
+    );
+  }
+  
+  // Sorter
+  const sortBy = $('vinlagerSort')?.value || 'name';
+  vinlagerVarer.sort((a, b) => {
+    const antalA = Number(vinlagerData[a.id] || 0);
+    const antalB = Number(vinlagerData[b.id] || 0);
+    const prisA = Number(a.pris) || 0;
+    const prisB = Number(b.pris) || 0;
+    const værdiA = antalA * prisA;
+    const værdiB = antalB * prisB;
+    
+    switch(sortBy){
+      case 'name':
+        return (a.navn || '').localeCompare(b.navn || '');
+      case 'name-desc':
+        return (b.navn || '').localeCompare(a.navn || '');
+      case 'value':
+        return værdiB - værdiA;
+      case 'value-asc':
+        return værdiA - værdiB;
+      case 'antal':
+        return antalB - antalA;
+      case 'antal-asc':
+        return antalA - antalB;
+      default:
+        return 0;
+    }
+  });
+  
+  // Beregn statistik
+  const stats = calculateVinlagerStats();
+  
+  // Opdater statistik kort
+  const totalValueEl = $('vinlagerTotalValue');
+  const totalBottlesEl = $('vinlagerTotalBottles');
+  const totalItemsEl = $('vinlagerTotalItems');
+  const avgPriceEl = $('vinlagerAvgPrice');
+  
+  if(totalValueEl) totalValueEl.textContent = stats.totalValue.toFixed(2) + ' kr.';
+  if(totalBottlesEl) totalBottlesEl.textContent = stats.totalBottles.toLocaleString('da-DK');
+  if(totalItemsEl) totalItemsEl.textContent = stats.totalItems.toLocaleString('da-DK');
+  if(avgPriceEl) avgPriceEl.textContent = stats.avgPrice.toFixed(2) + ' kr.';
+  
+  // Render tabel
+  tbody.innerHTML = '';
+  
+  if(vinlagerVarer.length === 0){
+    if(emptyDiv) emptyDiv.style.display = 'block';
+    return;
+  }
+  
+  if(emptyDiv) emptyDiv.style.display = 'none';
+  
+  let totalValue = 0;
+  vinlagerVarer.forEach(v => {
+    const antal = Number(vinlagerData[v.id] || 0);
+    const pris = Number(v.pris) || 0;
+    const værdi = antal * pris;
+    totalValue += værdi;
+    
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid #eee';
+    tr.innerHTML = `
+      <td style="padding:12px;">${v.navn || 'Ukendt'}</td>
+      <td style="padding:12px;">${v.maaleenhed || '-'}</td>
+      <td style="padding:12px; text-align:right; font-weight:bold;">${antal.toLocaleString('da-DK')}</td>
+      <td style="padding:12px; text-align:right;">${pris.toFixed(2)} kr.</td>
+      <td style="padding:12px; text-align:right; font-weight:bold; color:#2196F3;">${værdi.toFixed(2)} kr.</td>
+      <td style="padding:12px;">${v.reolNr ? 'Reol ' + v.reolNr : ''}${v.reolNr && v.hylleNr ? ' / ' : ''}${v.hylleNr ? 'Hylle ' + v.hylleNr : ''}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  
+  // Tilføj total række
+  const totalRow = document.createElement('tr');
+  totalRow.style.background = '#f5f5f5';
+  totalRow.style.fontWeight = 'bold';
+  totalRow.innerHTML = `
+    <td style="padding:12px;" colspan="2"><strong>TOTAL</strong></td>
+    <td style="padding:12px; text-align:right;"></td>
+    <td style="padding:12px; text-align:right;"></td>
+    <td style="padding:12px; text-align:right; color:#2196F3; font-size:16px;">${totalValue.toFixed(2)} kr.</td>
+    <td style="padding:12px;"></td>
+  `;
+  tbody.appendChild(totalRow);
 }
 
 /* edit session count inline */
@@ -5011,7 +5240,7 @@ async function generateReportPDF(r, forView = false){
               while(doc.getTextWidth(displayVareTekst + '...') > headerVarenavnWidth && displayVareTekst.length > 0){
                 displayVareTekst = displayVareTekst.slice(0, -1);
               }
-              displayVareTekst += '...';
+                displayVareTekst += '...';
             }
             doc.text(displayVareTekst, colVarenavn, y+1);
             
@@ -6880,17 +7109,17 @@ function generateVarelagerQR(){
     if (qrData.length > 2500) {
       // Data too large - offer to download file instead
       if (confirm('⚠️ Varelager data er for stor til QR-kode.\n\nVil du downloade en fil i stedet?\n\n✅ Ja = Download fil til import\n❌ Nej = Annuller')) {
-        // Download as JSON file for import
-        const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `varelager-${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
+      // Download as JSON file for import
+      const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `varelager-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
         alert('✅ Fil downloadet!\n\n📱 Næste skridt:\n\n1. Send filen til din telefon (email, cloud, etc.)\n2. Åbn scanner-appen på telefonen\n3. Tryk "📥 Import fil" knappen\n4. Vælg den downloadede fil\n5. Varelageret importeres automatisk!');
       }
       return;
@@ -6918,14 +7147,14 @@ function generateVarelagerQR(){
         colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.H // High error correction
       });
-      
-      // Show container
-      container.style.display = 'block';
-      
-      // Scroll to QR code
-      container.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      
-      alert('✅ QR-kode genereret!\n\n📱 Næste skridt:\n\n1. Åbn scanner-appen på telefonen\n2. Tryk "📥 Scan QR-kode" knappen\n3. Scan denne QR-kode\n4. Varelageret importeres automatisk!');
+        
+        // Show container
+        container.style.display = 'block';
+        
+        // Scroll to QR code
+          container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        alert('✅ QR-kode genereret!\n\n📱 Næste skridt:\n\n1. Åbn scanner-appen på telefonen\n2. Tryk "📥 Scan QR-kode" knappen\n3. Scan denne QR-kode\n4. Varelageret importeres automatisk!');
     } else {
       alert('⚠️ QR-kode bibliotek ikke indlæst.\n\nGenindlæs siden og prøv igen.');
     }
@@ -7615,11 +7844,11 @@ function showScannerInstallationId(){
           // Extract numeric part for comparison
           const mainIdNum = mainInstallationId.replace(/[^0-9]/g, '');
           const scannerIdNum = scannerId.replace(/[^0-9]/g, '');
-          
+        
           if (mainIdNum === scannerIdNum || scannerId.includes(mainIdNum)) {
             info += '✅ ID\'erne matcher!\n\n';
           } else {
-            info += '⚠️ ID\'erne matcher ikke.\n\n';
+          info += '⚠️ ID\'erne matcher ikke.\n\n';
             info += '💡 Tip: For at synkronisere:\n';
             info += '1. I scanner-appen: Klik "🔑 Vis ID"\n';
             info += '2. Kopiér scanner ID\n';
@@ -7635,12 +7864,12 @@ function showScannerInstallationId(){
                 data.scannerInstallationId = manualId.trim();
                 localStorage.setItem(storageKey, JSON.stringify(data));
                 alert('✅ Scanner ID gemt: ' + manualId.trim() + '\n\nID\'erne er nu synkroniseret!');
-                return;
-              }
-            }
             return;
           }
-        } else {
+            }
+            return;
+        }
+      } else {
           info += '⚠️ Flere scanner ID\'er fundet.\n\n';
         }
       } else {
@@ -7694,6 +7923,7 @@ function showPage(id){
     updateAllSelects(); 
   } 
   if(id==='rapporter') { refreshReportsFromStorage(); renderReports(); renderArchivedReports(); showReportsSection('active'); } 
+  if(id==='vinlager') { renderVinlager(); } 
   if(id==='labels') { updateAllSelects(); renderMasterTable(); updateLabelReolSelect(); } 
   if(id==='leverandor') renderLeverandorTable(); 
   if(id==='master') { showMasterSection('add'); updateAllSelects(); } 
