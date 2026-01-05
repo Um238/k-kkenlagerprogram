@@ -348,6 +348,8 @@ a:hover{color:#45a049;text-decoration:none}
     <h2 id="loginTitle">Login</h2>
     <div id="loginError" class="error"></div>
     <div id="loginForm">
+      <label for="loginUsername">Brugernavn</label>
+      <input type="text" id="loginUsername" placeholder="Indtast brugernavn" autocomplete="username" />
       <label for="loginPassword">Password</label>
       <input type="password" id="loginPassword" placeholder="Indtast password" autocomplete="current-password" />
       <div style="margin-top:8px; text-align:right;">
@@ -1313,16 +1315,18 @@ function formatTime(ts){ return new Date(ts).toLocaleString(); }
    [JS 0] LOGIN SYSTEM
    ====================================================== */
 const PASSWORD_KEY = 'køkkenlager_password';
+const USERNAME_KEY = 'køkkenlager_username';
 const RECOVERY_EMAIL_KEY = 'køkkenlager_recovery_email';
 const RECOVERY_EMAIL_HASH_KEY = 'køkkenlager_recovery_email_hash';
 let isLoggedIn = false;
 let appInitialized = false;
 
 // Simple hash function (ikke kryptografisk sikkert, men bedre end plaintext)
-function hashPassword(password){
+function hashPassword(password, username = ''){
+  const combined = username ? `${username}:${password}` : password;
   let hash = 0;
-  for(let i=0; i<password.length; i++){
-    const char = password.charCodeAt(i);
+  for(let i=0; i<combined.length; i++){
+    const char = combined.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash;
   }
@@ -1335,32 +1339,80 @@ function checkPasswordExists(){
 
 function attemptLogin(){
   try {
+    console.log('attemptLogin kaldt');
+    const usernameInput = $('loginUsername');
     const passwordInput = $('loginPassword');
     if(!passwordInput) {
       console.error('Login password input ikke fundet');
+      showLoginError('Login input ikke fundet. Genindlæs siden.');
       return;
     }
+    const username = usernameInput ? usernameInput.value.trim() : '';
     const password = passwordInput.value;
+    console.log('Username:', username);
+    console.log('Password længde:', password ? password.length : 0);
     if(!password){
       showLoginError('Indtast password');
       return;
     }
     const storedHash = localStorage.getItem(PASSWORD_KEY);
+    const storedUsername = localStorage.getItem(USERNAME_KEY);
     if(!storedHash) {
       showLoginError('Ingen password sat. Opret password først.');
       return;
     }
-    const inputHash = hashPassword(password);
-    if(storedHash === inputHash){
+    
+    // Backward compatibility: Hvis der ikke er et brugernavn gemt, accepter kun password
+    // Hvis der er et brugernavn gemt, kræv både brugernavn og password
+    let loginValid = false;
+    if(!storedUsername) {
+      // Backward compatibility: Kun password (gammel konto)
+      const inputHash = hashPassword(password);
+      loginValid = (storedHash === inputHash);
+      console.log('Backward compatibility login (kun password)');
+    } else {
+      // Ny login: Kræv både brugernavn og password
+      if(!username) {
+        showLoginError('Indtast brugernavn');
+        if(usernameInput) usernameInput.focus();
+        return;
+      }
+      if(username.toLowerCase() !== storedUsername.toLowerCase()) {
+        showLoginError('Forkert brugernavn eller password');
+        passwordInput.value = '';
+        if(usernameInput) usernameInput.focus();
+        return;
+      }
+      const inputHash = hashPassword(password, username);
+      loginValid = (storedHash === inputHash);
+      console.log('Ny login (brugernavn + password)');
+    }
+    
+    console.log('Stored hash:', storedHash);
+    // Calculate hash for logging (same as used in validation)
+    let finalInputHash;
+    if(!storedUsername) {
+      finalInputHash = hashPassword(password);
+    } else {
+      finalInputHash = username ? hashPassword(password, username) : hashPassword(password);
+    }
+    console.log('Input hash:', finalInputHash);
+    console.log('Match:', loginValid);
+    if(loginValid){
+      console.log('Login succesfuld');
       isLoggedIn = true;
       hideLoginModal();
     } else {
-      showLoginError('Forkert password');
+      console.log('Forkert brugernavn eller password');
+      showLoginError('Forkert brugernavn eller password');
       passwordInput.value = '';
+      if(usernameInput) usernameInput.value = '';
+      if(usernameInput) usernameInput.focus();
+      else passwordInput.focus();
     }
   } catch(error) {
     console.error('Fejl ved login:', error);
-    showLoginError('Der opstod en fejl. Prøv igen.');
+    showLoginError('Der opstod en fejl. Prøv igen. Fejl: ' + error.message);
   }
 }
 
@@ -1392,10 +1444,15 @@ function createPassword(){
     return;
   }
   
+  // Sæt standard brugernavn hvis der ikke allerede er et
+  const defaultUsername = 'mikkelsen67@outlook.dk';
+  const usernameToUse = defaultUsername.toLowerCase();
+  
   // Gem bruger data
   const emailHash = hashPassword(recoveryEmail.toLowerCase());
-  const hash = hashPassword(newPass);
+  const hash = hashPassword(newPass, usernameToUse); // Hash med brugernavn
   localStorage.setItem(PASSWORD_KEY, hash);
+  localStorage.setItem(USERNAME_KEY, usernameToUse); // Gem brugernavn
   localStorage.setItem(RECOVERY_EMAIL_KEY, recoveryEmail.toLowerCase());
   localStorage.setItem(RECOVERY_EMAIL_HASH_KEY, emailHash);
   localStorage.setItem('user_name', userName); // Gem bruger navn
@@ -1496,14 +1553,27 @@ function showLoginModal(){
       const forgotForm = $('forgotPasswordForm');
       const changeForm = $('changePasswordForm');
       const passwordInput = $('loginPassword');
+      const usernameInput = $('loginUsername');
       
       if(title) title.textContent = 'Login';
       if(loginForm) loginForm.style.display = 'block';
       if(createForm) createForm.style.display = 'none';
       if(forgotForm) forgotForm.style.display = 'none';
       if(changeForm) changeForm.style.display = 'none';
-      if(passwordInput) {
-        setTimeout(() => passwordInput.focus(), 100);
+      // Pre-fill brugernavn hvis det er gemt
+      try {
+        const storedUsername = localStorage.getItem(USERNAME_KEY);
+        if(usernameInput && storedUsername) {
+          usernameInput.value = storedUsername;
+          setTimeout(() => usernameInput.focus(), 100);
+        } else if(passwordInput) {
+          setTimeout(() => passwordInput.focus(), 100);
+        }
+      } catch(e) {
+        console.warn('Fejl ved pre-fill af brugernavn:', e);
+        if(passwordInput) {
+          setTimeout(() => passwordInput.focus(), 100);
+        }
       }
     }
   } catch(error) {
@@ -1539,13 +1609,21 @@ function showLoginForm(){
     const forgotForm = $('forgotPasswordForm');
     const changeForm = $('changePasswordForm');
     const passwordInput = $('loginPassword');
+    const usernameInput = $('loginUsername');
     
     if(title) title.textContent = 'Login';
     if(loginForm) loginForm.style.display = 'block';
     if(createForm) createForm.style.display = 'none';
     if(forgotForm) forgotForm.style.display = 'none';
     if(changeForm) changeForm.style.display = 'none';
-    if(passwordInput) passwordInput.focus();
+    // Pre-fill brugernavn hvis det er gemt
+    const storedUsername = localStorage.getItem(USERNAME_KEY);
+    if(usernameInput && storedUsername) {
+      usernameInput.value = storedUsername;
+      setTimeout(() => usernameInput.focus(), 100);
+    } else if(passwordInput) {
+      setTimeout(() => passwordInput.focus(), 100);
+    }
   } catch(error) {
     console.error('Fejl ved visning af login form:', error);
   }
@@ -1640,7 +1718,9 @@ function completePasswordReset(){
   }
   
   // Nulstil password (bevar recovery email)
-  const hash = hashPassword(newPass);
+  // Brug brugernavn hvis det findes
+  const storedUsername = localStorage.getItem(USERNAME_KEY);
+  const hash = storedUsername ? hashPassword(newPass, storedUsername) : hashPassword(newPass);
   localStorage.setItem(PASSWORD_KEY, hash);
   // Recovery email forbliver uændret - kun password nulstilles
   
@@ -1703,7 +1783,9 @@ function changePassword(){
   
   // Tjek nuværende password
   const storedHash = localStorage.getItem(PASSWORD_KEY);
-  const currentHash = hashPassword(currentPass);
+  const storedUsername = localStorage.getItem(USERNAME_KEY);
+  // Backward compatibility: Hvis der ikke er brugernavn, brug kun password
+  const currentHash = storedUsername ? hashPassword(currentPass, storedUsername) : hashPassword(currentPass);
   if(storedHash !== currentHash){
     showLoginError('Forkert nuværende password');
     $('currentPassword').value = '';
@@ -1722,8 +1804,9 @@ function changePassword(){
       return;
     }
     
-    // Opdater password
-    const newHash = hashPassword(newPass);
+    // Opdater password - brug brugernavn hvis det findes
+    const storedUsername = localStorage.getItem(USERNAME_KEY);
+    const newHash = storedUsername ? hashPassword(newPass, storedUsername) : hashPassword(newPass);
     localStorage.setItem(PASSWORD_KEY, newHash);
   }
   
@@ -2220,9 +2303,18 @@ document.addEventListener('DOMContentLoaded', ()=>{
     showLoginModal();
     
     // Allow Enter key to submit i login forms
+    const loginUser = $('loginUsername');
     const loginPass = $('loginPassword');
     const newPass = $('newPassword');
     const confirmPass = $('confirmPassword');
+    if(loginUser) {
+      loginUser.addEventListener('keypress', (e)=>{ 
+        if(e.key==='Enter') {
+          const pass = $('loginPassword');
+          if(pass) pass.focus();
+        }
+      });
+    }
     if(loginPass) {
       loginPass.addEventListener('keypress', (e)=>{ 
         if(e.key==='Enter') attemptLogin(); 
