@@ -2231,7 +2231,7 @@ function copyInstallationId(){
  // [JS 1.1] core data
 let masterVarelager = [];
 let lagerData = {};
-let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
+let lagerLokationer = ['Køl','Frost','Tørevare','Grønt','Vinlager'];
 let leverandorer = [];
 let reports = [];
 let archivedReports = [];
@@ -2283,6 +2283,11 @@ function loadAllData(){
     if(data.masterVarelager) masterVarelager = data.masterVarelager;
     if(data.lagerData) lagerData = data.lagerData;
     if(data.lagerLokationer) lagerLokationer = data.lagerLokationer;
+    // Sikr at Vinlager altid er til stede
+    if(!lagerLokationer.includes('Vinlager')){
+      lagerLokationer.push('Vinlager');
+      if(!lagerData['Vinlager']) lagerData['Vinlager'] = {};
+    }
     if(data.leverandorer) leverandorer = data.leverandorer;
     if(data.reports) reports = data.reports;
     if(data.archivedReports) archivedReports = data.archivedReports;
@@ -2397,7 +2402,11 @@ function initializeApp(){
         lagerData = {};
         // Opret tomme lokationer hvis de ikke findes
         if(!lagerLokationer || lagerLokationer.length === 0){
-          lagerLokationer = ['Køl', 'Frost', 'Tørevare', 'Grønt'];
+          lagerLokationer = ['Køl', 'Frost', 'Tørevare', 'Grønt', 'Vinlager'];
+        }
+        // Sikr at Vinlager altid er til stede
+        if(!lagerLokationer.includes('Vinlager')){
+          lagerLokationer.push('Vinlager');
         }
         lagerLokationer.forEach(l => {
           if(!lagerData[l]) lagerData[l] = {};
@@ -2646,7 +2655,7 @@ function updateSearchFilter(){
    [JS 2] OPSÆTNING LAGER (drag/drop)
    ================================ */
 function tilfoejLager(){ const name = $('nyLagerNavn').value.trim(); if(!name) return alert('Indtast lagernavn'); if(lagerLokationer.includes(name)) return alert('Lokation findes allerede'); lagerLokationer.push(name); $('nyLagerNavn').value=''; renderLagerOpsaetning(); updateAllSelects(); saveAllData(); }
-function resetLocations(){ if(confirm('Reset til demo-lokationer?')){ lagerLokationer=['Køl','Frost','Tørevare','Grønt']; renderLagerOpsaetning(); updateAllSelects(); saveAllData(); } }
+function resetLocations(){ if(confirm('Reset til demo-lokationer?')){ lagerLokationer=['Køl','Frost','Tørevare','Grønt','Vinlager']; renderLagerOpsaetning(); updateAllSelects(); saveAllData(); } }
 function renderLagerOpsaetning(){
   const ul=$('lagerOpsaetning'); if(!ul) return; ul.innerHTML='';
   lagerLokationer.forEach((loc,i)=>{
@@ -6712,7 +6721,7 @@ function processImportText(text, importType = 'add'){
 
 /* Backup / restore */
 function exportAllBackup(){ const payload={ masterVarelager, lagerData, lagerLokationer, leverandorer, reports, sessionCounter }; downloadFile(JSON.stringify(payload,null,2),'lager_backup.json','application/json'); }
-function importAllBackupFromFile(file){ const r = new FileReader(); r.onload = e => { try{ const obj = JSON.parse(e.target.result); masterVarelager = obj.masterVarelager || []; lagerData = obj.lagerData || {}; lagerLokationer = obj.lagerLokationer || ['Køl','Frost','Tørevare','Grønt']; reports = obj.reports || []; leverandorer = obj.leverandorer || []; sessionCounter = obj.sessionCounter || 0; updateAllSelects(); renderMasterTable(); renderLagerOpsaetning(); renderLagerTable(); renderReports(); updateLogPreview(); alert('Backup importeret'); }catch(err){ alert('Fejl ved import: '+err.message); } }; r.readAsText(file); }
+function importAllBackupFromFile(file){ const r = new FileReader(); r.onload = e => { try{ const obj = JSON.parse(e.target.result); masterVarelager = obj.masterVarelager || []; lagerData = obj.lagerData || {}; lagerLokationer = obj.lagerLokationer || ['Køl','Frost','Tørevare','Grønt','Vinlager']; reports = obj.reports || []; leverandorer = obj.leverandorer || []; sessionCounter = obj.sessionCounter || 0; updateAllSelects(); renderMasterTable(); renderLagerOpsaetning(); renderLagerTable(); renderReports(); updateLogPreview(); alert('Backup importeret'); }catch(err){ alert('Fejl ved import: '+err.message); } }; r.readAsText(file); }
 
 /* Check for manual counting data automatically and refresh reports */
 function checkForManualCountingData(){
