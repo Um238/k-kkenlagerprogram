@@ -485,8 +485,8 @@ a:hover{color:#45a049;text-decoration:none}
 
   <div class="header-controls" style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
     <div style="display:flex; gap:8px;">
-      <button class="secondary" onclick="showPage('licens'); updateLicenseStatusDisplay();" style="background:rgba(255,255,255,0.2); color:#fff; border-color:rgba(255,255,255,0.3);">🔑 Licens</button>
-      <button class="secondary" onclick="logout()">🚪 Log ud</button>
+    <button class="secondary" onclick="showPage('licens'); updateLicenseStatusDisplay();" style="background:rgba(255,255,255,0.2); color:#fff; border-color:rgba(255,255,255,0.3);">🔑 Licens</button>
+    <button class="secondary" onclick="logout()">🚪 Log ud</button>
     </div>
     <div id="versionDisplay" style="color:#fff; font-size:14px; font-weight:600; text-align:right; padding:4px 8px; background:rgba(255,255,255,0.15); border-radius:4px; font-family:monospace;">v4.1</div>
   </div>
@@ -759,7 +759,7 @@ a:hover{color:#45a049;text-decoration:none}
   <!-- [HTML 3.6] VINLAGER OPTÆLLING -->
   <section id="vinlager" class="page hidden">
     <div style="text-align:center; padding:40px 20px; background:linear-gradient(135deg, #8B0000 0%, #5C0000 100%); border-radius:12px; margin-bottom:20px; position:relative; overflow:hidden; box-shadow:0 8px 24px rgba(139,0,0,0.3);">
-      <h1 style="color:#FFFFFF; font-size:36px; margin:0 0 10px 0; text-shadow:2px 2px 4px rgba(0,0,0,0.3);">🍷 Vinlager Optælling</h1>
+      <h1 style="color:#FFFFFF; font-size:36px; margin:0 0 10px 0; text-shadow:2px 2px 4px rgba(0,0,0,0.3);">🍷 Vinlager Overblik</h1>
       <p style="color:#FFE4E1; font-size:16px; margin:0;">Administrer og tæl dit vinlager</p>
     </div>
 
@@ -848,11 +848,17 @@ a:hover{color:#45a049;text-decoration:none}
         <table style="width:100%; border-collapse:collapse; font-size:13px;">
           <thead>
             <tr style="background:#f5f5f5;">
-              <th style="padding:8px; text-align:left; border:1px solid #ddd;">Dato/Tid</th>
-              <th style="padding:8px; text-align:left; border:1px solid #ddd;">Vin</th>
-              <th style="padding:8px; text-align:center; border:1px solid #ddd;">Ændring</th>
-              <th style="padding:8px; text-align:left; border:1px solid #ddd;">Årsag</th>
-              <th style="padding:8px; text-align:left; border:1px solid #ddd;">Kommentar</th>
+              <th style="padding:8px; text-align:left; border:1px solid #ddd; font-weight:bold;">Dato/Tid</th>
+              <th style="padding:8px; text-align:left; border:1px solid #ddd; font-weight:bold;">Vinnavn</th>
+              <th style="padding:8px; text-align:left; border:1px solid #ddd; font-weight:bold;">Region</th>
+              <th style="padding:8px; text-align:center; border:1px solid #ddd; font-weight:bold;">Årstal</th>
+              <th style="padding:8px; text-align:center; border:1px solid #ddd; font-weight:bold;">Størrelse</th>
+              <th style="padding:8px; text-align:center; border:1px solid #ddd; font-weight:bold;">Antal på lager</th>
+              <th style="padding:8px; text-align:right; border:1px solid #ddd; font-weight:bold;">Købspris</th>
+              <th style="padding:8px; text-align:right; border:1px solid #ddd; font-weight:bold;">Købspris i alt</th>
+              <th style="padding:8px; text-align:left; border:1px solid #ddd; font-weight:bold;">Ændring</th>
+              <th style="padding:8px; text-align:left; border:1px solid #ddd; font-weight:bold;">Årsag</th>
+              <th style="padding:8px; text-align:left; border:1px solid #ddd; font-weight:bold;">Kommentar</th>
             </tr>
           </thead>
           <tbody id="vinlagerHistorikTableBody"></tbody>
@@ -1078,7 +1084,7 @@ a:hover{color:#45a049;text-decoration:none}
               <div id="masterBilledePreview" style="margin-top:10px; display:none;">
                 <img id="masterBilledePreviewImg" src="" alt="Preview" style="max-width:150px; max-height:150px; border:2px solid #0078D4; border-radius:6px; object-fit:contain;">
                 <button type="button" onclick="clearImagePreview()" style="background:#dc3545; color:white; padding:6px 12px; border:none; border-radius:4px; margin-left:10px; font-size:12px;">Fjern billede</button>
-              </div>
+            </div>
               <div style="margin-top:12px;"><button onclick="tilfoejMasterVare()">➕ Tilføj vare</button></div>
             </div>
             <div style="width:320px; margin-left:60px;">
@@ -1133,7 +1139,7 @@ a:hover{color:#45a049;text-decoration:none}
               <div id="varelagerUpdateNotification" style="display:none; background:#ffc107; color:#000; padding:8px 12px; border-radius:6px; font-size:13px; font-weight:600; margin-right:8px; cursor:pointer;" onclick="uploadVarelagerToServer()" title="Klik for at uploade">
                 ⚠️ Varelager opdateret - Upload til server
               </div>
-              <button onclick="uploadVarelagerToServer()" style="background:#28a745; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:600; white-space:nowrap; font-size:14px; box-shadow:0 2px 4px rgba(0,0,0,0.2);">☁️ Upload Varelager til Server</button>
+            <button onclick="uploadVarelagerToServer()" style="background:#28a745; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:600; white-space:nowrap; font-size:14px; box-shadow:0 2px 4px rgba(0,0,0,0.2);">☁️ Upload Varelager til Server</button>
             </div>
           </div>
           <div style="display:flex; gap:12px; align-items:center; justify-content:flex-end; flex-wrap:wrap; margin-bottom:12px;">
@@ -1748,7 +1754,7 @@ function attemptLogin(){
     let loginValid = false;
     if(!storedUsername) {
       // Backward compatibility: Kun password (gammel konto)
-      const inputHash = hashPassword(password);
+    const inputHash = hashPassword(password);
       loginValid = (storedHash === inputHash);
       console.log('Backward compatibility login (kun password)');
     } else {
@@ -1952,8 +1958,8 @@ function showLoginModal(){
         }
       } catch(e) {
         console.warn('Fejl ved pre-fill af brugernavn:', e);
-        if(passwordInput) {
-          setTimeout(() => passwordInput.focus(), 100);
+      if(passwordInput) {
+        setTimeout(() => passwordInput.focus(), 100);
         }
       }
     }
@@ -6499,8 +6505,8 @@ function downloadExcelTemplate(){
         const hylderPerReol = kategoriData.hylderPerReol || 5;
         const varerPerHylle = kategoriData.varerPerHylle || 5;
         
-        let vareIndex = 0;
-        
+    let vareIndex = 0;
+    
         // Expand varer to fill category - use all available varer
         const expandedVarer = [];
         const targetCount = (reolSlut - reolStart + 1) * hylderPerReol * varerPerHylle;
@@ -6540,18 +6546,18 @@ function downloadExcelTemplate(){
                   Hylle: String(hylle || ''),
                   Rækkefølge: String(globalRaekkefoelge || '0')
                 });
-                vareIndex++;
+          vareIndex++;
                 totalVarer++;
                 globalRaekkefoelge++;
-              }
-            }
-          }
+        }
+      }
+    }
         }
       });
       
-      return resultat;
-    }
-    
+    return resultat;
+  }
+  
     // Organize items by category for each location
     // Køl: Mejeri (reol 1), Kød (reol 2), Fisk (reol 3), Grøntsager (reol 4)
     const koelKategorier = {
@@ -8483,7 +8489,7 @@ async function uploadBackupToServer(){
     }
     
     // Generic error
-    alert('❌ Fejl ved upload: ' + err.message + '\n\nTjek din internetforbindelse og GitHub token.');
+      alert('❌ Fejl ved upload: ' + err.message + '\n\nTjek din internetforbindelse og GitHub token.');
   }
 }
 
@@ -8606,7 +8612,7 @@ async function fetchBackupFromServer(){
     }
     
     // Generic error
-    alert('❌ Fejl ved hentning: ' + err.message + '\n\nTjek din internetforbindelse og GitHub token.');
+      alert('❌ Fejl ved hentning: ' + err.message + '\n\nTjek din internetforbindelse og GitHub token.');
   }
 }
 
@@ -9946,7 +9952,7 @@ async function fetchReportsFromServer(){
     }
     
     // Generic error
-    alert('❌ Fejl ved hentning: ' + err.message + '\n\nTjek din internetforbindelse og prøv igen.');
+      alert('❌ Fejl ved hentning: ' + err.message + '\n\nTjek din internetforbindelse og prøv igen.');
   }
 }
 
@@ -10490,7 +10496,7 @@ function showPage(id){
   if(id==='master') { showMasterSection('add'); updateAllSelects(); } 
   if(id==='scanner') { loadScannerIntoPage(); }
   if(id==='systemOpsaetning') { showSettingsSection('password'); } 
-  if(id==='licens') { updateLicenseStatusDisplay(); }
+  if(id==='licens') { updateLicenseStatusDisplay(); } 
   if(id==='vinlager') { 
     renderVinlagerTable(); 
     renderVinlagerHistorik(); 
@@ -10956,7 +10962,7 @@ async function uploadVarelagerToServer(){
     }
     
     // Generic error
-    alert('❌ Fejl ved upload: ' + err.message + '\n\nTjek din internetforbindelse og prøv igen.');
+      alert('❌ Fejl ved upload: ' + err.message + '\n\nTjek din internetforbindelse og prøv igen.');
   }
 }
 
@@ -11381,7 +11387,7 @@ function renderVinlagerHistorik(){
   const recent = vinlagerHistorik.slice(0, 100);
   
   if(recent.length === 0){
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#666;">Ingen historik endnu</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding:20px; color:#666;">Ingen historik endnu</td></tr>';
     return;
   }
   
@@ -11392,9 +11398,25 @@ function renderVinlagerHistorik(){
     const ændringStr = entry.ændring > 0 ? `+${entry.ændring}` : String(entry.ændring);
     const ændringColor = entry.ændring > 0 ? '#28a745' : entry.ændring < 0 ? '#dc3545' : '#666';
     
+    // Find vin data for at få alle detaljer
+    const vin = vinlager.find(v => v.id === entry.vin_id);
+    const vinnavn = vin ? vin.navn : (entry.vin_navn || '-');
+    const region = vin ? vin.region : '-';
+    const årgang = vin ? (vin.årgang || '-') : '-';
+    const størrelse = vin ? vin.flasketype : '-';
+    const antalPåLager = vin ? vin.antal_flasker : '-';
+    const købspris = vin ? vin.indkøbspris.toFixed(2) + ' kr.' : '-';
+    const købsprisIAlt = vin ? (vin.antal_flasker * vin.indkøbspris).toFixed(2) + ' kr.' : '-';
+    
     tr.innerHTML = `
       <td style="padding:8px; border:1px solid #ddd;">${dateStr}</td>
-      <td style="padding:8px; border:1px solid #ddd;">${entry.vin_navn || '-'}</td>
+      <td style="padding:8px; border:1px solid #ddd;">${vinnavn}</td>
+      <td style="padding:8px; border:1px solid #ddd;">${region}</td>
+      <td style="padding:8px; border:1px solid #ddd; text-align:center;">${årgang}</td>
+      <td style="padding:8px; border:1px solid #ddd; text-align:center;">${størrelse}</td>
+      <td style="padding:8px; border:1px solid #ddd; text-align:center;">${antalPåLager}</td>
+      <td style="padding:8px; border:1px solid #ddd; text-align:right;">${købspris}</td>
+      <td style="padding:8px; border:1px solid #ddd; text-align:right;">${købsprisIAlt}</td>
       <td style="padding:8px; border:1px solid #ddd; text-align:center; color:${ændringColor}; font-weight:bold;">${ændringStr}</td>
       <td style="padding:8px; border:1px solid #ddd;">${entry.årsag || '-'}</td>
       <td style="padding:8px; border:1px solid #ddd;">${entry.kommentar || '-'}</td>
@@ -11669,7 +11691,7 @@ function renderVinlagerOpsaetning(){
       li.draggable = true;
       li.dataset.index = index;
       li.dataset.land = land;
-      li.style.cssText = 'display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border:1px solid #8B0000; border-radius:6px; background:#fff; margin-bottom:6px; cursor:move;';
+      li.style.cssText = 'display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border:1px solid #8B0000; border-radius:6px; background:#fff; margin-bottom:6px; cursor:move; max-width:400px;';
       li.innerHTML = `<strong style="color:#8B0000;">${land}</strong> <button class="secondary small" onclick="deleteVinlagerLand(${index})" style="background:#dc3545; color:white; padding:4px 8px; border:none; border-radius:4px; cursor:pointer; font-size:12px;">🗑️ Slet</button>`;
       
       li.addEventListener('dragstart', () => li.classList.add('dragging'));
@@ -12084,25 +12106,21 @@ function downloadVinlagerExcelTemplate(){
     
     const wb = XLSX.utils.book_new();
     
-    // Generer maksimalt 300 vine totalt
-    const MAX_VINE = 300;
-    const lande = vinlagerLande.length > 0 ? vinlagerLande : [
-      'Frankrig', 'Italien', 'Spanien', 'Tyskland', 'Portugal', 'USA', 'Chile', 'Argentina', 'Australien', 'Sydafrika'
-    ];
+    // Generer 14 lande med 24 flasker hver = 336 vine totalt
+    const VINE_PER_LAND = 24;
+    const ANTAL_LANDE = 14;
+    const lande = vinlagerLande.length > 0 ? vinlagerLande.slice(0, ANTAL_LANDE) : [
+      'Frankrig', 'Italien', 'Spanien', 'Tyskland', 'Portugal', 'USA', 'Chile', 'Argentina', 'Australien', 'Sydafrika', 'New Zealand', 'Sydafrika', 'Østrig', 'Schweiz'
+    ].slice(0, ANTAL_LANDE);
     const alleVine = [];
     
-    // Beregn antal vine per land (jævnt fordelt)
-    const vinePerLand = Math.floor(MAX_VINE / lande.length);
-    const restVine = MAX_VINE % lande.length;
-    
-    lande.forEach((land, index) => {
-      const antal = vinePerLand + (index < restVine ? 1 : 0);
-      const vine = genererVineForLand(land, antal);
+    // Generer 24 vine per land
+    lande.forEach((land) => {
+      const vine = genererVineForLand(land, VINE_PER_LAND);
       alleVine.push(...vine);
     });
     
-    // Begræns til maksimalt 300
-    const finalVine = alleVine.slice(0, MAX_VINE);
+    const finalVine = alleVine;
     
     // Opret sheet med alle vine - inkluder varenummer
     const ws = XLSX.utils.json_to_sheet(finalVine.map(v => ({
@@ -12139,7 +12157,7 @@ function downloadVinlagerExcelTemplate(){
     const filename = `vinlager_skabelon_v${version}.xlsx`;
     XLSX.writeFile(wb, filename);
     
-    alert(`✅ Excel skabelon downloadet!\n\nSkabelonen indeholder ${finalVine.length} demo vine (maksimalt 300 totalt, jævnt fordelt på ${lande.length} lande).\n\nDu kan nu redigere skabelonen og importere den igen.`);
+    alert(`✅ Excel skabelon downloadet!\n\nSkabelonen indeholder ${finalVine.length} demo vine (${VINE_PER_LAND} flasker fra hvert af ${lande.length} lande).\n\nDu kan nu redigere skabelonen og importere den igen.`);
   } catch(err){
     console.error('Fejl ved download af Excel skabelon:', err);
     alert('❌ Fejl ved download: ' + err.message);
@@ -12174,6 +12192,9 @@ function genererVineForLand(land, antal){
     const salgspris = indkøbspris * 1.5; // 50% markup
     const varenummer = String(startVarenummer + i).padStart(6, '0');
     
+    // Generer billede URL baseret på vin-typen (bruger Unsplash API)
+    const wineImageUrl = `https://source.unsplash.com/400x400/?wine,bottle,${land.toLowerCase().replace(/\s+/g,',')},${druetype.toLowerCase().replace(/\s+/g,',')}`;
+    
     vine.push({
       varenummer: varenummer,
       navn: `${producent} ${landData.navne[i % landData.navne.length]}`,
@@ -12189,7 +12210,8 @@ function genererVineForLand(land, antal){
       antal_flasker: Math.floor(Math.random() * 20) + 1,
       minimum_beholdning: 24,
       lagerplacering: `Vinkælder ${Math.floor(i / 10) + 1}`,
-      noter: ''
+      noter: '',
+      billede: wineImageUrl // Tilføj billede URL
     });
   }
   
