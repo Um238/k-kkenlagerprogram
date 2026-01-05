@@ -781,6 +781,10 @@ a:hover{color:#45a049;text-decoration:none}
         <div style="font-size:14px; color:#666; margin-bottom:5px;">Lav lager</div>
         <div id="vinlagerLavLager" style="font-size:28px; font-weight:bold; color:#dc3545; cursor:pointer; text-decoration:underline;" onclick="showLavLagerPopup()" title="Klik for at se detaljer">0</div>
       </div>
+      <div class="card" style="background:#FFF0F0; border:2px solid #8B0000;">
+        <div style="font-size:14px; color:#666; margin-bottom:5px;">Værktøjer</div>
+        <button onclick="rensDuplikeredeVine(); updateVinlagerStats(); renderVinlagerTable(); alert('Duplikater er blevet renset og statistikker opdateret!');" style="background:#8B0000; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer; font-size:12px; width:100%;">🔄 Rens duplikater</button>
+      </div>
     </div>
 
     <!-- Grafisk diagram -->
@@ -2716,31 +2720,24 @@ function loadAllData(){
     if(data.vinlagerHistorik) vinlagerHistorik = data.vinlagerHistorik;
     if(data.vinlagerLande) vinlagerLande = data.vinlagerLande;
     
-    // Fjern duplikerede vine baseret på id
+    // Fjern duplikerede vine baseret på id og varenummer
     if(vinlager && Array.isArray(vinlager)){
-      const unikkeVine = [];
-      const setIds = new Set();
-      
-      vinlager.forEach(vin => {
-        if(vin.id && !setIds.has(vin.id)){
-          setIds.add(vin.id);
-          unikkeVine.push(vin);
-        }
-      });
-      
-      // Hvis der var duplikerede, opdater arrayet
-      if(unikkeVine.length !== vinlager.length){
-        console.log(`Fjernede ${vinlager.length - unikkeVine.length} duplikerede vine`);
-        vinlager = unikkeVine;
-        saveAllData(); // Gem den opdaterede liste
-      }
+      // Brug den dedikerede rensningsfunktion
+      rensDuplikeredeVine();
       
       // Opdater eksisterende vine med minimum_beholdning hvis de mangler det
       vinlager.forEach(vin => {
-        if(!vin.minimum_beholdning){
+        if(vin && !vin.minimum_beholdning){
           vin.minimum_beholdning = 24;
         }
+        // Sikr at alle vine har et id
+        if(vin && !vin.id){
+          vin.id = genVinId();
+        }
       });
+      
+      // Gem hvis der var ændringer
+      saveAllData();
     }
     
     // Seed default lande hvis tom
@@ -10525,9 +10522,11 @@ function showPage(id){
     if(!vinlager || vinlager.length === 0){
       loadAllData();
     }
+    // Rens duplikater og opdater statistikker først
+    rensDuplikeredeVine();
+    updateVinlagerStats(); 
     renderVinlagerTable(); 
     renderVinlagerHistorik(); 
-    updateVinlagerStats(); 
     updateVinlagerFilters();
     updateVinlagerDiagram();
     updateVersionDisplay(); // Opdater versionsnummer
@@ -11212,6 +11211,68 @@ function createVinRow(vin){
   return tr;
 }
 
+// Rens duplikerede vine fra vinlager
+function rensDuplikeredeVine(){
+  if(!vinlager || !Array.isArray(vinlager)) {
+    console.warn('rensDuplikeredeVine: vinlager er ikke et array');
+    return false;
+  }
+  
+  console.log(`Rensning starter: ${vinlager.length} vine i arrayet`);
+  
+  const unikkeVine = [];
+  const setIds = new Set();
+  const setVarenumre = new Set();
+  let fjernet = 0;
+  let manglendeId = 0;
+  
+  vinlager.forEach((v, index) => {
+    if(!v) {
+      console.warn(`Vine ${index} er null/undefined`);
+      return; // Spring over null/undefined
+    }
+    
+    // Hvis vin mangler id, generer et nyt
+    if(!v.id){
+      v.id = genVinId();
+      manglendeId++;
+      console.log(`Genererede nyt id for vin: ${v.navn || 'Ukendt'}`);
+    }
+    
+    // Tjek for duplikater baseret på id ELLER varenummer
+    const isDuplicateById = setIds.has(v.id);
+    const isDuplicateByVarenummer = v.varenummer && setVarenumre.has(v.varenummer);
+    
+    if(isDuplicateById || isDuplicateByVarenummer){
+      fjernet++;
+      console.log(`FJERNER DUPLIKAT #${fjernet}:`, {
+        navn: v.navn,
+        id: v.id,
+        varenummer: v.varenummer,
+        antal_flasker: v.antal_flasker,
+        duplicateById: isDuplicateById,
+        duplicateByVarenummer: isDuplicateByVarenummer
+      });
+      return; // Spring over denne vin
+    }
+    
+    // Tilføj til unikke vine
+    setIds.add(v.id);
+    if(v.varenummer) setVarenumre.add(v.varenummer);
+    unikkeVine.push(v);
+  });
+  
+  if(fjernet > 0 || manglendeId > 0){
+    console.log(`Rensning færdig: Fjernede ${fjernet} duplikater, genererede ${manglendeId} nye id'er. Før: ${vinlager.length}, Efter: ${unikkeVine.length}`);
+    vinlager = unikkeVine;
+    saveAllData();
+    return true; // Der var ændringer
+  }
+  
+  console.log(`Rensning færdig: Ingen duplikater fundet. Total: ${unikkeVine.length} vine`);
+  return false; // Ingen ændringer
+}
+
 // Opdater statistik
 function updateVinlagerStats(){
   // Sikr at vinlager er indlæst
@@ -11225,39 +11286,25 @@ function updateVinlagerStats(){
     }
   }
   
-  // Sikr at vi kun tæller unikke vine (baseret på id og varenummer)
-  const unikkeVine = [];
-  const setIds = new Set();
-  const setVarenumre = new Set();
-  
-  vinlager.forEach(v => {
-    if(!v || !v.id) return; // Spring over vine uden id
-    
-    // Tjek både id og varenummer for at undgå duplikater
-    const isDuplicate = setIds.has(v.id) || (v.varenummer && setVarenumre.has(v.varenummer));
-    
-    if(!isDuplicate){
-      setIds.add(v.id);
-      if(v.varenummer) setVarenumre.add(v.varenummer);
-      unikkeVine.push(v);
-    }
-  });
-  
-  // Hvis der var duplikerede, opdater arrayet
-  if(unikkeVine.length !== vinlager.length){
-    console.log(`Fjernede ${vinlager.length - unikkeVine.length} duplikerede vine`);
-    vinlager = unikkeVine;
-    saveAllData(); // Gem den opdaterede liste
+  // Rens duplikerede vine først - DETTE ER KRITISK
+  const hadDuplicates = rensDuplikeredeVine();
+  if(hadDuplicates){
+    console.log('Duplikater fjernet, opdaterer statistikker...');
   }
+  
+  // Brug den rensede liste (vinlager er nu allerede renset)
+  const unikkeVine = vinlager;
   
   // Beregn statistikker baseret på unikke vine
   // Sikr at antal_flasker er et gyldigt tal og ikke negativt
   const totalAntal = unikkeVine.reduce((sum, v) => {
+    if(!v) return sum;
     const antal = Math.max(0, parseInt(v.antal_flasker) || 0); // Sikr at antal ikke er negativt
     return sum + antal;
   }, 0);
   
   const totalVærdi = unikkeVine.reduce((sum, v) => {
+    if(!v) return sum;
     const antal = Math.max(0, parseInt(v.antal_flasker) || 0);
     const pris = Math.max(0, parseFloat(v.indkøbspris) || 0);
     return sum + (antal * pris);
@@ -11265,15 +11312,11 @@ function updateVinlagerStats(){
   
   const antalVine = unikkeVine.length;
   const lavLager = unikkeVine.filter(v => {
+    if(!v) return false;
     const minBeholdning = parseInt(v.minimum_beholdning) || 24;
     const antal = parseInt(v.antal_flasker) || 0;
     return antal < minBeholdning;
   }).length;
-  
-  const totalAntalEl = $('vinlagerTotalAntal');
-  const totalVærdiEl = $('vinlagerTotalVærdi');
-  const antalVineEl = $('vinlagerAntalVine');
-  const lavLagerEl = $('vinlagerLavLager');
   
   // Debug: Log statistikker for at hjælpe med fejlfinding
   console.log('Vinlager statistikker:', {
@@ -11281,8 +11324,14 @@ function updateVinlagerStats(){
     unikkeVine: unikkeVine.length,
     totalAntal,
     totalVærdi,
-    antalVine
+    antalVine,
+    hadDuplicates
   });
+  
+  const totalAntalEl = $('vinlagerTotalAntal');
+  const totalVærdiEl = $('vinlagerTotalVærdi');
+  const antalVineEl = $('vinlagerAntalVine');
+  const lavLagerEl = $('vinlagerLavLager');
   
   if(totalAntalEl) totalAntalEl.textContent = totalAntal;
   if(totalVærdiEl) totalVærdiEl.textContent = totalVærdi.toFixed(2) + ' kr.';
