@@ -10533,7 +10533,18 @@ function showPage(id){
     updateVersionDisplay(); // Opdater versionsnummer
   }
   if(id==='vinlagerOpsaetning') { 
-    renderVinlagerOpsaetning(); 
+    renderVinlagerOpsaetning();
+    // Sikr at alle grupper er collapsed når siden vises
+    setTimeout(() => {
+      const container = $('vinlagerOpsaetningGrupper');
+      if(container){
+        container.querySelectorAll('ul[id^="vinlagerGruppe_"]').forEach(list => {
+          list.style.display = 'none';
+          const header = list.previousElementSibling;
+          if(header) header.querySelector('span:last-child').textContent = '▶';
+        });
+      }
+    }, 100);
   }
   if(id==='vinlagerAdmin') { 
     showVinlagerAdminSection('add'); 
@@ -11214,13 +11225,20 @@ function updateVinlagerStats(){
     }
   }
   
-  // Sikr at vi kun tæller unikke vine (baseret på id)
+  // Sikr at vi kun tæller unikke vine (baseret på id og varenummer)
   const unikkeVine = [];
   const setIds = new Set();
+  const setVarenumre = new Set();
   
   vinlager.forEach(v => {
-    if(v && v.id && !setIds.has(v.id)){
+    if(!v || !v.id) return; // Spring over vine uden id
+    
+    // Tjek både id og varenummer for at undgå duplikater
+    const isDuplicate = setIds.has(v.id) || (v.varenummer && setVarenumre.has(v.varenummer));
+    
+    if(!isDuplicate){
       setIds.add(v.id);
+      if(v.varenummer) setVarenumre.add(v.varenummer);
       unikkeVine.push(v);
     }
   });
@@ -11233,14 +11251,15 @@ function updateVinlagerStats(){
   }
   
   // Beregn statistikker baseret på unikke vine
+  // Sikr at antal_flasker er et gyldigt tal og ikke negativt
   const totalAntal = unikkeVine.reduce((sum, v) => {
-    const antal = parseInt(v.antal_flasker) || 0;
+    const antal = Math.max(0, parseInt(v.antal_flasker) || 0); // Sikr at antal ikke er negativt
     return sum + antal;
   }, 0);
   
   const totalVærdi = unikkeVine.reduce((sum, v) => {
-    const antal = parseInt(v.antal_flasker) || 0;
-    const pris = parseFloat(v.indkøbspris) || 0;
+    const antal = Math.max(0, parseInt(v.antal_flasker) || 0);
+    const pris = Math.max(0, parseFloat(v.indkøbspris) || 0);
     return sum + (antal * pris);
   }, 0);
   
@@ -11255,6 +11274,15 @@ function updateVinlagerStats(){
   const totalVærdiEl = $('vinlagerTotalVærdi');
   const antalVineEl = $('vinlagerAntalVine');
   const lavLagerEl = $('vinlagerLavLager');
+  
+  // Debug: Log statistikker for at hjælpe med fejlfinding
+  console.log('Vinlager statistikker:', {
+    totalVine: vinlager.length,
+    unikkeVine: unikkeVine.length,
+    totalAntal,
+    totalVærdi,
+    antalVine
+  });
   
   if(totalAntalEl) totalAntalEl.textContent = totalAntal;
   if(totalVærdiEl) totalVærdiEl.textContent = totalVærdi.toFixed(2) + ' kr.';
@@ -11745,17 +11773,17 @@ function renderVinlagerOpsaetning(){
   // Opret grupper med fold-out funktionalitet
   Object.keys(VINLAGER_GRUPPER).forEach(gruppe => {
     const gruppeDiv = document.createElement('div');
-    gruppeDiv.style.cssText = 'margin-bottom:15px; border:2px solid #8B0000; border-radius:8px; background:#FFF0F0; overflow:hidden;';
+    gruppeDiv.style.cssText = 'margin-bottom:15px; border:2px solid #8B0000; border-radius:8px; background:#FFF0F0; overflow:hidden; max-width:600px;';
     
     const gruppeHeader = document.createElement('div');
-    gruppeHeader.style.cssText = 'padding:12px 16px; background:#8B0000; color:white; font-weight:bold; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:space-between;';
+    gruppeHeader.style.cssText = 'padding:12px 16px; background:#8B0000; color:white; font-weight:bold; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; max-width:300px;';
     const emoji = gruppe === 'Europa' ? '🌍' : gruppe === 'Amerika' ? '🌎' : '🌏';
-    gruppeHeader.innerHTML = `<span>${emoji} ${gruppe}</span><span style="font-size:12px;">▼</span>`;
+    gruppeHeader.innerHTML = `<span>${emoji} ${gruppe}</span><span style="font-size:12px;">▶</span>`; // Start collapsed
     gruppeHeader.dataset.gruppe = gruppe;
     gruppeHeader.onclick = function(){
       const clickedGruppe = this;
       const landeList = this.nextElementSibling;
-      const isHidden = landeList.style.display === 'none';
+      const isHidden = landeList.style.display === 'none' || landeList.style.display === '';
       
       // Luk alle andre grupper
       container.querySelectorAll('ul[id^="vinlagerGruppe_"]').forEach(list => {
@@ -11773,7 +11801,7 @@ function renderVinlagerOpsaetning(){
     
     const landeList = document.createElement('ul');
     landeList.id = `vinlagerGruppe_${gruppe}`;
-    landeList.style.cssText = 'list-style:none; padding:10px; margin:0; display:none; display:grid; grid-template-columns:repeat(2, 1fr); gap:8px;';
+    landeList.style.cssText = 'list-style:none; padding:10px; margin:0; display:none; grid-template-columns:repeat(2, 1fr); gap:8px;'; // Start collapsed
     
     const gruppeLande = VINLAGER_GRUPPER[gruppe].filter(land => vinlagerLande.includes(land));
     
