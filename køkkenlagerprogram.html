@@ -832,7 +832,6 @@ a:hover{color:#45a049;text-decoration:none}
             <th style="padding:12px; text-align:left; border:1px solid #A00000; font-weight:bold;">Druetype</th>
             <th style="padding:12px; text-align:center; border:1px solid #A00000; font-weight:bold;">Flasketype</th>
             <th style="padding:12px; text-align:right; border:1px solid #A00000; font-weight:bold;">Indkøbspris</th>
-            <th style="padding:12px; text-align:right; border:1px solid #A00000; font-weight:bold;">Salgspris</th>
             <th style="padding:12px; text-align:center; border:1px solid #A00000; font-weight:bold;">Antal</th>
             <th style="padding:12px; text-align:center; border:1px solid #A00000; font-weight:bold;">Beholdning</th>
             <th style="padding:12px; text-align:left; border:1px solid #A00000; font-weight:bold;">Placering</th>
@@ -2714,8 +2713,26 @@ function loadAllData(){
     if(data.vinlagerHistorik) vinlagerHistorik = data.vinlagerHistorik;
     if(data.vinlagerLande) vinlagerLande = data.vinlagerLande;
     
-    // Opdater eksisterende vine med minimum_beholdning hvis de mangler det
+    // Fjern duplikerede vine baseret på id
     if(vinlager && Array.isArray(vinlager)){
+      const unikkeVine = [];
+      const setIds = new Set();
+      
+      vinlager.forEach(vin => {
+        if(vin.id && !setIds.has(vin.id)){
+          setIds.add(vin.id);
+          unikkeVine.push(vin);
+        }
+      });
+      
+      // Hvis der var duplikerede, opdater arrayet
+      if(unikkeVine.length !== vinlager.length){
+        console.log(`Fjernede ${vinlager.length - unikkeVine.length} duplikerede vine`);
+        vinlager = unikkeVine;
+        saveAllData(); // Gem den opdaterede liste
+      }
+      
+      // Opdater eksisterende vine med minimum_beholdning hvis de mangler det
       vinlager.forEach(vin => {
         if(!vin.minimum_beholdning){
           vin.minimum_beholdning = 24;
@@ -11126,7 +11143,7 @@ function renderVinlagerTable(){
       headerRow.style.background = '#f5f5f5';
       headerRow.style.fontWeight = 'bold';
       headerRow.style.borderTop = '2px solid #8B0000';
-      headerRow.innerHTML = `<td colspan="13" style="padding:12px 16px; border:1px solid #ddd; background:#f5f5f5; font-size:14px; color:#8B0000;">${filterGruppering === 'land' ? '🌍' : filterGruppering === 'producent' ? '🏭' : filterGruppering === 'årgang' ? '📅' : '📍'} ${groupKey} (${groups[groupKey].length} vine)</td>`;
+      headerRow.innerHTML = `<td colspan="12" style="padding:12px 16px; border:1px solid #ddd; background:#f5f5f5; font-size:14px; color:#8B0000;">${filterGruppering === 'land' ? '🌍' : filterGruppering === 'producent' ? '🏭' : filterGruppering === 'årgang' ? '📅' : '📍'} ${groupKey} (${groups[groupKey].length} vine)</td>`;
       tbody.appendChild(headerRow);
       
       // Gruppe varer
@@ -11142,7 +11159,7 @@ function renderVinlagerTable(){
   }
   
   if(filtered.length === 0){
-    tbody.innerHTML = '<tr><td colspan="13" style="text-align:center; padding:40px; color:#666;">Ingen vine fundet</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center; padding:40px; color:#666;">Ingen vine fundet</td></tr>';
   }
 }
 
@@ -11164,7 +11181,6 @@ function createVinRow(vin){
     <td style="padding:12px; border:1px solid #ddd; background:${lavLager ? '#fff5f5' : '#fff'}; border-bottom:1px solid #e0e0e0;">${vin.druetype || '-'}</td>
     <td style="padding:12px; border:1px solid #ddd; background:${lavLager ? '#fff5f5' : '#fff'}; border-bottom:1px solid #e0e0e0; text-align:center;">${vin.flasketype || '-'}</td>
     <td style="padding:12px; border:1px solid #ddd; background:${lavLager ? '#fff5f5' : '#fff'}; border-bottom:1px solid #e0e0e0; text-align:right;">${vin.indkøbspris.toFixed(2)} kr.</td>
-    <td style="padding:12px; border:1px solid #ddd; background:${lavLager ? '#fff5f5' : '#fff'}; border-bottom:1px solid #e0e0e0; text-align:right;">${vin.salgspris ? vin.salgspris.toFixed(2) + ' kr.' : '-'}</td>
     <td style="padding:12px; border:1px solid #ddd; background:${lavLager ? '#fff5f5' : '#fff'}; border-bottom:1px solid #e0e0e0; text-align:center; font-weight:bold; ${lavLager ? 'color:#dc3545;' : ''}">${vin.antal_flasker}</td>
     <td style="padding:12px; border:1px solid #ddd; background:${lavLager ? '#fff5f5' : '#fff'}; border-bottom:1px solid #e0e0e0; text-align:center; font-weight:bold; ${lavLager ? 'color:#dc3545;' : ''}">${minBeholdning}</td>
     <td style="padding:12px; border:1px solid #ddd; background:${lavLager ? '#fff5f5' : '#fff'}; border-bottom:1px solid #e0e0e0;">${vin.lagerplacering || '-'}</td>
@@ -11179,12 +11195,34 @@ function createVinRow(vin){
 
 // Opdater statistik
 function updateVinlagerStats(){
-  const totalAntal = vinlager.reduce((sum, v) => sum + v.antal_flasker, 0);
-  const totalVærdi = vinlager.reduce((sum, v) => sum + (v.antal_flasker * v.indkøbspris), 0);
-  const antalVine = vinlager.length;
-  const lavLager = vinlager.filter(v => {
-    const minBeholdning = v.minimum_beholdning || 24;
-    return v.antal_flasker < minBeholdning;
+  // Sikr at vi kun tæller unikke vine (baseret på id)
+  const unikkeVine = [];
+  const setIds = new Set();
+  
+  vinlager.forEach(v => {
+    if(!setIds.has(v.id)){
+      setIds.add(v.id);
+      unikkeVine.push(v);
+    }
+  });
+  
+  // Beregn statistikker baseret på unikke vine
+  const totalAntal = unikkeVine.reduce((sum, v) => {
+    const antal = parseInt(v.antal_flasker) || 0;
+    return sum + antal;
+  }, 0);
+  
+  const totalVærdi = unikkeVine.reduce((sum, v) => {
+    const antal = parseInt(v.antal_flasker) || 0;
+    const pris = parseFloat(v.indkøbspris) || 0;
+    return sum + (antal * pris);
+  }, 0);
+  
+  const antalVine = unikkeVine.length;
+  const lavLager = unikkeVine.filter(v => {
+    const minBeholdning = parseInt(v.minimum_beholdning) || 24;
+    const antal = parseInt(v.antal_flasker) || 0;
+    return antal < minBeholdning;
   }).length;
   
   const totalAntalEl = $('vinlagerTotalAntal');
