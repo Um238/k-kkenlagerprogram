@@ -2282,11 +2282,25 @@ function loadAllData(){
     const data = JSON.parse(saved);
     if(data.masterVarelager) masterVarelager = data.masterVarelager;
     if(data.lagerData) lagerData = data.lagerData;
-    if(data.lagerLokationer) lagerLokationer = data.lagerLokationer;
+    if(data.lagerLokationer) {
+      lagerLokationer = data.lagerLokationer;
+    } else {
+      // Hvis lagerLokationer ikke findes i data, brug standard
+      if(!lagerLokationer || lagerLokationer.length === 0){
+        lagerLokationer = ['Køl', 'Frost', 'Tørevare', 'Grønt', 'Vinlager'];
+      }
+    }
     // Sikr at Vinlager altid er til stede
-    if(!lagerLokationer.includes('Vinlager')){
+    let vinlagerAdded = false;
+    if(!lagerLokationer || !Array.isArray(lagerLokationer)){
+      lagerLokationer = ['Køl', 'Frost', 'Tørevare', 'Grønt', 'Vinlager'];
+      vinlagerAdded = true;
+    } else if(!lagerLokationer.includes('Vinlager')){
       lagerLokationer.push('Vinlager');
-      if(!lagerData['Vinlager']) lagerData['Vinlager'] = {};
+      vinlagerAdded = true;
+    }
+    if(vinlagerAdded && !lagerData['Vinlager']) {
+      lagerData['Vinlager'] = {};
     }
     if(data.leverandorer) leverandorer = data.leverandorer;
     if(data.reports) reports = data.reports;
@@ -2294,6 +2308,10 @@ function loadAllData(){
     if(data.archivePeriod !== undefined) archivePeriod = data.archivePeriod;
     if(data.sessionCounter !== undefined) sessionCounter = data.sessionCounter;
     if(data.activeSession) activeSession = data.activeSession;
+    // Gem data igen hvis Vinlager blev tilføjet
+    if(vinlagerAdded){
+      saveAllData();
+    }
     return true;
   }catch(err){
     console.warn('Kunne ikke indlæse data:', err);
@@ -2390,6 +2408,13 @@ function initializeApp(){
   setTimeout(() => {
     // Prøv at indlæse gemte data
     const hasData = loadAllData();
+    
+    // Sikr at Vinlager altid er til stede (også når der er eksisterende data)
+    if(!lagerLokationer.includes('Vinlager')){
+      lagerLokationer.push('Vinlager');
+      if(!lagerData['Vinlager']) lagerData['Vinlager'] = {};
+      saveAllData(); // Gem så Vinlager er permanent
+    }
     
     // Ved ny installation: Start ALTID med tomt lager (ingen demo data)
     const isNewInstallation = typeof PRE_GENERATED_INSTALLATION_ID !== 'undefined' && 
@@ -7658,7 +7683,16 @@ function showPage(id){
   const el = $(id); 
   if(el) el.classList.remove('hidden'); 
   if(id==='lageropt') renderLagerTable(); 
-  if(id==='opsaetning') { renderLagerOpsaetning(); updateAllSelects(); } 
+  if(id==='opsaetning') { 
+    // Sikr at Vinlager altid er til stede
+    if(!lagerLokationer.includes('Vinlager')){
+      lagerLokationer.push('Vinlager');
+      if(!lagerData['Vinlager']) lagerData['Vinlager'] = {};
+      saveAllData();
+    }
+    renderLagerOpsaetning(); 
+    updateAllSelects(); 
+  } 
   if(id==='rapporter') { refreshReportsFromStorage(); renderReports(); renderArchivedReports(); showReportsSection('active'); } 
   if(id==='labels') { updateAllSelects(); renderMasterTable(); updateLabelReolSelect(); } 
   if(id==='leverandor') renderLeverandorTable(); 
