@@ -2671,6 +2671,9 @@ function saveAllData(){
       archivePeriod,
       sessionCounter,
       activeSession,
+      vinlager, // Gem vinlager data
+      vinlagerHistorik, // Gem vinlager historik
+      vinlagerLande, // Gem vinlager lande
       version: '1.0',
       savedAt: Date.now()
     };
@@ -2783,7 +2786,7 @@ function loadAllData(){
 /* Ensure modals hidden at load og setup event listeners */
 // Versionsnummer - opdateres automatisk med dato og tid
 function getAppVersion(){
-  const baseVersion = '4.3';
+  const baseVersion = '4.4';
   const now = new Date();
   const dateStr = now.toLocaleDateString('da-DK', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const timeStr = now.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' });
@@ -2798,7 +2801,7 @@ function updateVersionDisplay(){
     versionDisplay.textContent = `v${version}`;
   }
   // Opdater også i title
-  const baseVersion = '4.3';
+  const baseVersion = '4.4';
   document.title = `Lager optælling — Færdig version v${baseVersion}`;
 }
 
@@ -10518,11 +10521,16 @@ function showPage(id){
   if(id==='systemOpsaetning') { showSettingsSection('password'); } 
   if(id==='licens') { updateLicenseStatusDisplay(); } 
   if(id==='vinlager') { 
+    // Sikr at data er indlæst
+    if(!vinlager || vinlager.length === 0){
+      loadAllData();
+    }
     renderVinlagerTable(); 
     renderVinlagerHistorik(); 
     updateVinlagerStats(); 
     updateVinlagerFilters();
     updateVinlagerDiagram();
+    updateVersionDisplay(); // Opdater versionsnummer
   }
   if(id==='vinlagerOpsaetning') { 
     renderVinlagerOpsaetning(); 
@@ -11195,16 +11203,34 @@ function createVinRow(vin){
 
 // Opdater statistik
 function updateVinlagerStats(){
+  // Sikr at vinlager er indlæst
+  if(!vinlager || !Array.isArray(vinlager)){
+    console.warn('vinlager er ikke indlæst eller er ikke et array - indlæser data');
+    loadAllData();
+    // Prøv igen efter indlæsning
+    if(!vinlager || !Array.isArray(vinlager)){
+      console.error('Kunne ikke indlæse vinlager data');
+      return;
+    }
+  }
+  
   // Sikr at vi kun tæller unikke vine (baseret på id)
   const unikkeVine = [];
   const setIds = new Set();
   
   vinlager.forEach(v => {
-    if(!setIds.has(v.id)){
+    if(v && v.id && !setIds.has(v.id)){
       setIds.add(v.id);
       unikkeVine.push(v);
     }
   });
+  
+  // Hvis der var duplikerede, opdater arrayet
+  if(unikkeVine.length !== vinlager.length){
+    console.log(`Fjernede ${vinlager.length - unikkeVine.length} duplikerede vine`);
+    vinlager = unikkeVine;
+    saveAllData(); // Gem den opdaterede liste
+  }
   
   // Beregn statistikker baseret på unikke vine
   const totalAntal = unikkeVine.reduce((sum, v) => {
