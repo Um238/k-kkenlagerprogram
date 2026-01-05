@@ -872,7 +872,7 @@ a:hover{color:#45a049;text-decoration:none}
     <h2 style="color:#8B0000;">Opsætning Vinlager</h2>
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:20px;">
       <input id="nytVinlagerLand" placeholder="Nyt land" style="border:2px solid #8B0000; padding:8px 12px; border-radius:6px; width:200px;" />
-      <select id="nytVinlagerLandGruppe" style="border:2px solid #8B0000; padding:8px 12px; border-radius:6px; width:180px;">
+      <select id="nytVinlagerLandGruppe" style="border:2px solid #8B0000; padding:8px 12px; border-radius:6px; width:150px;">
         <option value="Europa">🌍 Europa</option>
         <option value="Amerika">🌎 Amerika</option>
         <option value="Afrika">🌏 Afrika</option>
@@ -958,12 +958,13 @@ a:hover{color:#45a049;text-decoration:none}
                 <button onclick="downloadVinlagerExcelTemplate()" style="width:100%; margin-bottom:8px; background:#8B0000; color:white; border-color:#A00000;">Hent Excel skabelon</button>
               </div>
               <input type="file" id="vinlagerCsvImport" accept=".csv,.xlsx,.xls" />
-              <div style="display:flex; gap:8px; margin-top:8px;">
+              <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
                 <button onclick="importVinlagerCSV()" style="background:#8B0000; color:white;">📥 Importer Excel/CSV</button>
                 <button onclick="exportVinlagerCSV()" class="secondary">📤 Eksport CSV</button>
+                <button onclick="nulstilVinlager()" style="background:#dc3545; color:white;" title="Slet hele vinlageret og historik">🗑️ Nulstil vinlager</button>
               </div>
               <div class="small" style="margin-top:8px; color:#666;">
-                <strong>Tip:</strong> Download skabelonen, udfyld den i Excel, og importer den igen.
+                <strong>Tip:</strong> Download skabelonen, udfyld den i Excel, og importer den igen. Vælg "Overskriv vinlager" for at erstatte alt.
               </div>
             </div>
           </div>
@@ -11625,6 +11626,29 @@ function deleteVinlagerLand(index){
   saveAllData();
 }
 
+// Nulstil hele vinlageret
+function nulstilVinlager(){
+  if(!confirm('⚠️ ADVARSEL: Dette vil slette ALT vinlager og ALT historik!\n\nEr du helt sikker på at du vil nulstille?')){
+    return;
+  }
+  
+  if(!confirm('Dette kan IKKE fortrydes. Er du 100% sikker?')){
+    return;
+  }
+  
+  vinlager = [];
+  vinlagerHistorik = [];
+  
+  renderVinlagerTable();
+  renderVinlagerAdminTable();
+  updateVinlagerStats();
+  updateVinlagerFilters();
+  renderVinlagerHistorik();
+  saveAllData();
+  
+  alert('✅ Vinlager nulstillet! Du kan nu importere et nyt lager.');
+}
+
 // Lande gruppering
 const VINLAGER_GRUPPER = {
   'Europa': ['Frankrig', 'Italien', 'Spanien', 'Portugal', 'Tyskland', 'Østrig', 'Schweiz', 'Ungarn', 'Tjekkiet', 'Slovakiet', 'Slovenien', 'Kroatien', 'Serbien', 'Rumænien', 'Bulgarien', 'Grækenland', 'Cypern', 'Nordmakedonien', 'Bosnien-Hercegovina', 'Montenegro', 'Georgien', 'Armenien', 'Aserbajdsjan', 'Storbritannien', 'Danmark', 'Sverige', 'Norge', 'Belgien', 'Holland', 'Polen', 'Letland', 'Litauen'],
@@ -11675,13 +11699,13 @@ function renderVinlagerOpsaetning(){
       });
       
       // Toggle denne gruppe
-      landeList.style.display = isHidden ? 'block' : 'none';
+      landeList.style.display = isHidden ? 'grid' : 'none';
       this.querySelector('span:last-child').textContent = isHidden ? '▼' : '▶';
     };
     
     const landeList = document.createElement('ul');
     landeList.id = `vinlagerGruppe_${gruppe}`;
-    landeList.style.cssText = 'list-style:none; padding:10px; margin:0; display:none;';
+    landeList.style.cssText = 'list-style:none; padding:10px; margin:0; display:none; display:grid; grid-template-columns:repeat(2, 1fr); gap:8px;';
     
     const gruppeLande = VINLAGER_GRUPPER[gruppe].filter(land => vinlagerLande.includes(land));
     
@@ -11691,7 +11715,7 @@ function renderVinlagerOpsaetning(){
       li.draggable = true;
       li.dataset.index = index;
       li.dataset.land = land;
-      li.style.cssText = 'display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border:1px solid #8B0000; border-radius:6px; background:#fff; margin-bottom:6px; cursor:move; max-width:400px;';
+      li.style.cssText = 'display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border:1px solid #8B0000; border-radius:6px; background:#fff; cursor:move; width:100%;';
       li.innerHTML = `<strong style="color:#8B0000;">${land}</strong> <button class="secondary small" onclick="deleteVinlagerLand(${index})" style="background:#dc3545; color:white; padding:4px 8px; border:none; border-radius:4px; cursor:pointer; font-size:12px;">🗑️ Slet</button>`;
       
       li.addEventListener('dragstart', () => li.classList.add('dragging'));
@@ -12122,7 +12146,7 @@ function downloadVinlagerExcelTemplate(){
     
     const finalVine = alleVine;
     
-    // Opret sheet med alle vine - inkluder varenummer
+    // Opret sheet med alle vine - inkluder varenummer og billede
     const ws = XLSX.utils.json_to_sheet(finalVine.map(v => ({
       'Varenummer': v.varenummer,
       'Navn': v.navn,
@@ -12138,13 +12162,14 @@ function downloadVinlagerExcelTemplate(){
       'Antal': v.antal_flasker,
       'Minimum beholdning': v.minimum_beholdning || 24,
       'Placering': v.lagerplacering || '',
-      'Noter': v.noter || ''
+      'Noter': v.noter || '',
+      'Billede': v.billede || '' // Tilføj billede URL
     })));
     
-    // Sæt kolonnebredder (inkluder varenummer og minimum beholdning)
+    // Sæt kolonnebredder (inkluder varenummer, minimum beholdning og billede)
     ws['!cols'] = [
       {wch: 10}, {wch: 25}, {wch: 20}, {wch: 12}, {wch: 15}, {wch: 6}, {wch: 15}, {wch: 8}, 
-      {wch: 12}, {wch: 12}, {wch: 12}, {wch: 6}, {wch: 18}, {wch: 15}, {wch: 30}
+      {wch: 12}, {wch: 12}, {wch: 12}, {wch: 6}, {wch: 18}, {wch: 15}, {wch: 30}, {wch: 50}
     ];
     
     // Lås første række
@@ -12368,10 +12393,20 @@ function processVinlagerImport(data, importType = 'add'){
   let sprungetOver = 0;
   
   if(importType === 'overwrite'){
-    // Overskriv hele vinlageret
+    // Overskriv hele vinlageret - nulstil alt
     vinlager = [];
+    vinlagerHistorik = []; // Nulstil også historik
     data.forEach(row => {
       if(!row.Navn || !row.Producent || !row.Land) return;
+      
+      // Generer billede URL hvis ikke allerede i Excel
+      let billedeUrl = row.Billede || row.billede || '';
+      if(!billedeUrl){
+        // Generer billede baseret på land og druetype
+        const land = row.Land || '';
+        const druetype = row.Druetype || '';
+        billedeUrl = `https://source.unsplash.com/400x400/?wine,bottle,${land.toLowerCase().replace(/\s+/g,',')},${druetype.toLowerCase().replace(/\s+/g,',')}`;
+      }
       
       const nyVin = createVin({
         varenummer: row.Varenummer ? String(row.Varenummer).padStart(6, '0') : undefined,
@@ -12390,6 +12425,10 @@ function processVinlagerImport(data, importType = 'add'){
         lagerplacering: row.Placering || '',
         noter: row.Noter || ''
       });
+      // Tilføj billede hvis det findes
+      if(billedeUrl){
+        nyVin.billede = billedeUrl;
+      }
       vinlager.push(nyVin);
       importeret++;
     });
@@ -12414,6 +12453,14 @@ function processVinlagerImport(data, importType = 'add'){
       }
       
       if(!eksisterende){
+        // Generer billede URL hvis ikke allerede i Excel
+        let billedeUrl = row.Billede || row.billede || '';
+        if(!billedeUrl){
+          const land = row.Land || '';
+          const druetype = row.Druetype || '';
+          billedeUrl = `https://source.unsplash.com/400x400/?wine,bottle,${land.toLowerCase().replace(/\s+/g,',')},${druetype.toLowerCase().replace(/\s+/g,',')}`;
+        }
+        
         const nyVin = createVin({
           varenummer: row.Varenummer ? String(row.Varenummer).padStart(6, '0') : undefined,
           navn: row.Navn,
@@ -12431,6 +12478,10 @@ function processVinlagerImport(data, importType = 'add'){
           lagerplacering: row.Placering || '',
           noter: row.Noter || ''
         });
+        // Tilføj billede hvis det findes
+        if(billedeUrl){
+          nyVin.billede = billedeUrl;
+        }
         vinlager.push(nyVin);
         importeret++;
       } else {
@@ -12471,9 +12522,26 @@ function processVinlagerImport(data, importType = 'add'){
         eksisterende.lagerplacering = row.Placering || '';
         eksisterende.noter = row.Noter || '';
         eksisterende.sidst_opdateret = Date.now();
+        // Opdater også billede hvis det findes i Excel
+        if(row.Billede || row.billede){
+          eksisterende.billede = row.Billede || row.billede;
+        } else if(!eksisterende.billede){
+          // Generer billede hvis ikke allerede eksisterende
+          const land = row.Land || '';
+          const druetype = row.Druetype || '';
+          eksisterende.billede = `https://source.unsplash.com/400x400/?wine,bottle,${land.toLowerCase().replace(/\s+/g,',')},${druetype.toLowerCase().replace(/\s+/g,',')}`;
+        }
         opdateret++;
       } else {
         // Tilføj ny vin
+        // Generer billede URL hvis ikke allerede i Excel
+        let billedeUrl = row.Billede || row.billede || '';
+        if(!billedeUrl){
+          const land = row.Land || '';
+          const druetype = row.Druetype || '';
+          billedeUrl = `https://source.unsplash.com/400x400/?wine,bottle,${land.toLowerCase().replace(/\s+/g,',')},${druetype.toLowerCase().replace(/\s+/g,',')}`;
+        }
+        
         const nyVin = createVin({
           varenummer: row.Varenummer ? String(row.Varenummer).padStart(6, '0') : undefined,
           navn: row.Navn,
@@ -12491,6 +12559,10 @@ function processVinlagerImport(data, importType = 'add'){
           lagerplacering: row.Placering || '',
           noter: row.Noter || ''
         });
+        // Tilføj billede hvis det findes
+        if(billedeUrl){
+          nyVin.billede = billedeUrl;
+        }
         vinlager.push(nyVin);
         importeret++;
       }
