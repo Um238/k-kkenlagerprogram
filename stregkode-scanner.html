@@ -36,7 +36,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .scanned-item .count{font-size:32px;font-weight:700;color:#4CAF50;margin-left:14px;min-width:60px;text-align:center;flex-shrink:0}
 .scanned-item .remove{background:#dc3545;color:#fff;border:none;padding:12px 18px;border-radius:8px;cursor:pointer;font-size:18px;margin-left:10px;touch-action:manipulation;font-weight:600;flex-shrink:0}
 .actions{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;width:100%}
-.actions .button{flex:1;min-width:140px;font-size:18px;padding:18px}
+.actions .button{flex:1;min-width:140px;font-size:20px;padding:22px;min-height:70px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,0.2)}
 .empty{text-align:center;padding:35px;color:#999;font-size:20px}
 .stats{display:flex;gap:20px;margin:20px 0;padding:25px;background:#f8f9fa;border-radius:12px;flex-wrap:wrap}
 .stat{text-align:center;flex:1;min-width:100px}
@@ -44,15 +44,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .stat-label{font-size:17px;color:#666;margin-top:8px}
 .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;overflow-y:auto}
 .modal.hidden{display:none}
-.modal-content{background:white;padding:40px;border-radius:20px;max-width:min(700px, 95vw);width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);margin:auto}
-.modal-content h3{margin:0 0 30px 0;font-size:32px;color:#333;font-weight:700}
-.modal-content p{font-size:20px;line-height:1.5}
-.modal-content label{font-size:20px;font-weight:600;display:block;margin-bottom:12px}
+.modal-content{background:white;padding:50px;border-radius:24px;max-width:min(800px, 96vw);width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);margin:auto}
+.modal-content h3{margin:0 0 35px 0;font-size:36px;color:#333;font-weight:700}
+.modal-content p{font-size:22px;line-height:1.5}
+.modal-content label{font-size:22px;font-weight:600;display:block;margin-bottom:15px}
 .modal-content input[type="number"]{width:100%;padding:30px;font-size:42px;text-align:center;border:5px solid #4CAF50;border-radius:14px;margin:20px 0;font-weight:700}
 .modal-content select{width:100%;padding:25px;font-size:26px;border:5px solid #4CAF50;border-radius:14px;margin:15px 0;background:white;font-weight:600}
-.modal-buttons{display:flex;gap:15px;margin-top:35px;flex-wrap:wrap}
-.modal-buttons button{flex:1;padding:25px;font-size:26px;border-radius:14px;border:none;cursor:pointer;font-weight:700;touch-action:manipulation;min-height:70px}
+.modal-buttons{display:flex;gap:18px;margin-top:40px;flex-wrap:wrap}
+.modal-buttons button{flex:1;padding:30px;font-size:28px;border-radius:16px;border:none;cursor:pointer;font-weight:700;touch-action:manipulation;min-height:85px;box-shadow:0 4px 12px rgba(0,0,0,0.2);transition:all 0.2s}
 .modal-buttons button:active{opacity:0.85;transform:scale(0.97)}
+.modal-buttons button[onclick*="confirmLocationSelection"]{background:#4CAF50 !important;color:white !important;font-size:30px;font-weight:800;min-height:90px;box-shadow:0 6px 16px rgba(76,175,80,0.4)}
 @media (max-width:480px){
   body{padding:4px;font-size:18px}
   .header{padding:16px}
@@ -115,10 +116,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
     <div id="varelagerUpdateNotificationScanner" style="display:none; background:#ffc107; color:#000; padding:8px 12px; border-radius:6px; font-size:12px; font-weight:600; margin-right:8px; cursor:pointer; white-space:nowrap;" onclick="fetchVarelagerFromServer()" title="Klik for at hente nyt varelager">
       ⚠️ Nyt varelager tilgængeligt
     </div>
-    <button class="button secondary" onclick="clearAll()" style="font-size:13px; padding:10px 16px; border-radius:6px; font-weight:600;">🗑 Ryd alt</button>
-    <button class="button secondary" onclick="fetchVarelagerFromServer()" style="font-size:13px; padding:10px 16px; background:#17a2b8; color:white; border-radius:6px; font-weight:600; box-shadow:0 2px 4px rgba(0,0,0,0.2);">☁️ Hent varelager</button>
-    <button class="button secondary" onclick="uploadReportsToServer()" style="font-size:13px; padding:10px 16px; background:#28a745; color:white; border-radius:6px; font-weight:600; box-shadow:0 2px 4px rgba(0,0,0,0.2);">☁️ Upload rapporter</button>
-    <button class="button" onclick="finishSession()" style="font-size:14px; padding:10px 16px; border-radius:6px; font-weight:600; box-shadow:0 2px 4px rgba(0,0,0,0.2);">✅ Afslut optælling</button>
+    <button class="button secondary" onclick="clearAll()" style="font-size:18px; padding:22px; min-height:70px; border-radius:10px; font-weight:700; box-shadow:0 4px 12px rgba(0,0,0,0.2);">🗑 Ryd alt</button>
+    <button class="button secondary" onclick="fetchVarelagerFromServer()" style="font-size:18px; padding:22px; min-height:70px; background:#17a2b8; color:white; border-radius:10px; font-weight:700; box-shadow:0 4px 12px rgba(23,162,184,0.3);">☁️ Hent varelager</button>
+    <button class="button secondary" onclick="uploadReportsToServer()" style="font-size:18px; padding:22px; min-height:70px; background:#28a745; color:white; border-radius:10px; font-weight:700; box-shadow:0 4px 12px rgba(40,167,69,0.3);">☁️ Upload rapporter</button>
+    <button class="button" onclick="finishSession()" style="font-size:20px; padding:22px; min-height:70px; border-radius:10px; font-weight:700; box-shadow:0 4px 12px rgba(76,175,80,0.3);">✅ Afslut optælling</button>
   </div>
 </div>
 
@@ -380,15 +381,15 @@ async function startScannerAfterLocation(){
       // Make it taller (more height) for better barcode reading
       const screenWidth = window.innerWidth;
       const screenHeight = window.innerHeight;
-      // Use almost full width but make it taller for barcodes
-      qrboxSize = Math.max(450, Math.min(screenWidth * 0.98, screenHeight * 0.8));
+      // Use almost full width (wider) but make it taller for barcodes
+      qrboxSize = Math.max(480, Math.min(screenWidth * 0.99, screenHeight * 0.8));
       console.log('Android detected - using large qrbox:', qrboxSize, 'Screen:', screenWidth, 'x', screenHeight);
     } else if (isMobile) {
       // Other mobile: Use 95% of screen width
-      qrboxSize = Math.max(400, Math.min(window.innerWidth * 0.95, window.innerHeight * 0.75));
+      qrboxSize = Math.max(420, Math.min(window.innerWidth * 0.98, window.innerHeight * 0.75));
     } else {
       // Desktop
-      qrboxSize = 500;
+      qrboxSize = 550;
     }
     
     const config = {
