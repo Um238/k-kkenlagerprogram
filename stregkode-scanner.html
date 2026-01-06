@@ -160,9 +160,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 // Versionsnummer - opdateres automatisk
-const APP_VERSION = '4.16';
+const APP_VERSION = '4.17';
 const BUILD_DATE = '2026-01-06';
-const BUILD_TIME = '14:48';
+const BUILD_TIME = '15:15';
 
 let scannerActive = false;
 let html5QrCode = null;
@@ -1365,7 +1365,25 @@ function finishSession(){
     });
     
     // Generate unique report name: OPTA-000004 format
-    const reportName = `OPTA-${String(sessionCounter).padStart(6, '0')}`;
+    // Ensure the name is unique by checking existing reports
+    let reportName = `OPTA-${String(sessionCounter).padStart(6, '0')}`;
+    let nameCounter = sessionCounter;
+    
+    // Check if report name already exists and generate unique name
+    if (data.reports && Array.isArray(data.reports)) {
+      const existingNames = new Set(data.reports.map(r => r.handling));
+      while (existingNames.has(reportName)) {
+        nameCounter++;
+        reportName = `OPTA-${String(nameCounter).padStart(6, '0')}`;
+        console.log('⚠️ Report name conflict, trying:', reportName);
+      }
+    }
+    
+    // Update sessionCounter to the new value to avoid future conflicts
+    if (nameCounter > sessionCounter) {
+      sessionCounter = nameCounter;
+      console.log('✅ Updated sessionCounter to:', sessionCounter, 'to avoid name conflicts');
+    }
     
     // Determine scope based on selected location or actual locations found
     let scope = '';
@@ -1396,18 +1414,22 @@ function finishSession(){
       data.reports = [];
     }
     
-    // Check if report already exists (by name and timestamp)
-    const reportExists = data.reports.some(r => 
-      r.handling === report.handling && 
-      Math.abs(r.ts - report.ts) < 1000
-    );
+    // Check if report already exists (by name only - name should already be unique from generation above)
+    const reportExists = data.reports.some(r => r.handling === report.handling);
     
     if (!reportExists) {
       // Add report to beginning of reports array
       data.reports.unshift(report);
       console.log('✅ New report added:', report.handling, 'with', details.length, 'items');
     } else {
-      console.log('⚠️ Report already exists:', report.handling);
+      // This should not happen if name generation worked correctly, but handle it anyway
+      console.error('⚠️ Report name conflict detected:', report.handling, '- generating new name');
+      // Generate a completely unique name with timestamp
+      const timestamp = Date.now();
+      report.handling = `OPTA-${String(sessionCounter).padStart(6, '0')}-${timestamp}`;
+      reportName = report.handling;
+      data.reports.unshift(report);
+      console.log('✅ Report added with timestamped name:', report.handling);
     }
     
     // Update sessionCounter
