@@ -1,1 +1,998 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0078D4" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Stregkode Scanner" />
+<link rel="manifest" href="stregkode-scanner-manifest.json" />
+<title>Stregkode Scanner</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #f5f5f5;
+  color: #333;
+  padding: 10px;
+}
+
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.header {
+  background: linear-gradient(135deg, #0078D4 0%, #005A9E 100%);
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+
+.header h1 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.status-bar {
+  background: #E3F2FD;
+  padding: 15px 20px;
+  border-bottom: 2px solid #0078D4;
+  text-align: center;
+  font-weight: 600;
+}
+
+.status-bar.warning {
+  background: #FFF3CD;
+  border-bottom-color: #FFC107;
+  color: #856404;
+}
+
+.status-bar.error {
+  background: #F8D7DA;
+  border-bottom-color: #DC3545;
+  color: #721C24;
+}
+
+.status-bar.success {
+  background: #D4EDDA;
+  border-bottom-color: #28A745;
+  color: #155724;
+}
+
+.scanner-section {
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+#scannerVideo {
+  width: 100%;
+  max-height: 60vh;
+  border: 3px solid #0078D4;
+  border-radius: 8px;
+  background: #000;
+  display: none;
+}
+
+#scannerVideo video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.btn {
+  width: 100%;
+  padding: 18px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.btn-primary {
+  background: #0078D4;
+  color: white;
+}
+
+.btn-primary:active {
+  background: #005A9E;
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-success {
+  background: #28A745;
+  color: white;
+}
+
+.btn-danger {
+  background: #DC3545;
+  color: white;
+}
+
+.scanned-list {
+  padding: 20px;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.scanned-item {
+  padding: 15px;
+  margin: 10px 0;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #0078D4;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.scanned-item .info {
+  flex: 1;
+}
+
+.scanned-item .name {
+  font-weight: 600;
+  font-size: 16px;
+  color: #333;
+}
+
+.scanned-item .details {
+  font-size: 14px;
+  color: #666;
+  margin-top: 5px;
+}
+
+.scanned-item .actions {
+  display: flex;
+  gap: 5px;
+}
+
+.btn-small {
+  padding: 8px 12px;
+  font-size: 14px;
+  width: auto;
+  margin: 0;
+}
+
+.empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.actions-section {
+  padding: 20px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.actions-section .btn {
+  flex: 1;
+  min-width: 120px;
+  margin: 0;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal.active {
+  display: flex;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+
+.modal-body {
+  margin-bottom: 20px;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.input-group {
+  margin-bottom: 15px;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.input-group input, .input-group select {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+}
+
+.stats {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.stat-item {
+  flex: 1;
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: #0078D4;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #666;
+  margin-top: 5px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>📷 Stregkode Scanner</h1>
+    <p style="font-size: 14px; opacity: 0.9; margin-top: 5px;">Scan stregkoder og optæl varer</p>
+  </div>
+  
+  <div id="statusBar" class="status-bar">
+    <span id="statusText">Klar til scanning</span>
+  </div>
+  
+  <div class="scanner-section">
+    <div id="scannerVideo">
+      <video id="videoElement" autoplay playsinline></video>
+    </div>
+    <button id="startBtn" class="btn btn-primary" onclick="startScanner()">📷 Start Scanner</button>
+    <button id="stopBtn" class="btn btn-secondary" onclick="stopScanner()" style="display:none">⏹ Stop Scanner</button>
+  </div>
+  
+  <div class="scanned-list">
+    <h3 style="margin-bottom: 15px;">Scannede varer (<span id="count">0</span>)</h3>
+    <div id="scannedList">
+      <div class="empty">Ingen varer scannet endnu</div>
+    </div>
+  </div>
+  
+  <div class="stats">
+    <div class="stat-item">
+      <div class="stat-value" id="totalScanned">0</div>
+      <div class="stat-label">Total scannet</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="totalItems">0</div>
+      <div class="stat-label">Unikke varer</div>
+    </div>
+  </div>
+  
+  <div class="actions-section">
+    <button class="btn btn-secondary" onclick="clearAll()">🗑 Ryd alt</button>
+    <button class="btn btn-success" onclick="finishCounting()">✅ Afslut optælling</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="header" style="background: linear-gradient(135deg, #28A745 0%, #20C997 100%);">
+    <h1>📥 Import Varelager</h1>
+  </div>
+  
+  <div style="padding: 20px;">
+    <div id="varelagerStatus" class="status-bar warning" style="display:none;">
+      <span id="varelagerStatusText">Ingen varelager data</span>
+    </div>
+    
+    <button class="btn btn-primary" onclick="scanVarelagerQR()">📱 Scan QR-kode</button>
+    <button class="btn btn-secondary" onclick="importVarelagerFile()">📁 Import fil</button>
+    <button class="btn btn-secondary" onclick="showInstallationId()">🔑 Installation ID</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="header" style="background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);">
+    <h1>📤 Eksport Rapporter</h1>
+  </div>
+  
+  <div style="padding: 20px;">
+    <button class="btn btn-primary" onclick="exportReports()">📥 Eksporter rapporter</button>
+    <button class="btn btn-secondary" onclick="uploadToServer()" style="display:none">☁️ Upload til server</button>
+  </div>
+</div>
+
+<!-- QR Scanner Modal -->
+<div id="qrModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">📱 Scan QR-kode</div>
+    <div class="modal-body">
+      <div id="qrScannerVideo" style="width: 100%; max-height: 400px; border: 2px solid #0078D4; border-radius: 8px; background: #000; display: none;">
+        <video id="qrVideoElement" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+      </div>
+      <div id="qrStatus" style="text-align: center; padding: 20px; color: #666;">Starter QR-scanner...</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeQRModal()">Luk</button>
+    </div>
+  </div>
+</div>
+
+<!-- Installation ID Modal -->
+<div id="idModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">🔑 Installation ID</div>
+    <div class="modal-body">
+      <div class="input-group">
+        <label>Scanner Installation ID:</label>
+        <input type="text" id="scannerInstallationId" readonly style="background: #f5f5f5;">
+      </div>
+      <div class="input-group">
+        <label>Hovedprogram Installation ID (fra QR-kode):</label>
+        <input type="text" id="mainInstallationId" readonly style="background: #f5f5f5;">
+      </div>
+      <button class="btn btn-primary" onclick="copyScannerId()">📋 Kopier Scanner ID</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeIdModal()">Luk</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/@zxing/library@latest"></script>
+<script>
+// Global variables
+let scannerActive = false;
+let codeReader = null;
+let videoStream = null;
+let scannedItems = [];
+let masterVarelager = [];
+let lagerLokationer = [];
+let mainInstallationId = null;
+let scannerInstallationId = null;
+let sessionCounter = 0;
+let reports = [];
+let lastScannedCode = null;
+let lastScanTime = 0;
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+  loadData();
+  updateUI();
+});
+
+// Load data from localStorage
+function loadData() {
+  try {
+    // Load scanner installation ID
+    scannerInstallationId = localStorage.getItem('scanner_installation_id');
+    if (!scannerInstallationId) {
+      scannerInstallationId = 'SCANNER-' + generateId();
+      localStorage.setItem('scanner_installation_id', scannerInstallationId);
+    }
+    
+    // Load varelager
+    const varelagerData = localStorage.getItem('scanner_varelager');
+    if (varelagerData) {
+      const data = JSON.parse(varelagerData);
+      masterVarelager = data.masterVarelager || [];
+      lagerLokationer = data.lagerLokationer || [];
+      mainInstallationId = data.mainInstallationId || null;
+    }
+    
+    // Load scanned items
+    const scannedData = localStorage.getItem('scanner_scanned_items');
+    if (scannedData) {
+      scannedItems = JSON.parse(scannedData);
+    }
+    
+    // Load session counter
+    const counter = localStorage.getItem('scanner_session_counter');
+    if (counter) {
+      sessionCounter = parseInt(counter) || 0;
+    }
+    
+    // Load reports
+    const reportsData = localStorage.getItem('scanner_reports');
+    if (reportsData) {
+      reports = JSON.parse(reportsData);
+    }
+    
+    updateVarelagerStatus();
+  } catch(err) {
+    console.error('Error loading data:', err);
+  }
+}
+
+// Save data to localStorage
+function saveData() {
+  try {
+    localStorage.setItem('scanner_scanned_items', JSON.stringify(scannedItems));
+    localStorage.setItem('scanner_session_counter', sessionCounter.toString());
+    localStorage.setItem('scanner_reports', JSON.stringify(reports));
+  } catch(err) {
+    console.error('Error saving data:', err);
+  }
+}
+
+// Generate unique ID
+function generateId() {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
+
+// Update UI
+function updateUI() {
+  renderScannedList();
+  updateStats();
+}
+
+// Render scanned list
+function renderScannedList() {
+  const list = document.getElementById('scannedList');
+  const count = document.getElementById('count');
+  
+  count.textContent = scannedItems.length;
+  
+  if (scannedItems.length === 0) {
+    list.innerHTML = '<div class="empty">Ingen varer scannet endnu</div>';
+    return;
+  }
+  
+  // Group by vare ID
+  const grouped = {};
+  scannedItems.forEach(item => {
+    if (!grouped[item.vareId]) {
+      grouped[item.vareId] = {
+        vare: item.vare,
+        count: 0,
+        locations: new Set()
+      };
+    }
+    grouped[item.vareId].count++;
+    if (item.location) {
+      grouped[item.vareId].locations.add(item.location);
+    }
+  });
+  
+  list.innerHTML = Object.values(grouped).map((group, index) => {
+    const locations = Array.from(group.locations).join(', ') || 'Ikke angivet';
+    return `
+      <div class="scanned-item">
+        <div class="info">
+          <div class="name">${group.vare.navn || group.vare.id}</div>
+          <div class="details">Antal: ${group.count} ${group.vare.maaleenhed || 'stk'} | Lokation: ${locations}</div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-small btn-danger" onclick="removeItem('${group.vare.id}')">-</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Update stats
+function updateStats() {
+  document.getElementById('totalScanned').textContent = scannedItems.length;
+  const uniqueItems = new Set(scannedItems.map(item => item.vareId)).size;
+  document.getElementById('totalItems').textContent = uniqueItems;
+}
+
+// Start scanner
+async function startScanner() {
+  if (scannerActive) {
+    stopScanner();
+    return;
+  }
+  
+  if (masterVarelager.length === 0) {
+    alert('⚠️ Ingen varelager data!\n\nImport varelager først via QR-kode eller fil.');
+    return;
+  }
+  
+  const statusBar = document.getElementById('statusBar');
+  const statusText = document.getElementById('statusText');
+  const video = document.getElementById('scannerVideo');
+  const videoElement = document.getElementById('videoElement');
+  const startBtn = document.getElementById('startBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  
+  const isSecure = window.location.protocol === 'https:' || 
+                   window.location.hostname === 'localhost' || 
+                   window.location.hostname === '127.0.0.1';
+  
+  if (!isSecure && window.location.protocol === 'file:') {
+    statusText.textContent = '⚠️ KAMERA KRÆVER HTTPS';
+    statusBar.className = 'status-bar error';
+    alert('⚠️ Kameraet virker kun med HTTPS eller localhost.\n\nBrug GitHub Pages eller en HTTPS webserver.');
+    return;
+  }
+  
+  if (typeof ZXing === 'undefined' && typeof window.ZXing === 'undefined') {
+    statusText.textContent = 'Scanner library ikke indlæst';
+    statusBar.className = 'status-bar error';
+    return;
+  }
+  
+  statusText.textContent = 'Starter kamera...';
+  statusBar.className = 'status-bar';
+  
+  try {
+    const constraints = {
+      video: {
+        facingMode: "environment",
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      }
+    };
+    
+    videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+    videoElement.srcObject = videoStream;
+    video.style.display = 'block';
+    await videoElement.play();
+    
+    scannerActive = true;
+    startBtn.style.display = 'none';
+    stopBtn.style.display = 'block';
+    
+    statusText.textContent = 'Peger på stregkoden...';
+    statusBar.className = 'status-bar';
+    
+    const ZXingLib = window.ZXing || ZXing;
+    codeReader = new ZXingLib.BrowserMultiFormatReader();
+    
+    codeReader.decodeFromVideoDevice(null, videoElement, (result, error) => {
+      if (result) {
+        const code = result.getText();
+        const now = Date.now();
+        if (now - lastScanTime < 1000) return;
+        if (code && code !== lastScannedCode) {
+          lastScannedCode = code;
+          lastScanTime = now;
+          handleScannedCode(code);
+        }
+      }
+    });
+    
+  } catch(err) {
+    console.error('Kamera fejl:', err);
+    scannerActive = false;
+    let errorMsg = '';
+    if (err.name === 'NotAllowedError') {
+      errorMsg = 'Kamera tilladelse nægtet. Giv tilladelse i browser indstillinger.';
+    } else if (err.name === 'NotFoundError') {
+      errorMsg = 'Ingen kamera fundet.';
+    } else {
+      errorMsg = 'Kunne ikke starte scanner: ' + (err.message || err.name);
+    }
+    statusText.textContent = errorMsg;
+    statusBar.className = 'status-bar error';
+    startBtn.style.display = 'block';
+    stopBtn.style.display = 'none';
+  }
+}
+
+// Stop scanner
+function stopScanner() {
+  scannerActive = false;
+  const statusBar = document.getElementById('statusBar');
+  const statusText = document.getElementById('statusText');
+  const video = document.getElementById('scannerVideo');
+  const startBtn = document.getElementById('startBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  
+  if (codeReader) {
+    try {
+      codeReader.reset();
+    } catch(err) {
+      console.warn('Fejl ved stop:', err);
+    }
+    codeReader = null;
+  }
+  
+  if (videoStream) {
+    videoStream.getTracks().forEach(track => track.stop());
+    videoStream = null;
+  }
+  
+  video.style.display = 'none';
+  startBtn.style.display = 'block';
+  stopBtn.style.display = 'none';
+  statusText.textContent = 'Scanner stoppet';
+  statusBar.className = 'status-bar';
+}
+
+// Handle scanned code
+function handleScannedCode(code) {
+  if (!code) return;
+  
+  // Find vare in varelager
+  const vare = masterVarelager.find(v => v.id === code);
+  
+  if (!vare) {
+    const statusText = document.getElementById('statusText');
+    const statusBar = document.getElementById('statusBar');
+    statusText.textContent = 'Vare ikke fundet: ' + code;
+    statusBar.className = 'status-bar error';
+    setTimeout(() => {
+      if (scannerActive) {
+        statusText.textContent = 'Peger på stregkoden...';
+        statusBar.className = 'status-bar';
+      }
+    }, 2000);
+    return;
+  }
+  
+  // Add to scanned items
+  const location = vare.placering || '';
+  scannedItems.push({
+    vareId: vare.id,
+    vare: vare,
+    location: location,
+    timestamp: Date.now()
+  });
+  
+  saveData();
+  updateUI();
+  
+  const statusText = document.getElementById('statusText');
+  const statusBar = document.getElementById('statusBar');
+  statusText.textContent = '✓ Scannet: ' + vare.navn;
+  statusBar.className = 'status-bar success';
+  
+  setTimeout(() => {
+    if (scannerActive) {
+      statusText.textContent = 'Peger på stregkoden...';
+      statusBar.className = 'status-bar';
+    }
+  }, 1000);
+}
+
+// Remove item
+function removeItem(vareId) {
+  if (confirm('Er du sikker på at du vil fjerne denne vare?')) {
+    scannedItems = scannedItems.filter(item => item.vareId !== vareId);
+    saveData();
+    updateUI();
+  }
+}
+
+// Clear all
+function clearAll() {
+  if (confirm('Er du sikker på at du vil slette alle scannede varer?')) {
+    scannedItems = [];
+    saveData();
+    updateUI();
+  }
+}
+
+// Finish counting and generate report
+function finishCounting() {
+  if (scannedItems.length === 0) {
+    alert('Ingen varer at optælle. Scan nogle varer først.');
+    return;
+  }
+  
+  if (!confirm(`Er du sikker på at du vil afslutte optællingen?\n\nTotal varer: ${scannedItems.length}`)) {
+    return;
+  }
+  
+  // Generate report
+  sessionCounter++;
+  const reportId = String(sessionCounter).padStart(6, '0');
+  const handling = 'OPTA-' + reportId;
+  
+  // Group items by location and vare
+  const grouped = {};
+  scannedItems.forEach(item => {
+    const key = `${item.location || 'Ukendt'}|${item.vareId}`;
+    if (!grouped[key]) {
+      grouped[key] = {
+        lokation: item.location || 'Ukendt',
+        vareId: item.vareId,
+        vare: item.vare,
+        antal: 0
+      };
+    }
+    grouped[key].antal++;
+  });
+  
+  const details = Object.values(grouped).map(group => ({
+    lokation: group.lokation,
+    vareId: group.vareId,
+    vareNavn: group.vare.navn || group.vareId,
+    antal: group.antal,
+    maaleenhed: group.vare.maaleenhed || 'stk'
+  }));
+  
+  const total = scannedItems.length;
+  
+  const report = {
+    handling: handling,
+    type: 'session',
+    ts: Date.now(),
+    details: details,
+    total: total,
+    source: 'stregkode-scanner',
+    installationId: scannerInstallationId,
+    mainInstallationId: mainInstallationId
+  };
+  
+  reports.unshift(report);
+  saveData();
+  
+  // Clear scanned items
+  scannedItems = [];
+  saveData();
+  updateUI();
+  
+  alert(`✅ Optælling afsluttet!\n\nRapport: ${handling}\nTotal varer: ${total}\n\nRapporten er gemt og kan eksporteres.`);
+}
+
+// Export reports
+function exportReports() {
+  if (reports.length === 0) {
+    alert('Ingen rapporter at eksportere.');
+    return;
+  }
+  
+  const exportData = {
+    reports: reports,
+    source: 'stregkode-scanner',
+    installationId: scannerInstallationId,
+    mainInstallationId: mainInstallationId,
+    exportedAt: Date.now(),
+    version: '1.0'
+  };
+  
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `scanner-rapporter-${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  alert(`✅ ${reports.length} rapport(er) eksporteret!\n\nDu kan nu importere filen i hovedprogrammet.`);
+}
+
+// Import varelager from QR code
+function scanVarelagerQR() {
+  const modal = document.getElementById('qrModal');
+  const qrVideo = document.getElementById('qrScannerVideo');
+  const qrVideoElement = document.getElementById('qrVideoElement');
+  const qrStatus = document.getElementById('qrStatus');
+  
+  modal.classList.add('active');
+  qrStatus.textContent = 'Starter QR-scanner...';
+  
+  let qrCodeReader = null;
+  let qrVideoStream = null;
+  
+  async function startQRScanner() {
+    try {
+      const constraints = {
+        video: {
+          facingMode: "environment",
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      };
+      
+      qrVideoStream = await navigator.mediaDevices.getUserMedia(constraints);
+      qrVideoElement.srcObject = qrVideoStream;
+      qrVideo.style.display = 'block';
+      await qrVideoElement.play();
+      
+      qrStatus.textContent = 'Peger på QR-koden...';
+      
+      const ZXingLib = window.ZXing || ZXing;
+      qrCodeReader = new ZXingLib.BrowserMultiFormatReader();
+      
+      qrCodeReader.decodeFromVideoDevice(null, qrVideoElement, (result, error) => {
+        if (result) {
+          const qrData = result.getText();
+          if (qrData.startsWith('VARELAGER:')) {
+            // Stop scanner
+            if (qrCodeReader) {
+              try {
+                qrCodeReader.reset();
+              } catch(err) {}
+              qrCodeReader = null;
+            }
+            if (qrVideoStream) {
+              qrVideoStream.getTracks().forEach(track => track.stop());
+              qrVideoStream = null;
+            }
+            
+            // Process data
+            try {
+              const base64Data = qrData.substring(10); // Remove 'VARELAGER:' prefix
+              const jsonString = decodeURIComponent(escape(atob(base64Data)));
+              const data = JSON.parse(jsonString);
+              
+              masterVarelager = data.masterVarelager || [];
+              lagerLokationer = data.lagerLokationer || [];
+              mainInstallationId = data.mainInstallationId || null;
+              
+              localStorage.setItem('scanner_varelager', JSON.stringify({
+                masterVarelager: masterVarelager,
+                lagerLokationer: lagerLokationer,
+                mainInstallationId: mainInstallationId
+              }));
+              
+              updateVarelagerStatus();
+              closeQRModal();
+              
+              alert(`✅ Varelager importeret!\n\nVarer: ${masterVarelager.length}\nLokationer: ${lagerLokationer.length}`);
+            } catch(err) {
+              qrStatus.textContent = 'Fejl ved import: ' + err.message;
+            }
+          }
+        }
+      });
+    } catch(err) {
+      qrStatus.textContent = 'Fejl: ' + err.message;
+    }
+  }
+  
+  startQRScanner();
+  
+  // Cleanup on close
+  window.closeQRModal = function() {
+    if (qrCodeReader) {
+      try {
+        qrCodeReader.reset();
+      } catch(err) {}
+      qrCodeReader = null;
+    }
+    if (qrVideoStream) {
+      qrVideoStream.getTracks().forEach(track => track.stop());
+      qrVideoStream = null;
+    }
+    modal.classList.remove('active');
+    qrVideo.style.display = 'none';
+  };
+}
+
+// Import varelager from file
+function importVarelagerFile() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        
+        if (data.masterVarelager) {
+          masterVarelager = data.masterVarelager || [];
+          lagerLokationer = data.lagerLokationer || [];
+          mainInstallationId = data.mainInstallationId || null;
+          
+          localStorage.setItem('scanner_varelager', JSON.stringify({
+            masterVarelager: masterVarelager,
+            lagerLokationer: lagerLokationer,
+            mainInstallationId: mainInstallationId
+          }));
+          
+          updateVarelagerStatus();
+          alert(`✅ Varelager importeret!\n\nVarer: ${masterVarelager.length}\nLokationer: ${lagerLokationer.length}`);
+        } else {
+          alert('⚠️ Filen indeholder ikke varelager data.');
+        }
+      } catch(err) {
+        alert('Fejl ved import: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// Update varelager status
+function updateVarelagerStatus() {
+  const statusBar = document.getElementById('varelagerStatus');
+  const statusText = document.getElementById('varelagerStatusText');
+  
+  if (masterVarelager.length === 0) {
+    statusBar.style.display = 'block';
+    statusBar.className = 'status-bar warning';
+    statusText.textContent = 'Ingen varelager data - Import via QR-kode eller fil';
+  } else {
+    statusBar.style.display = 'block';
+    statusBar.className = 'status-bar success';
+    statusText.textContent = `Varelager indlæst: ${masterVarelager.length} varer, ${lagerLokationer.length} lokationer`;
+  }
+}
+
+// Show installation ID
+function showInstallationId() {
+  const modal = document.getElementById('idModal');
+  const scannerIdInput = document.getElementById('scannerInstallationId');
+  const mainIdInput = document.getElementById('mainInstallationId');
+  
+  scannerIdInput.value = scannerInstallationId || 'Ikke sat';
+  mainIdInput.value = mainInstallationId || 'Ikke synkroniseret';
+  
+  modal.classList.add('active');
+}
+
+// Close ID modal
+function closeIdModal() {
+  const modal = document.getElementById('idModal');
+  modal.classList.remove('active');
+}
+
+// Copy scanner ID
+function copyScannerId() {
+  const scannerIdInput = document.getElementById('scannerInstallationId');
+  scannerIdInput.select();
+  document.execCommand('copy');
+  alert('✅ Installation ID kopieret!');
+}
+
+// Upload to server (placeholder - can be implemented with GitHub Gist API)
+function uploadToServer() {
+  alert('Upload til server funktion kan implementeres med GitHub Gist API.\n\nBrug eksport funktionen i stedet.');
+}
+</script>
+</body>
+</html>
