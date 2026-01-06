@@ -4906,7 +4906,11 @@ function renderReports(){
       lokationDisplay = r.scope || r.placering || '-';
     }
     
-    tr.innerHTML = `<td>${formatTime(r.ts)}</td><td>${title}</td><td>${summary}</td><td>${antalDisplay}</td><td>${lokationDisplay}</td><td style="white-space:nowrap"><button class="secondary small" onclick="viewReportPDF(${i})" style="margin-right:4px;">📄 Vis PDF</button><button class="secondary small" onclick="exportReportPDF(${i})" style="margin-right:4px;">💾 Download</button><button class="secondary small" onclick="moveReportToArchive(${i})" style="background:#FF9800; color:white;">📦 Arkiver</button></td>`;
+    // Check if report was imported from server
+    const isFromServer = r.importedFromServer || r.gistId;
+    const serverBadge = isFromServer ? '<span style="background:#17a2b8; color:white; padding:3px 8px; border-radius:4px; font-size:11px; margin-left:8px; font-weight:600; display:inline-block;" title="Hentet fra server">☁️ Server</span>' : '<span style="background:#28a745; color:white; padding:3px 8px; border-radius:4px; font-size:11px; margin-left:8px; font-weight:600; display:inline-block;" title="Lokal optælling">📱 Lokal</span>';
+    
+    tr.innerHTML = `<td>${formatTime(r.ts)}</td><td>${title}${serverBadge}</td><td>${summary}</td><td>${antalDisplay}</td><td>${lokationDisplay}</td><td style="white-space:nowrap"><button class="secondary small" onclick="viewReportPDF(${i})" style="margin-right:4px;">📄 Vis PDF</button><button class="secondary small" onclick="exportReportPDF(${i})" style="margin-right:4px;">💾 Download</button><button class="secondary small" onclick="moveReportToArchive(${i})" style="background:#FF9800; color:white;">📦 Arkiver</button></td>`;
     tbody.appendChild(tr); shown++;
   });
   
@@ -5094,7 +5098,11 @@ function renderArchivedReports(){
       lokationDisplay = r.scope || r.placering || '-';
     }
     
-    tr.innerHTML = `<td>${formatTime(r.ts)}</td><td>${title}</td><td>${summary}</td><td>${antalDisplay}</td><td>${lokationDisplay}</td><td style="white-space:nowrap"><button class="secondary small" onclick="viewArchivedReportPDF(${i})" style="margin-right:4px;">📄 Vis PDF</button><button class="secondary small" onclick="exportArchivedReportPDF(${i})">💾 Download</button></td>`;
+    // Check if report was imported from server
+    const isFromServer = r.importedFromServer || r.gistId;
+    const serverBadge = isFromServer ? '<span style="background:#17a2b8; color:white; padding:3px 8px; border-radius:4px; font-size:11px; margin-left:8px; font-weight:600; display:inline-block;" title="Hentet fra server">☁️ Server</span>' : '<span style="background:#28a745; color:white; padding:3px 8px; border-radius:4px; font-size:11px; margin-left:8px; font-weight:600; display:inline-block;" title="Lokal optælling">📱 Lokal</span>';
+    
+    tr.innerHTML = `<td>${formatTime(r.ts)}</td><td>${title}${serverBadge}</td><td>${summary}</td><td>${antalDisplay}</td><td>${lokationDisplay}</td><td style="white-space:nowrap"><button class="secondary small" onclick="viewArchivedReportPDF(${i})" style="margin-right:4px;">📄 Vis PDF</button><button class="secondary small" onclick="exportArchivedReportPDF(${i})">💾 Download</button></td>`;
     tbody.appendChild(tr);
   });
 }
