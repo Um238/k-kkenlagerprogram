@@ -72,8 +72,8 @@ table th{background:#fafafa;font-weight:800}
 }
 
 /* [CSS 9] Labels */
-.label-container{display:flex;flex-direction:column;margin-top:15px;gap:15mm;align-items:flex-start}
-.label{border:1px solid #000;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0;padding:6px;box-sizing:border-box;background:#fff;page-break-inside:avoid;break-inside:avoid;margin-bottom:15mm}
+.label-container{display:flex;flex-direction:column;margin-top:15px;gap:15mm;align-items:flex-start;padding-left:20mm}
+.label{border:1px solid #000;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0;padding:8px;box-sizing:border-box;background:#fff;page-break-inside:avoid;break-inside:avoid;margin-bottom:15mm;text-align:center}
 
 /* [CSS 10] Login Modal */
 .login-backdrop{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:2000}
@@ -118,8 +118,8 @@ body.login-active #content{display:none}
 @media print{
   nav,button,input,select{display:none !important} 
   body{background:white;margin:0;padding:0}
-  .label-container{display:flex;flex-direction:column;gap:20mm;margin:0;padding:10mm;align-items:flex-start}
-  .label{margin-bottom:20mm !important;margin-right:0;margin-top:0;page-break-after:auto;break-after:auto;page-break-inside:avoid;break-inside:avoid}
+  .label-container{display:flex;flex-direction:column;gap:20mm;margin:0;padding:10mm;padding-left:30mm;align-items:flex-start}
+  .label{margin-bottom:20mm !important;margin-right:0;margin-top:0;page-break-after:auto;break-after:auto;page-break-inside:avoid;break-inside:avoid;text-align:center}
   .label:not(:last-child){margin-bottom:20mm !important}
   @page{margin:10mm}
 }
@@ -5659,9 +5659,42 @@ function generateLabels(){
   items.forEach(v=>{
     for(let i=0;i<count;i++){
       const d = document.createElement('div'); d.className='label'; d.style.width='90mm'; d.style.height='50mm';
-      d.innerHTML = `<strong>${v.navn}</strong><br><svg class="barcode"></svg>`;
+      
+      // Build info text - show mængde, lokation, reol but hide ID
+      let infoText = '';
+      if (v.maaleenhed) {
+        infoText += v.maaleenhed;
+      }
+      if (v.placering) {
+        if (infoText) infoText += ' • ';
+        infoText += v.placering;
+      }
+      if (v.reolNr) {
+        if (infoText) infoText += ' ';
+        infoText += 'Reol ' + v.reolNr;
+      }
+      if (v.hylleNr) {
+        if (infoText) infoText += ' ';
+        infoText += 'Hylle ' + v.hylleNr;
+      }
+      
+      // Use stregkode if available, otherwise use id (for backward compatibility)
+      const barcodeValue = v.stregkode || v.id;
+      
+      d.innerHTML = `<strong style="font-size:14px; margin-bottom:4px;">${v.navn}</strong>${infoText ? `<div style="font-size:11px; color:#666; margin-bottom:6px;">${infoText}</div>` : ''}<svg class="barcode"></svg>`;
       container.appendChild(d);
-      try{ JsBarcode(d.querySelector('.barcode'), v.id, { format:'CODE128', displayValue:true, width:2, height:40 }); }catch(e){}
+      try{ 
+        // Use stregkode if available, otherwise id
+        JsBarcode(d.querySelector('.barcode'), barcodeValue, { 
+          format:'CODE128', 
+          displayValue:false, // Hide the text value (don't show ID)
+          width:2, 
+          height:40,
+          margin:2
+        }); 
+      }catch(e){
+        console.error('Barcode generation error:', e);
+      }
     }
   });
 }
