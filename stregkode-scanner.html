@@ -12,54 +12,54 @@
 <title id="scannerTitle">Stregkode Scanner - Telefon v4.1</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:#f5f5f5;padding:4px;max-width:100%;margin:0 auto;font-size:20px;overflow-x:hidden}
-.header{background:#4CAF50;color:#fff;padding:20px;border-radius:12px;margin-bottom:12px;text-align:center}
-.header h1{font-size:32px;margin-bottom:8px;font-weight:700}
-.header p{font-size:18px;opacity:0.95}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:#f5f5f5;padding:4px;max-width:100%;margin:0 auto;font-size:24px;overflow-x:hidden}
+.header{background:#4CAF50;color:#fff;padding:25px;border-radius:12px;margin-bottom:15px;text-align:center}
+.header h1{font-size:42px;margin-bottom:12px;font-weight:800}
+.header p{font-size:24px;opacity:0.95;font-weight:600}
 .scanner-container{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);width:100%}
 #scannerVideo{width:100% !important;height:auto !important;min-height:550px !important;max-height:85vh !important;border:5px solid #4CAF50;border-radius:12px;background:#000;display:none;position:relative;object-fit:cover}
 #scannerVideo video{width:100% !important;height:auto !important;min-height:550px !important;max-height:85vh !important;object-fit:cover !important}
-.status{padding:20px;margin:12px 0;border-radius:10px;text-align:center;font-weight:700;min-height:70px;display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1.5;word-wrap:break-word}
+.status{padding:25px;margin:15px 0;border-radius:12px;text-align:center;font-weight:800;min-height:90px;display:flex;align-items:center;justify-content:center;font-size:26px;line-height:1.6;word-wrap:break-word;letter-spacing:0.3px}
 .status.waiting{background:#fff3cd;color:#856404}
 .status.scanning{background:#d4edda;color:#155724}
 .status.success{background:#d1ecf1;color:#0c5460}
 .status.error{background:#f8d7da;color:#721c24;white-space:pre-line}
-.button{width:100%;padding:28px;margin:12px 0;border:none;border-radius:12px;font-size:22px;font-weight:700;cursor:pointer;background:#4CAF50;color:#fff;touch-action:manipulation;min-height:85px;transition:all 0.2s}
+.button{width:100%;padding:35px;margin:15px 0;border:none;border-radius:14px;font-size:28px;font-weight:800;cursor:pointer;background:#4CAF50;color:#fff;touch-action:manipulation;min-height:110px;transition:all 0.2s;letter-spacing:0.5px}
 .button:active{opacity:0.85;transform:scale(0.97)}
-.button.secondary{background:#6c757d;font-size:20px;padding:26px;min-height:85px}
-.button.danger{background:#dc3545;min-height:85px}
+.button.secondary{background:#6c757d;font-size:26px;padding:32px;min-height:110px;font-weight:800}
+.button.danger{background:#dc3545;min-height:110px;font-weight:800}
 .scanned-list{background:#fff;border-radius:12px;padding:20px;margin-top:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch;width:100%}
 .scanned-item{padding:18px;margin:10px 0;background:#f8f9fa;border-radius:10px;border-left:6px solid #4CAF50;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
 .scanned-item .info{flex:1;min-width:0;max-width:100%}
-.scanned-item .name{font-weight:700;font-size:22px;color:#333;margin-bottom:6px;word-wrap:break-word}
-.scanned-item .details{font-size:17px;color:#666;margin-top:6px;word-wrap:break-word}
-.scanned-item .count{font-size:32px;font-weight:700;color:#4CAF50;margin-left:14px;min-width:60px;text-align:center;flex-shrink:0}
-.scanned-item .remove{background:#dc3545;color:#fff;border:none;padding:12px 18px;border-radius:8px;cursor:pointer;font-size:18px;margin-left:10px;touch-action:manipulation;font-weight:600;flex-shrink:0}
+.scanned-item .name{font-weight:800;font-size:28px;color:#333;margin-bottom:8px;word-wrap:break-word;letter-spacing:0.3px}
+.scanned-item .details{font-size:22px;color:#666;margin-top:8px;word-wrap:break-word;font-weight:600}
+.scanned-item .count{font-size:42px;font-weight:800;color:#4CAF50;margin-left:16px;min-width:80px;text-align:center;flex-shrink:0}
+.scanned-item .remove{background:#dc3545;color:#fff;border:none;padding:18px 24px;border-radius:10px;cursor:pointer;font-size:22px;margin-left:12px;touch-action:manipulation;font-weight:700;flex-shrink:0;min-height:60px}
 .actions{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;width:100%}
-.actions .button{flex:1;min-width:140px;font-size:20px;padding:26px;min-height:85px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,0.2)}
+.actions .button{flex:1;min-width:140px;font-size:24px;padding:32px;min-height:110px;font-weight:800;box-shadow:0 4px 12px rgba(0,0,0,0.2);letter-spacing:0.3px}
 .empty{text-align:center;padding:35px;color:#999;font-size:20px}
 .stats{display:flex;gap:20px;margin:20px 0;padding:25px;background:#f8f9fa;border-radius:12px;flex-wrap:wrap}
 .stat{text-align:center;flex:1;min-width:100px}
-.stat-value{font-size:36px;font-weight:700;color:#4CAF50}
-.stat-label{font-size:17px;color:#666;margin-top:8px}
+.stat-value{font-size:48px;font-weight:800;color:#4CAF50;letter-spacing:0.5px}
+.stat-label{font-size:22px;color:#666;margin-top:10px;font-weight:700}
 .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;overflow-y:auto}
 .modal.hidden{display:none}
 .modal-content{background:white;padding:50px;border-radius:24px;max-width:min(800px, 96vw);width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);margin:auto}
-.modal-content h3{margin:0 0 35px 0;font-size:36px;color:#333;font-weight:700}
-.modal-content p{font-size:22px;line-height:1.5}
-.modal-content label{font-size:22px;font-weight:600;display:block;margin-bottom:15px}
-.modal-content input[type="number"]{width:100%;padding:30px;font-size:42px;text-align:center;border:5px solid #4CAF50;border-radius:14px;margin:20px 0;font-weight:700}
-.modal-content select{width:100%;padding:25px;font-size:26px;border:5px solid #4CAF50;border-radius:14px;margin:15px 0;background:white;font-weight:600}
-.modal-buttons{display:flex;gap:18px;margin-top:40px;flex-wrap:wrap}
-.modal-buttons button{flex:1;padding:30px;font-size:28px;border-radius:16px;border:none;cursor:pointer;font-weight:700;touch-action:manipulation;min-height:85px;box-shadow:0 4px 12px rgba(0,0,0,0.2);transition:all 0.2s}
+.modal-content h3{margin:0 0 40px 0;font-size:44px;color:#333;font-weight:800;letter-spacing:0.5px}
+.modal-content p{font-size:28px;line-height:1.6;font-weight:600}
+.modal-content label{font-size:28px;font-weight:700;display:block;margin-bottom:18px;letter-spacing:0.3px}
+.modal-content input[type="number"]{width:100%;padding:35px;font-size:52px;text-align:center;border:6px solid #4CAF50;border-radius:16px;margin:25px 0;font-weight:800;letter-spacing:1px}
+.modal-content select{width:100%;padding:30px;font-size:32px;border:6px solid #4CAF50;border-radius:16px;margin:18px 0;background:white;font-weight:700}
+.modal-buttons{display:flex;gap:20px;margin-top:45px;flex-wrap:wrap}
+.modal-buttons button{flex:1;padding:35px;font-size:32px;border-radius:18px;border:none;cursor:pointer;font-weight:800;touch-action:manipulation;min-height:120px;box-shadow:0 4px 12px rgba(0,0,0,0.2);transition:all 0.2s;letter-spacing:0.5px}
 .modal-buttons button:active{opacity:0.85;transform:scale(0.97)}
-.modal-buttons button[onclick*="confirmLocationSelection"]{background:#4CAF50 !important;color:white !important;font-size:30px;font-weight:800;min-height:90px;box-shadow:0 6px 16px rgba(76,175,80,0.4)}
+.modal-buttons button[onclick*="confirmLocationSelection"]{background:#4CAF50 !important;color:white !important;font-size:36px;font-weight:900;min-height:130px;box-shadow:0 6px 16px rgba(76,175,80,0.4);letter-spacing:0.8px}
 @media (max-width:480px){
   body{padding:4px;font-size:18px}
   .header{padding:16px}
   .header h1{font-size:28px}
   .scanner-container{padding:12px}
-  .button{font-size:20px;padding:24px;min-height:80px}
+  .button{font-size:26px;padding:30px;min-height:100px;font-weight:800}
   .scanned-item{flex-direction:column;align-items:stretch}
   .scanned-item .count{margin-left:0;margin-top:10px;font-size:28px}
   .scanned-item .remove{margin-left:0;margin-top:10px;width:100%;padding:16px;font-size:18px}
@@ -71,7 +71,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
   .modal-content h3{font-size:28px;margin-bottom:20px}
   .modal-content input[type="number"]{font-size:38px;padding:25px}
   .modal-content select{font-size:24px;padding:22px}
-  .modal-buttons button{font-size:24px;padding:26px;min-height:85px}
+  .modal-buttons button{font-size:28px;padding:30px;min-height:100px}
 }
 @media (orientation:landscape) and (max-height:600px){
   #scannerVideo{max-height:70vh !important;min-height:400px !important}
@@ -86,7 +86,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <div class="header">
   <h1>📱 Stregkode Scanner</h1>
   <p>Scan stregkoder med din telefon</p>
-  <div id="versionDisplayScanner" style="font-size:16px; font-weight:700; margin-top:8px; opacity:0.95; line-height:1.5;">v4.1</div>
+  <div id="versionDisplayScanner" style="font-size:22px; font-weight:800; margin-top:12px; opacity:0.95; line-height:1.6; letter-spacing:0.5px;">v4.1</div>
 </div>
 
 <div class="scanner-container">
@@ -108,7 +108,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 </div>
 
 <div class="scanned-list">
-  <h3 style="margin-bottom:10px">Scannede varer (<span id="count">0</span>)</h3>
+  <h3 style="margin-bottom:15px; font-size:28px; font-weight:800; letter-spacing:0.3px;">Scannede varer (<span id="count">0</span>)</h3>
   <div id="scannedList">
     <div class="empty">Ingen varer scannet endnu</div>
   </div>
@@ -116,10 +116,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
     <div id="varelagerUpdateNotificationScanner" style="display:none; background:#ffc107; color:#000; padding:8px 12px; border-radius:6px; font-size:12px; font-weight:600; margin-right:8px; cursor:pointer; white-space:nowrap;" onclick="fetchVarelagerFromServer()" title="Klik for at hente nyt varelager">
       ⚠️ Nyt varelager tilgængeligt
     </div>
-    <button class="button secondary" onclick="clearAll()" style="font-size:18px; padding:26px; min-height:85px; border-radius:10px; font-weight:700; box-shadow:0 4px 12px rgba(0,0,0,0.2);">🗑 Ryd alt</button>
-    <button class="button secondary" onclick="fetchVarelagerFromServer()" style="font-size:18px; padding:26px; min-height:85px; background:#17a2b8; color:white; border-radius:10px; font-weight:700; box-shadow:0 4px 12px rgba(23,162,184,0.3);">☁️ Hent varelager</button>
-    <button class="button secondary" onclick="uploadReportsToServer()" style="font-size:18px; padding:26px; min-height:85px; background:#28a745; color:white; border-radius:10px; font-weight:700; box-shadow:0 4px 12px rgba(40,167,69,0.3);">☁️ Upload rapporter</button>
-    <button class="button" onclick="finishSession()" style="font-size:20px; padding:26px; min-height:85px; border-radius:10px; font-weight:700; box-shadow:0 4px 12px rgba(76,175,80,0.3);">✅ Afslut optælling</button>
+    <button class="button secondary" onclick="clearAll()" style="font-size:24px; padding:32px; min-height:110px; border-radius:12px; font-weight:800; box-shadow:0 4px 12px rgba(0,0,0,0.2); letter-spacing:0.3px;">🗑 Ryd alt</button>
+    <button class="button secondary" onclick="fetchVarelagerFromServer()" style="font-size:24px; padding:32px; min-height:110px; background:#17a2b8; color:white; border-radius:12px; font-weight:800; box-shadow:0 4px 12px rgba(23,162,184,0.3); letter-spacing:0.3px;">☁️ Hent varelager</button>
+    <button class="button secondary" onclick="uploadReportsToServer()" style="font-size:24px; padding:32px; min-height:110px; background:#28a745; color:white; border-radius:12px; font-weight:800; box-shadow:0 4px 12px rgba(40,167,69,0.3); letter-spacing:0.3px;">☁️ Upload rapporter</button>
+    <button class="button" onclick="finishSession()" style="font-size:26px; padding:32px; min-height:110px; border-radius:12px; font-weight:800; box-shadow:0 4px 12px rgba(76,175,80,0.3); letter-spacing:0.4px;">✅ Afslut optælling</button>
   </div>
 </div>
 
@@ -127,10 +127,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <div id="locationModal" class="modal hidden">
   <div class="modal-content">
     <h3>📍 Vælg Lokation</h3>
-    <p style="margin-bottom:25px; color:#666; font-size:20px; line-height:1.5;">Vælg hvilken lokation du vil optælle. Du kan vælge "Alle lokationer" for at optælle alle.</p>
-    <div style="margin:30px 0">
-      <label for="locationSelect" style="display:block;margin-bottom:15px;font-weight:600;font-size:20px;">Lokation:</label>
-      <select id="locationSelect" style="width:100%;padding:25px;font-size:26px;border:5px solid #4CAF50;border-radius:14px;font-weight:600;">
+    <p style="margin-bottom:30px; color:#666; font-size:28px; line-height:1.6; font-weight:600;">Vælg hvilken lokation du vil optælle. Du kan vælge "Alle lokationer" for at optælle alle.</p>
+    <div style="margin:35px 0">
+      <label for="locationSelect" style="display:block;margin-bottom:18px;font-weight:700;font-size:28px; letter-spacing:0.3px;">Lokation:</label>
+      <select id="locationSelect" style="width:100%;padding:30px;font-size:32px;border:6px solid #4CAF50;border-radius:16px;font-weight:700;">
         <option value="">Alle lokationer</option>
       </select>
     </div>
@@ -145,10 +145,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <div id="quantityModal" class="modal hidden">
   <div class="modal-content">
     <h3>Indtast antal</h3>
-    <div id="scannedCodeDisplay" style="font-size:22px;font-weight:600;margin:25px 0;color:#4CAF50;line-height:1.5;"></div>
-    <div style="margin:30px 0">
-      <label for="quantityInput" style="display:block;margin-bottom:15px;font-weight:600;font-size:20px;">Antal:</label>
-      <input type="number" id="quantityInput" min="1" value="1" style="width:100%;padding:30px;font-size:42px;text-align:center;border:5px solid #4CAF50;border-radius:14px;font-weight:700;" autofocus onkeypress="if(event.key==='Enter') confirmQuantityInput()">
+    <div id="scannedCodeDisplay" style="font-size:28px;font-weight:700;margin:30px 0;color:#4CAF50;line-height:1.6; letter-spacing:0.3px;"></div>
+    <div style="margin:35px 0">
+      <label for="quantityInput" style="display:block;margin-bottom:18px;font-weight:700;font-size:28px; letter-spacing:0.3px;">Antal:</label>
+      <input type="number" id="quantityInput" min="1" value="1" style="width:100%;padding:35px;font-size:52px;text-align:center;border:6px solid #4CAF50;border-radius:16px;font-weight:800; letter-spacing:1px;" autofocus onkeypress="if(event.key==='Enter') confirmQuantityInput()">
     </div>
     <div class="modal-buttons">
       <button onclick="cancelQuantityInput()" style="background:#6c757d;color:white;">Annuller</button>
@@ -160,9 +160,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 // Versionsnummer - opdateres automatisk
-const APP_VERSION = '4.17';
+const APP_VERSION = '4.18';
 const BUILD_DATE = '2026-01-06';
-const BUILD_TIME = '15:15';
+const BUILD_TIME = '15:35';
 
 let scannerActive = false;
 let html5QrCode = null;
@@ -2091,7 +2091,7 @@ async function fetchVarelagerFromServer(){
 function updateVersionDisplayScanner(){
   const versionDisplay = document.getElementById('versionDisplayScanner');
   if(versionDisplay){
-    versionDisplay.innerHTML = `v${APP_VERSION}<br><span style="font-size:14px; opacity:0.95; letter-spacing:0.2px;">${BUILD_DATE} ${BUILD_TIME}</span>`;
+    versionDisplay.innerHTML = `v${APP_VERSION}<br><span style="font-size:18px; opacity:0.95; letter-spacing:0.3px; font-weight:700;">${BUILD_DATE} ${BUILD_TIME}</span>`;
   }
   // Opdater også i title
   const titleEl = document.getElementById('scannerTitle');
