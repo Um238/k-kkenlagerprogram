@@ -45,16 +45,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .stat-label{font-size:22px;color:#666;margin-top:10px;font-weight:700}
 .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;overflow-y:auto}
 .modal.hidden{display:none}
-.modal-content{background:white;padding:50px;border-radius:24px;max-width:100vw;width:100vw;box-shadow:0 8px 32px rgba(0,0,0,0.3);margin:0;box-sizing:border-box}
-.modal-content h3{margin:0 0 40px 0;font-size:44px;color:#333;font-weight:800;letter-spacing:0.5px}
-.modal-content p{font-size:28px;line-height:1.6;font-weight:600}
-.modal-content label{font-size:28px;font-weight:700;display:block;margin-bottom:18px;letter-spacing:0.3px}
-.modal-content input[type="number"]{width:100%;padding:35px;font-size:52px;text-align:center;border:6px solid #4CAF50;border-radius:16px;margin:25px 0;font-weight:800;letter-spacing:1px}
-.modal-content select{width:100%;padding:30px;font-size:32px;border:6px solid #4CAF50;border-radius:16px;margin:18px 0;background:white;font-weight:700}
-.modal-buttons{display:flex;gap:20px;margin-top:45px;flex-wrap:wrap}
-.modal-buttons button{flex:1;padding:35px;font-size:32px;border-radius:18px;border:none;cursor:pointer;font-weight:800;touch-action:manipulation;min-height:120px;box-shadow:0 4px 12px rgba(0,0,0,0.2);transition:all 0.2s;letter-spacing:0.5px}
+.modal-content{background:white;padding:40px;border-radius:20px;max-width:90vw;width:90vw;box-shadow:0 8px 32px rgba(0,0,0,0.3);margin:auto;box-sizing:border-box}
+.modal-content h3{margin:0 0 30px 0;font-size:40px;color:#333;font-weight:800;letter-spacing:0.5px}
+.modal-content p{font-size:26px;line-height:1.5;font-weight:600;margin-bottom:20px}
+.modal-content label{font-size:26px;font-weight:700;display:block;margin-bottom:15px;letter-spacing:0.3px}
+.modal-content input[type="number"]{width:100%;padding:30px;font-size:48px;text-align:center;border:6px solid #4CAF50;border-radius:14px;margin:20px 0;font-weight:800;letter-spacing:1px}
+.modal-content select{width:100%;padding:28px;font-size:30px;border:6px solid #4CAF50;border-radius:14px;margin:15px 0;background:white;font-weight:700}
+.modal-buttons{display:flex;gap:18px;margin-top:35px;flex-wrap:wrap}
+.modal-buttons button{flex:1;padding:32px;font-size:30px;border-radius:16px;border:none;cursor:pointer;font-weight:800;touch-action:manipulation;min-height:110px;box-shadow:0 4px 12px rgba(0,0,0,0.2);transition:all 0.2s;letter-spacing:0.5px}
 .modal-buttons button:active{opacity:0.85;transform:scale(0.97)}
-.modal-buttons button[onclick*="confirmLocationSelection"]{background:#4CAF50 !important;color:white !important;font-size:36px;font-weight:900;min-height:130px;box-shadow:0 6px 16px rgba(76,175,80,0.4);letter-spacing:0.8px}
+.modal-buttons button[onclick*="confirmLocationSelection"]{background:#4CAF50 !important;color:white !important;font-size:34px;font-weight:900;min-height:120px;box-shadow:0 6px 16px rgba(76,175,80,0.4);letter-spacing:0.8px}
 @media (max-width:480px){
   html,body{width:100vw !important;height:100vh !important;margin:0 !important;padding:0 !important;overflow-x:hidden}
   body{padding:0 !important;font-size:22px;width:100vw !important;max-width:100vw !important;box-sizing:border-box}
@@ -69,11 +69,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
   .stat{width:100%}
   #scannerVideo{width:100vw !important;max-width:100vw !important;min-height:450px !important;max-height:70vh !important;box-sizing:border-box;margin:0 !important;padding:0 !important;border-radius:0 !important}
   #scannerVideo video{width:100vw !important;max-width:100vw !important;min-height:450px !important;max-height:70vh !important;box-sizing:border-box}
-  .modal-content{padding:35px !important;width:100vw !important;max-width:100vw !important;box-sizing:border-box;margin:0 !important;border-radius:0 !important}
-  .modal-content h3{font-size:36px;margin-bottom:25px}
-  .modal-content input[type="number"]{font-size:46px;padding:30px;width:100% !important;box-sizing:border-box}
-  .modal-content select{font-size:28px;padding:28px;width:100% !important;box-sizing:border-box}
-  .modal-buttons button{font-size:28px;padding:30px;min-height:100px;width:100% !important;box-sizing:border-box}
+  .modal-content{padding:30px !important;width:90vw !important;max-width:90vw !important;box-sizing:border-box;margin:auto !important;border-radius:16px !important}
+  .modal-content h3{font-size:34px;margin-bottom:20px}
+  .modal-content p{font-size:24px;margin-bottom:15px}
+  .modal-content input[type="number"]{font-size:44px;padding:28px;width:100% !important;box-sizing:border-box}
+  .modal-content select{font-size:26px;padding:26px;width:100% !important;box-sizing:border-box}
+  .modal-buttons button{font-size:26px;padding:28px;min-height:100px;width:100% !important;box-sizing:border-box}
   .scanned-list{width:100vw !important;max-width:100vw !important;box-sizing:border-box;margin:0 !important;border-radius:0 !important}
   .actions{width:100vw !important;max-width:100vw !important;box-sizing:border-box;margin:20px 0 0 0 !important}
   .status{width:100vw !important;max-width:100vw !important;box-sizing:border-box;margin:15px 0 !important;border-radius:0 !important}
@@ -165,9 +166,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 // Versionsnummer - opdateres automatisk
-const APP_VERSION = '4.19';
+const APP_VERSION = '4.20';
 const BUILD_DATE = '2026-01-06';
-const BUILD_TIME = '16:05';
+const BUILD_TIME = '16:31';
 
 let scannerActive = false;
 let html5QrCode = null;
