@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta name="theme-color" content="#0078D4" />
 <meta name="description" content="Lager optælling system til køkken og lager - Scan stregkoder, administrer varelager og generer rapporter" />
-<title>Lager optælling — Færdig version v4.8 (2026-01-06 09:18)</title>
+<title>Lager optælling — Færdig version v4.9 (2026-01-06 09:47)</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%230078D4' rx='4'/%3E%3Cg transform='translate(200, 80)'%3E%3Cpath d='M -60 40 L -50 80 L 50 80 L 60 40 L 55 35 L -55 35 Z' fill='%23D4A574' stroke='%238B6F47' stroke-width='2'/%3E%3Cpath d='M -55 35 L -50 30 L 50 30 L 55 35 L 60 40 L -60 40 Z' fill='%23E8C9A0' stroke='%238B6F47' stroke-width='2'/%3E%3Ccircle cx='-30' cy='50' r='3' fill='%23F5E6D3' opacity='0.6'/%3E%3Ccircle cx='0' cy='55' r='2.5' fill='%23F5E6D3' opacity='0.6'/%3E%3Ccircle cx='25' cy='50' r='2' fill='%23F5E6D3' opacity='0.6'/%3E%3C/g%3E%3Ctext x='200' y='50' font-family='serif' font-size='32' font-weight='bold' fill='%23fff' text-anchor='middle'%3EKØKKEN%3C/text%3E%3C/svg%3E" />
 <!-- PWA: Tilføj manifest link for at gøre det til en installable app -->
@@ -474,7 +474,7 @@ a:hover{color:#45a049;text-decoration:none}
       <button class="secondary" onclick="showPage('licens'); updateLicenseStatusDisplay();" style="background:rgba(255,255,255,0.2); color:#fff; border-color:rgba(255,255,255,0.3);">🔑 Licens</button>
       <button class="secondary" onclick="logout()">🚪 Log ud</button>
     </div>
-    <div id="versionDisplay" style="color:#fff; font-size:14px; font-weight:600; text-align:right; padding:6px 10px; background:rgba(255,255,255,0.15); border-radius:4px; font-family:monospace; line-height:1.4;">v4.8<br><span style="font-size:11px; opacity:0.9;">2026-01-06 09:18</span></div>
+    <div id="versionDisplay" style="color:#fff; font-size:14px; font-weight:600; text-align:right; padding:6px 10px; background:rgba(255,255,255,0.15); border-radius:4px; font-family:monospace; line-height:1.4;">v4.9<br><span style="font-size:11px; opacity:0.9;">2026-01-06 09:47</span></div>
   </div>
 </header>
 
@@ -863,6 +863,7 @@ a:hover{color:#45a049;text-decoration:none}
             <table style="width:100%; border-collapse:collapse;">
               <thead style="position:sticky; top:0; z-index:10; background:#fff;">
                 <tr>
+                  <th style="background:#f5f5f5; padding:12px; text-align:center; border-bottom:2px solid #ddd; font-weight:bold;">Billede</th>
                   <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Vare</th>
                   <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Måleenhed</th>
                   <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Pris</th>
@@ -2299,9 +2300,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.8';
+const APP_VERSION = '4.9';
 const BUILD_DATE = '2026-01-06';
-const BUILD_TIME = '09:18';
+const BUILD_TIME = '09:47';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -2367,20 +2368,12 @@ function loadAllData(){
     } else {
       // Hvis lagerLokationer ikke findes i data, brug standard
       if(!lagerLokationer || lagerLokationer.length === 0){
-        lagerLokationer = ['Køl', 'Frost', 'Tørevare', 'Grønt', 'Vinlager'];
+        lagerLokationer = ['Køl', 'Frost', 'Tørevare', 'Grønt'];
       }
     }
-    // Sikr at Vinlager altid er til stede
-    let vinlagerAdded = false;
+    // Sikr at lagerLokationer er korrekt initialiseret
     if(!lagerLokationer || !Array.isArray(lagerLokationer)){
-      lagerLokationer = ['Køl', 'Frost', 'Tørevare', 'Grønt', 'Vinlager'];
-      vinlagerAdded = true;
-    } else if(!lagerLokationer.includes('Vinlager')){
-      lagerLokationer.push('Vinlager');
-      vinlagerAdded = true;
-    }
-    if(vinlagerAdded && !lagerData['Vinlager']) {
-      lagerData['Vinlager'] = {};
+      lagerLokationer = ['Køl', 'Frost', 'Tørevare', 'Grønt'];
     }
     if(data.leverandorer) leverandorer = data.leverandorer;
     if(data.reports) reports = data.reports;
@@ -2388,10 +2381,6 @@ function loadAllData(){
     if(data.archivePeriod !== undefined) archivePeriod = data.archivePeriod;
     if(data.sessionCounter !== undefined) sessionCounter = data.sessionCounter;
     if(data.activeSession) activeSession = data.activeSession;
-    // Gem data igen hvis Vinlager blev tilføjet
-    if(vinlagerAdded){
-      saveAllData();
-    }
     return true;
   }catch(err){
     console.warn('Kunne ikke indlæse data:', err);
@@ -2492,11 +2481,10 @@ function initializeApp(){
     // Prøv at indlæse gemte data
     const hasData = loadAllData();
     
-    // Sikr at Vinlager altid er til stede (også når der er eksisterende data)
-    if(!lagerLokationer.includes('Vinlager')){
-      lagerLokationer.push('Vinlager');
-      if(!lagerData['Vinlager']) lagerData['Vinlager'] = {};
-      saveAllData(); // Gem så Vinlager er permanent
+    // Fjern Vinlager fra lagerLokationer hvis det findes (kun for opsætning lager)
+    if(lagerLokationer.includes('Vinlager')){
+      lagerLokationer = lagerLokationer.filter(loc => loc !== 'Vinlager');
+      saveAllData();
     }
     
     // Ved ny installation: Start ALTID med tomt lager (ingen demo data)
@@ -2510,11 +2498,11 @@ function initializeApp(){
         lagerData = {};
         // Opret tomme lokationer hvis de ikke findes
         if(!lagerLokationer || lagerLokationer.length === 0){
-          lagerLokationer = ['Køl', 'Frost', 'Tørevare', 'Grønt', 'Vinlager'];
+          lagerLokationer = ['Køl', 'Frost', 'Tørevare', 'Grønt'];
         }
-        // Sikr at Vinlager altid er til stede
-        if(!lagerLokationer.includes('Vinlager')){
-          lagerLokationer.push('Vinlager');
+        // Fjern Vinlager fra lagerLokationer hvis det findes
+        if(lagerLokationer.includes('Vinlager')){
+          lagerLokationer = lagerLokationer.filter(loc => loc !== 'Vinlager');
         }
         lagerLokationer.forEach(l => {
           if(!lagerData[l]) lagerData[l] = {};
@@ -2763,7 +2751,7 @@ function updateSearchFilter(){
    [JS 2] OPSÆTNING LAGER (drag/drop)
    ================================ */
 function tilfoejLager(){ const name = $('nyLagerNavn').value.trim(); if(!name) return alert('Indtast lagernavn'); if(lagerLokationer.includes(name)) return alert('Lokation findes allerede'); lagerLokationer.push(name); $('nyLagerNavn').value=''; renderLagerOpsaetning(); updateAllSelects(); saveAllData(); }
-function resetLocations(){ if(confirm('Reset til demo-lokationer?')){ lagerLokationer=['Køl','Frost','Tørevare','Grønt','Vinlager']; renderLagerOpsaetning(); updateAllSelects(); saveAllData(); } }
+function resetLocations(){ if(confirm('Reset til demo-lokationer?')){ lagerLokationer=['Køl','Frost','Tørevare','Grønt']; renderLagerOpsaetning(); updateAllSelects(); saveAllData(); } }
 function renderLagerOpsaetning(){
   const ul=$('lagerOpsaetning'); if(!ul) return; ul.innerHTML='';
   lagerLokationer.forEach((loc,i)=>{
@@ -2845,8 +2833,18 @@ function renderMasterTable(){
 
     paginatedItems.forEach(v => {
         const tr = document.createElement("tr");
+        
+        // Billede cell - klikbart for at uploade nyt billede
+        let imageCell = '<td style="text-align:center; padding:8px;">';
+        if(v.billede) {
+            imageCell += `<img src="${v.billede}" alt="${v.navn}" style="width:60px; height:60px; object-fit:contain; border:2px solid #0078D4; border-radius:4px; cursor:pointer;" onclick="uploadVareImage('${v.id}')" title="Klik for at uploade nyt billede">`;
+        } else {
+            imageCell += `<div style="width:60px; height:60px; border:2px dashed #ccc; border-radius:4px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#999; font-size:11px;" onclick="uploadVareImage('${v.id}')" title="Klik for at uploade billede">+ Billede</div>`;
+        }
+        imageCell += '</td>';
 
         tr.innerHTML = `
+            ${imageCell}
             <td onclick="editMasterName('${v.id}')" style="cursor:pointer">${v.navn}</td>
             <td onclick="editMasterUnit('${v.id}')" style="cursor:pointer">${v.maaleenhed}</td>
             <td onclick="editMasterPrice('${v.id}')" style="cursor:pointer">${v.pris.toFixed(2)} kr.</td>
@@ -2865,7 +2863,7 @@ function renderMasterTable(){
         const paginationRow = document.createElement('tr');
         paginationRow.style.background = '#f9f9f9';
         paginationRow.innerHTML = `
-            <td colspan="8" style="text-align:center; padding:12px;">
+            <td colspan="9" style="text-align:center; padding:12px;">
                 <button class="secondary small" onclick="window.masterTablePage = Math.max(1, (window.masterTablePage || 1) - 1); renderMasterTable();" ${currentPage === 1 ? 'disabled' : ''}>◀ Forrige</button>
                 <span style="margin:0 12px; color:#666;">Side ${currentPage} af ${totalPages} (${sorted.length} varer)</span>
                 <button class="secondary small" onclick="window.masterTablePage = Math.min(${totalPages}, (window.masterTablePage || 1) + 1); renderMasterTable();" ${currentPage === totalPages ? 'disabled' : ''}>Næste ▶</button>
@@ -2889,6 +2887,55 @@ function renderMasterTable(){
 /* ======================================================
    [JS 3.1] REDIGERINGSFUNKTIONER (NYT)
    ====================================================== */
+
+function uploadVareImage(id){
+    const v = masterVarelager.find(x=>x.id===id);
+    if(!v) return;
+    
+    // Opret skjult file input
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.style.display = 'none';
+    
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        // Tjek filtype
+        if (!file.type.startsWith('image/')) {
+            alert('⚠️ Vælg venligst en billedfil (jpg, png, etc.)');
+            return;
+        }
+        
+        // Tjek filstørrelse (max 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            alert('⚠️ Billedet er for stort. Maksimal størrelse er 2MB. Komprimer billedet og prøv igen.');
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const base64 = e.target.result;
+            v.billede = base64;
+            renderMasterTable();
+            renderLagerTable();
+            saveAllData();
+            alert('✅ Billede opdateret!');
+        };
+        reader.onerror = function() {
+            alert('❌ Fejl ved indlæsning af billede. Prøv igen.');
+        };
+        reader.readAsDataURL(file);
+        
+        // Fjern input element
+        document.body.removeChild(input);
+    };
+    
+    // Tilføj til DOM og trigger click
+    document.body.appendChild(input);
+    input.click();
+}
 
 function editMasterName(id){
     const v = masterVarelager.find(x=>x.id===id);
@@ -7287,7 +7334,7 @@ function processImportText(text, importType = 'add'){
 
 /* Backup / restore */
 function exportAllBackup(){ const payload={ masterVarelager, lagerData, lagerLokationer, leverandorer, reports, sessionCounter }; downloadFile(JSON.stringify(payload,null,2),'lager_backup.json','application/json'); }
-function importAllBackupFromFile(file){ const r = new FileReader(); r.onload = e => { try{ const obj = JSON.parse(e.target.result); masterVarelager = obj.masterVarelager || []; lagerData = obj.lagerData || {}; lagerLokationer = obj.lagerLokationer || ['Køl','Frost','Tørevare','Grønt','Vinlager']; reports = obj.reports || []; leverandorer = obj.leverandorer || []; sessionCounter = obj.sessionCounter || 0; updateAllSelects(); renderMasterTable(); renderLagerOpsaetning(); renderLagerTable(); renderReports(); updateLogPreview(); alert('Backup importeret'); }catch(err){ alert('Fejl ved import: '+err.message); } }; r.readAsText(file); }
+function importAllBackupFromFile(file){ const r = new FileReader(); r.onload = e => { try{ const obj = JSON.parse(e.target.result); masterVarelager = obj.masterVarelager || []; lagerData = obj.lagerData || {}; lagerLokationer = obj.lagerLokationer || ['Køl','Frost','Tørevare','Grønt']; if(lagerLokationer.includes('Vinlager')){ lagerLokationer = lagerLokationer.filter(loc => loc !== 'Vinlager'); } reports = obj.reports || []; leverandorer = obj.leverandorer || []; sessionCounter = obj.sessionCounter || 0; updateAllSelects(); renderMasterTable(); renderLagerOpsaetning(); renderLagerTable(); renderReports(); updateLogPreview(); alert('Backup importeret'); }catch(err){ alert('Fejl ved import: '+err.message); } }; r.readAsText(file); }
 
 /* Check for manual counting data automatically and refresh reports */
 function checkForManualCountingData(){
@@ -8236,10 +8283,9 @@ function showPage(id){
   
   if(id==='lageropt') renderLagerTable(); 
   if(id==='opsaetning') { 
-    // Sikr at Vinlager altid er til stede
-    if(!lagerLokationer.includes('Vinlager')){
-      lagerLokationer.push('Vinlager');
-      if(!lagerData['Vinlager']) lagerData['Vinlager'] = {};
+    // Fjern Vinlager fra lagerLokationer hvis det findes (kun for opsætning lager)
+    if(lagerLokationer.includes('Vinlager')){
+      lagerLokationer = lagerLokationer.filter(loc => loc !== 'Vinlager');
       saveAllData();
     }
     renderLagerOpsaetning(); 
