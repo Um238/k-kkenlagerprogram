@@ -99,6 +99,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
   <div id="status" class="status waiting">Klik "Start Scanner" for at begynde</div>
   <div id="scannerVideo"></div>
   <button id="startBtn" class="button" onclick="showLocationSelection()">📷 Start Optælling</button>
+  <button id="startVinBtn" class="button" onclick="showVinLocationSelection()" style="background:#8B0000; margin-top:0;">🍷 Start Vinlager Optælling</button>
   <button id="stopBtn" class="button secondary" onclick="stopScanner()" style="display:none">⏹ Stop Scanner</button>
 </div>
 
@@ -126,6 +127,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
     <button class="button secondary" onclick="fetchVarelagerFromServer()" style="font-size:24px; padding:32px; min-height:110px; background:#17a2b8; color:white; border-radius:12px; font-weight:800; box-shadow:0 4px 12px rgba(23,162,184,0.3); letter-spacing:0.3px;">☁️ Hent varelager</button>
     <button class="button secondary" onclick="uploadReportsToServer()" style="font-size:24px; padding:32px; min-height:110px; background:#28a745; color:white; border-radius:12px; font-weight:800; box-shadow:0 4px 12px rgba(40,167,69,0.3); letter-spacing:0.3px;">☁️ Upload rapporter</button>
     <button class="button" onclick="finishSession()" style="font-size:26px; padding:32px; min-height:110px; border-radius:12px; font-weight:800; box-shadow:0 4px 12px rgba(76,175,80,0.3); letter-spacing:0.4px;">✅ Afslut optælling</button>
+    <button class="button secondary" onclick="clearAllVin()" style="font-size:24px; padding:32px; min-height:110px; border-radius:12px; font-weight:800; box-shadow:0 4px 12px rgba(0,0,0,0.2); letter-spacing:0.3px; background:#8B0000; color:white;">🗑 Ryd alt</button>
+    <button class="button secondary" onclick="fetchVinlagerFromServer()" style="font-size:24px; padding:32px; min-height:110px; background:#8B0000; color:white; border-radius:12px; font-weight:800; box-shadow:0 4px 12px rgba(139,0,0,0.3); letter-spacing:0.3px;">☁️ Hent vinlager</button>
+    <button class="button secondary" onclick="uploadVinReportsToServer()" style="font-size:24px; padding:32px; min-height:110px; background:#8B0000; color:white; border-radius:12px; font-weight:800; box-shadow:0 4px 12px rgba(139,0,0,0.3); letter-spacing:0.3px;">☁️ Upload vin rapporter</button>
+    <button class="button" onclick="finishVinSession()" style="font-size:26px; padding:32px; min-height:110px; border-radius:12px; font-weight:800; box-shadow:0 4px 12px rgba(139,0,0,0.3); letter-spacing:0.4px; background:#8B0000; color:white;">✅ Afslut vin optælling</button>
   </div>
 </div>
 
@@ -2091,6 +2096,29 @@ async function fetchVarelagerFromServer(){
     // Generic error
     alert('❌ Fejl ved hentning: ' + err.message + '\n\nTjek din internetforbindelse og prøv igen.');
   }
+}
+
+// Vinlager funktioner - placeholder funktioner til senere implementering
+function showVinLocationSelection(){
+  alert('🍷 Vinlager optælling kommer snart!\n\nDenne funktion vil blive implementeret på et senere tidspunkt.');
+}
+
+function clearAllVin(){
+  if(confirm('🗑 Er du sikker på at du vil rydde alt i vinlager optællingen?')){
+    alert('🍷 Ryd vinlager funktion kommer snart!');
+  }
+}
+
+function fetchVinlagerFromServer(){
+  alert('🍷 Hent vinlager funktion kommer snart!');
+}
+
+function uploadVinReportsToServer(){
+  alert('🍷 Upload vin rapporter funktion kommer snart!');
+}
+
+function finishVinSession(){
+  alert('🍷 Afslut vin optælling funktion kommer snart!');
 }
 
 // Opdater versionsnummer i header
