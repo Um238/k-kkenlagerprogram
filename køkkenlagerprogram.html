@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta name="theme-color" content="#0078D4" />
 <meta name="description" content="Lager optælling system til køkken og lager - Scan stregkoder, administrer varelager og generer rapporter" />
-<title>Lager optælling — Færdig version v4.12 (2026-01-06 10:23)</title>
+<title>Lager optælling — Færdig version v4.13 (2026-01-06 10:32)</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%230078D4' rx='4'/%3E%3Cg transform='translate(200, 80)'%3E%3Cpath d='M -60 40 L -50 80 L 50 80 L 60 40 L 55 35 L -55 35 Z' fill='%23D4A574' stroke='%238B6F47' stroke-width='2'/%3E%3Cpath d='M -55 35 L -50 30 L 50 30 L 55 35 L 60 40 L -60 40 Z' fill='%23E8C9A0' stroke='%238B6F47' stroke-width='2'/%3E%3Ccircle cx='-30' cy='50' r='3' fill='%23F5E6D3' opacity='0.6'/%3E%3Ccircle cx='0' cy='55' r='2.5' fill='%23F5E6D3' opacity='0.6'/%3E%3Ccircle cx='25' cy='50' r='2' fill='%23F5E6D3' opacity='0.6'/%3E%3C/g%3E%3Ctext x='200' y='50' font-family='serif' font-size='32' font-weight='bold' fill='%23fff' text-anchor='middle'%3EKØKKEN%3C/text%3E%3C/svg%3E" />
 <!-- PWA: Tilføj manifest link for at gøre det til en installable app -->
@@ -471,10 +471,10 @@ a:hover{color:#45a049;text-decoration:none}
 
   <div class="header-controls" style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
     <div style="display:flex; gap:8px;">
-      <button class="secondary" onclick="showPage('licens'); updateLicenseStatusDisplay();" style="background:rgba(255,255,255,0.2); color:#fff; border-color:rgba(255,255,255,0.3);">🔑 Licens</button>
-      <button class="secondary" onclick="logout()">🚪 Log ud</button>
+    <button class="secondary" onclick="showPage('licens'); updateLicenseStatusDisplay();" style="background:rgba(255,255,255,0.2); color:#fff; border-color:rgba(255,255,255,0.3);">🔑 Licens</button>
+    <button class="secondary" onclick="logout()">🚪 Log ud</button>
     </div>
-    <div id="versionDisplay" style="color:#fff; font-size:16px; font-weight:700; text-align:right; padding:8px 12px; background:rgba(255,255,255,0.25); border-radius:6px; border:1px solid rgba(255,255,255,0.35); box-shadow:0 4px 12px rgba(0,0,0,0.15); font-family:'Segoe UI', sans-serif; line-height:1.5;">v4.12<br><span style="font-size:12px; opacity:0.95; letter-spacing:0.2px;">2026-01-06 10:23</span></div>
+    <div id="versionDisplay" style="color:#fff; font-size:16px; font-weight:700; text-align:right; padding:8px 12px; background:rgba(255,255,255,0.25); border-radius:6px; border:1px solid rgba(255,255,255,0.35); box-shadow:0 4px 12px rgba(0,0,0,0.15); font-family:'Segoe UI', sans-serif; line-height:1.5;">v4.13<br><span style="font-size:12px; opacity:0.95; letter-spacing:0.2px;">2026-01-06 10:32</span></div>
   </div>
 </header>
 
@@ -484,12 +484,12 @@ a:hover{color:#45a049;text-decoration:none}
 <nav id="topnav">
   <span class="menu-item active" data-target="lageropt" onclick="navClick(event)">📦 Lager optælling</span>
   <span class="menu-item" data-target="opsaetning" onclick="navClick(event)">⚙️ Opsætning Lager</span>
-  <span class="menu-item" data-target="vinlager" onclick="navClick(event)">🍷 Vinlager</span>
   <span class="menu-item" data-target="master" onclick="navClick(event)">📋 Varelager administration</span>
   <span class="menu-item" data-target="rapporter" onclick="navClick(event)">📊 Rapporter</span>
   <span class="menu-item" data-target="labels" onclick="navClick(event)">🏷️ Labels</span>
   <span class="menu-item" data-target="leverandor" onclick="navClick(event)">🚚 Leverandører</span>
   <span class="menu-item" data-target="systemOpsaetning" onclick="navClick(event)">⚙️ Opsætning</span>
+  <span class="menu-item" data-target="vinlager" onclick="navClick(event)">🍷 Vinlager</span>
 </nav>
 
 <!-- =========================
@@ -1624,8 +1624,8 @@ function showLoginModal(){
         }
       } catch(e) {
         console.warn('Fejl ved pre-fill af brugernavn:', e);
-        if(passwordInput) {
-          setTimeout(() => passwordInput.focus(), 100);
+      if(passwordInput) {
+        setTimeout(() => passwordInput.focus(), 100);
         }
       }
     }
@@ -2299,9 +2299,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.12';
+const APP_VERSION = '4.13';
 const BUILD_DATE = '2026-01-06';
-const BUILD_TIME = '10:23';
+const BUILD_TIME = '10:32';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -5299,7 +5299,7 @@ async function generateReportPDF(r, forView = false){
               while(doc.getTextWidth(displayVareTekst + '...') > headerVarenavnWidth && displayVareTekst.length > 0){
                 displayVareTekst = displayVareTekst.slice(0, -1);
               }
-                displayVareTekst += '...';
+              displayVareTekst += '...';
             }
             doc.text(displayVareTekst, colVarenavn, y+1);
             
@@ -5870,8 +5870,8 @@ function downloadExcelTemplate(){
         const hylderPerReol = kategoriData.hylderPerReol || 5;
         const varerPerHylle = kategoriData.varerPerHylle || 5;
         
-        let vareIndex = 0;
-        
+    let vareIndex = 0;
+    
         // Expand varer to fill category - use all available varer
         const expandedVarer = [];
         const targetCount = (reolSlut - reolStart + 1) * hylderPerReol * varerPerHylle;
@@ -5908,18 +5908,18 @@ function downloadExcelTemplate(){
                   Hylle: String(hylle || ''),
                   Rækkefølge: String(globalRaekkefoelge || '0')
                 });
-                vareIndex++;
+          vareIndex++;
                 totalVarer++;
                 globalRaekkefoelge++;
-              }
-            }
-          }
+        }
+      }
+    }
         }
       });
       
-      return resultat;
-    }
-    
+    return resultat;
+  }
+  
     // Organize items by category for each location
     // Køl: Mejeri (reol 1), Kød (reol 2), Fisk (reol 3), Grøntsager (reol 4)
     const koelKategorier = {
@@ -7467,17 +7467,17 @@ function generateVarelagerQR(){
     if (qrData.length > 2500) {
       // Data too large - offer to download file instead
       if (confirm('⚠️ Varelager data er for stor til QR-kode.\n\nVil du downloade en fil i stedet?\n\n✅ Ja = Download fil til import\n❌ Nej = Annuller')) {
-      // Download as JSON file for import
-      const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `varelager-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
+        // Download as JSON file for import
+        const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `varelager-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
         alert('✅ Fil downloadet!\n\n📱 Næste skridt:\n\n1. Send filen til din telefon (email, cloud, etc.)\n2. Åbn scanner-appen på telefonen\n3. Tryk "📥 Import fil" knappen\n4. Vælg den downloadede fil\n5. Varelageret importeres automatisk!');
       }
       return;
@@ -7505,14 +7505,14 @@ function generateVarelagerQR(){
         colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.H // High error correction
       });
-        
-        // Show container
-        container.style.display = 'block';
-        
-        // Scroll to QR code
-          container.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        
-        alert('✅ QR-kode genereret!\n\n📱 Næste skridt:\n\n1. Åbn scanner-appen på telefonen\n2. Tryk "📥 Scan QR-kode" knappen\n3. Scan denne QR-kode\n4. Varelageret importeres automatisk!');
+      
+      // Show container
+      container.style.display = 'block';
+      
+      // Scroll to QR code
+      container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+      alert('✅ QR-kode genereret!\n\n📱 Næste skridt:\n\n1. Åbn scanner-appen på telefonen\n2. Tryk "📥 Scan QR-kode" knappen\n3. Scan denne QR-kode\n4. Varelageret importeres automatisk!');
     } else {
       alert('⚠️ QR-kode bibliotek ikke indlæst.\n\nGenindlæs siden og prøv igen.');
     }
@@ -8202,11 +8202,11 @@ function showScannerInstallationId(){
           // Extract numeric part for comparison
           const mainIdNum = mainInstallationId.replace(/[^0-9]/g, '');
           const scannerIdNum = scannerId.replace(/[^0-9]/g, '');
-        
+          
           if (mainIdNum === scannerIdNum || scannerId.includes(mainIdNum)) {
             info += '✅ ID\'erne matcher!\n\n';
           } else {
-          info += '⚠️ ID\'erne matcher ikke.\n\n';
+            info += '⚠️ ID\'erne matcher ikke.\n\n';
             info += '💡 Tip: For at synkronisere:\n';
             info += '1. I scanner-appen: Klik "🔑 Vis ID"\n';
             info += '2. Kopiér scanner ID\n';
@@ -8222,12 +8222,12 @@ function showScannerInstallationId(){
                 data.scannerInstallationId = manualId.trim();
                 localStorage.setItem(storageKey, JSON.stringify(data));
                 alert('✅ Scanner ID gemt: ' + manualId.trim() + '\n\nID\'erne er nu synkroniseret!');
-            return;
-          }
+                return;
+              }
             }
             return;
-        }
-      } else {
+          }
+        } else {
           info += '⚠️ Flere scanner ID\'er fundet.\n\n';
         }
       } else {
