@@ -84,7 +84,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <body>
 <div class="header">
   <h1>📱 Stregkode Scanner</h1>
-  <p>Scan stregkoder med din telefon - v<span id="versionDisplayScanner">4.1</span></p>
+  <p>Scan stregkoder med din telefon</p>
+  <div id="versionDisplayScanner" style="font-size:16px; font-weight:700; margin-top:8px; opacity:0.95; line-height:1.5;">v4.1</div>
 </div>
 
 <div class="scanner-container">
@@ -158,7 +159,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 // Versionsnummer - opdateres automatisk
-const APP_VERSION = '4.1';
+const APP_VERSION = '4.16';
+const BUILD_DATE = '2026-01-06';
+const BUILD_TIME = '14:48';
 
 let scannerActive = false;
 let html5QrCode = null;
@@ -2065,14 +2068,14 @@ async function fetchVarelagerFromServer(){
 function updateVersionDisplayScanner(){
   const versionDisplay = document.getElementById('versionDisplayScanner');
   if(versionDisplay){
-    versionDisplay.textContent = APP_VERSION;
+    versionDisplay.innerHTML = `v${APP_VERSION}<br><span style="font-size:14px; opacity:0.95; letter-spacing:0.2px;">${BUILD_DATE} ${BUILD_TIME}</span>`;
   }
   // Opdater også i title
   const titleEl = document.getElementById('scannerTitle');
   if(titleEl) {
-    titleEl.textContent = `Stregkode Scanner - Telefon v${APP_VERSION}`;
+    titleEl.textContent = `Stregkode Scanner - Telefon v${APP_VERSION} (${BUILD_DATE} ${BUILD_TIME})`;
   }
-  document.title = `Stregkode Scanner - Telefon v${APP_VERSION}`;
+  document.title = `Stregkode Scanner - Telefon v${APP_VERSION} (${BUILD_DATE} ${BUILD_TIME})`;
 }
 
 // Wait for DOM and library to load
