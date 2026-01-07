@@ -158,16 +158,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 
 <!-- Modal til antalsindtastning -->
 <div id="quantityModal" class="modal hidden">
-  <div class="modal-content">
-    <h3 style="font-size:44px; font-weight:800; margin-bottom:25px;">Indtast antal</h3>
-    <div id="scannedCodeDisplay" style="font-size:36px;font-weight:700;margin:30px 0;color:#333;line-height:1.8; letter-spacing:0.3px;"></div>
-    <div style="margin:35px 0">
-      <label for="quantityInput" style="display:block;margin-bottom:18px;font-weight:700;font-size:36px; letter-spacing:0.3px; color:#333;">Antal:</label>
-      <input type="number" id="quantityInput" min="1" value="1" style="width:100%;padding:35px;font-size:52px;text-align:center;border:6px solid #4CAF50;border-radius:16px;font-weight:800; letter-spacing:1px;" autofocus onkeypress="if(event.key==='Enter') confirmQuantityInput()">
+  <div class="modal-content" style="max-width:95vw; padding:50px;">
+    <h3 style="font-size:52px; font-weight:900; margin-bottom:30px; color:#333; letter-spacing:0.5px;">Indtast antal</h3>
+    <div id="scannedCodeDisplay" style="font-size:42px;font-weight:700;margin:40px 0;color:#333;line-height:2; letter-spacing:0.4px;"></div>
+    <div style="margin:40px 0">
+      <label for="quantityInput" style="display:block;margin-bottom:25px;font-weight:800;font-size:42px; letter-spacing:0.4px; color:#333;">Antal:</label>
+      <input type="number" id="quantityInput" min="1" value="1" style="width:100%;padding:45px;font-size:64px;text-align:center;border:8px solid #4CAF50;border-radius:20px;font-weight:900; letter-spacing:2px;" autofocus onkeypress="if(event.key==='Enter') confirmQuantityInput()">
     </div>
     <div class="modal-buttons">
-      <button onclick="cancelQuantityInput()" style="background:#6c757d;color:white;">Annuller</button>
-      <button onclick="confirmQuantityInput()" style="background:#4CAF50;color:white;">Gem</button>
+      <button onclick="cancelQuantityInput()" style="background:#6c757d;color:white; font-size:32px; padding:25px 40px; font-weight:800;">Annuller</button>
+      <button onclick="confirmQuantityInput()" style="background:#4CAF50;color:white; font-size:32px; padding:25px 40px; font-weight:800;">Gem</button>
     </div>
   </div>
 </div>
@@ -175,9 +175,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 // Versionsnummer - opdateres automatisk
-const APP_VERSION = '4.23';
+const APP_VERSION = '4.24';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '08:08';
+const BUILD_TIME = '08:33';
 
 let scannerActive = false;
 let html5QrCode = null;
@@ -576,14 +576,15 @@ function showQuantityDialog(barcode){
     
     // Vare info til venstre
     displayHTML += `<div style="flex:1;">
-      <strong style="font-size:42px; font-weight:800; color:#333; line-height:1.4; display:block; margin-bottom:15px;">${item.navn}</strong>`;
+      <strong style="font-size:48px; font-weight:900; color:#333; line-height:1.5; display:block; margin-bottom:20px; letter-spacing:0.3px;">${item.navn}</strong>`;
     
     // Vis varenummer hvis tilgængelig - i tydelig blå skrift
-    if (item.varenummer) {
-      displayHTML += `<span style="font-size:32px; color:#0066cc; font-weight:700; display:block; margin-bottom:12px; letter-spacing:0.5px;">Varenummer: ${item.varenummer}</span>`;
+    const varenummer = item.varenummer || '';
+    if (varenummer) {
+      displayHTML += `<span style="font-size:38px; color:#0066cc; font-weight:800; display:block; margin-bottom:15px; letter-spacing:0.6px; text-shadow:0 1px 2px rgba(0,102,204,0.2);">Varenummer: ${varenummer}</span>`;
     }
     
-    displayHTML += `<span style="font-size:28px; color:#666; font-weight:600;">${maaleenhed}${prisText}</span>`;
+    displayHTML += `<span style="font-size:32px; color:#666; font-weight:700;">${maaleenhed}${prisText}</span>`;
     
     displayHTML += `</div></div>`;
     codeDisplay.innerHTML = displayHTML;
@@ -1560,6 +1561,9 @@ function finishSession(){
     
     alert(`✅ Optælling afsluttet!\n\n📋 Rapport: ${reportName}\n📊 ${uniqueItems} unikke varer, ${totalItems} total antal\n${locationText}\n💰 Total værdi: ${grandTotal.toFixed(2)} kr.${saveStatus}${exportInfo}`);
     
+    // Update pending reports list
+    updatePendingReportsList();
+    
   } catch(err){
     console.error('Fejl ved oprettelse af rapport:', err);
     updateStatus('Fejl ved oprettelse af rapport: ' + err.message, 'error');
@@ -1767,6 +1771,21 @@ async function uploadReportsToServer(){
       `2. Den seneste rapport hentes automatisk!\n\n` +
       `🔑 Gist ID: ${gistId.substring(0, 20)}...`);
     
+    // Mark reports as uploaded and update pending list
+    if (data.reports && Array.isArray(data.reports)) {
+      scannerReports.forEach(report => {
+        const reportIndex = data.reports.findIndex(r => r.handling === report.handling && r.ts === report.ts);
+        if (reportIndex !== -1) {
+          data.reports[reportIndex].gistId = gistId;
+          data.reports[reportIndex].uploadedToServer = true;
+        }
+      });
+      localStorage.setItem(storageKey, JSON.stringify(data));
+    }
+    
+    // Update pending reports list after successful upload
+    updatePendingReportsList();
+    
   } catch(err) {
     console.error('Fejl ved upload:', err);
     updateStatus('❌ Fejl ved upload: ' + err.message, 'error');
@@ -1858,6 +1877,65 @@ function exportReports(){
 }
 
 // showInstallationId function removed - not needed
+
+// Update pending reports list - show reports that haven't been uploaded yet
+function updatePendingReportsList(){
+  try {
+    const storageKey = 'køkkenlager_data';
+    const dataStr = localStorage.getItem(storageKey);
+    const pendingListEl = document.getElementById('pendingReportsList');
+    const pendingContentEl = document.getElementById('pendingReportsContent');
+    
+    if(!pendingListEl || !pendingContentEl) return;
+    
+    if (!dataStr) {
+      pendingListEl.style.display = 'none';
+      return;
+    }
+    
+    const data = JSON.parse(dataStr);
+    
+    if (!data.reports || !Array.isArray(data.reports) || data.reports.length === 0) {
+      pendingListEl.style.display = 'none';
+      return;
+    }
+    
+    // Filter scanner reports that haven't been uploaded (no gistId)
+    const pendingReports = data.reports.filter(r => 
+      r.handling && (r.handling.startsWith('SPTA-') || r.handling.startsWith('OPTA-') || r.handling.startsWith('Stregkode scanner')) &&
+      !r.gistId && !r.uploadedToServer
+    );
+    
+    if (pendingReports.length === 0) {
+      pendingListEl.style.display = 'none';
+      return;
+    }
+    
+    // Show list
+    pendingListEl.style.display = 'block';
+    
+    // Sort by timestamp (newest first)
+    pendingReports.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    
+    // Build list HTML
+    let listHTML = '';
+    pendingReports.forEach((r, idx) => {
+      const date = new Date(r.ts || Date.now());
+      const dateStr = date.toLocaleDateString('da-DK', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const itemCount = r.details ? r.details.length : 0;
+      const total = r.total ? r.total.toFixed(2) : '0.00';
+      listHTML += `<div style="margin-bottom:12px; padding:12px; background:#fff; border-radius:8px; border-left:4px solid #ffc107;">
+        <strong style="font-size:22px; color:#856404;">${r.handling || 'Ukendt rapport'}</strong><br>
+        <span style="font-size:18px; color:#856404;">📅 ${dateStr} • ${itemCount} varer • ${total} kr.</span>
+      </div>`;
+    });
+    
+    pendingContentEl.innerHTML = listHTML;
+    
+  } catch(err) {
+    console.error('Error updating pending reports list:', err);
+  }
+}
 
 /* Fetch varelager from server (GitHub Gist) */
 async function fetchVarelagerFromServer(){
@@ -2214,6 +2292,9 @@ function initializeApp() {
   
   // Check for new varelager on server
   checkForNewVarelager();
+  
+  // Update pending reports list
+  updatePendingReportsList();
   
   if(loadItemsFromMainApp()){
     updateStatus('Klar til scanning - Klik "Start Scanner"', 'waiting');

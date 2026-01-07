@@ -2311,9 +2311,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.23';
+const APP_VERSION = '4.24';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '08:08';
+const BUILD_TIME = '08:33';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -5334,42 +5334,27 @@ async function generateReportPDF(r, forView = false){
               displayVareTekst += ` (${varenummer})`;
             }
             
-            // Calculate available width for varenavn column (use more space)
-            const availableWidth = colReol - colVarenavn - 2; // Leave 2mm padding
+            // Calculate available width for varenavn column - use more space (extend to colAntal)
+            const availableWidth = colAntal - colVarenavn - 4; // Use more space, leave 4mm padding
             
-            // Split text into lines if needed
-            const lines = doc.splitTextToSize(displayVareTekst, availableWidth);
-            lines.forEach((line, lineIdx) => {
-              if(lineIdx === 0){
-                doc.text(line, colVarenavn, y+1);
-              } else {
-                // Move to next line
-                y += 4;
-                if(y > 275){ 
-                  drawSideBorders(pageStartY, y);
-                  doc.addPage(); 
-                  y=15;
-                  pageStartY = y;
-                  // Repeat header on new page
-                  doc.setDrawColor(150, 150, 150);
-                  doc.setFillColor(240, 240, 240);
-                  doc.setLineWidth(0.3);
-                  doc.rect(tableLeft, y-3, tableWidth, 5, 'FD');
-                  doc.setFont('helvetica','bold'); doc.setFontSize(10);
-                  doc.text('Varenavn', colVarenavn, y+1);
-                  doc.text('Reol', colReol, y+1);
-                  doc.text('Hylle', colHylle, y+1);
-                  doc.text('Antal optalt varer', colAntal, y+1);
-                  doc.text('Pris', colPris, y+1);
-                  doc.text('Linjetotal', colLinjetotal, y+1);
-                  y += 6;
-                  doc.setDrawColor(200, 200, 200);
-                  doc.line(tableLeft, y, tableRight, y);
-                  y += 3;
+            // Use smaller font if text is too long, but keep on one line
+            let fontSize = 10;
+            let textWidth = doc.getTextWidth(displayVareTekst);
+            if(textWidth > availableWidth){
+              // Try smaller font sizes
+              for(let fs = 9; fs >= 7; fs -= 0.5){
+                doc.setFontSize(fs);
+                textWidth = doc.getTextWidth(displayVareTekst);
+                if(textWidth <= availableWidth){
+                  fontSize = fs;
+                  break;
                 }
-                doc.text(line, colVarenavn, y+1);
               }
-            });
+            }
+            
+            // Set font size and display on one line
+            doc.setFontSize(fontSize);
+            doc.text(displayVareTekst, colVarenavn, y+1, { maxWidth: availableWidth });
             
             // Reol - truncate to match header width exactly
             let reolTekst = '-';
