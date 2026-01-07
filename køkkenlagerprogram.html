@@ -1529,11 +1529,12 @@ function showLoginModal(){
     
     // Hvis der ikke er password, tjek om der er lokal backup til gendannelse
     if(!hasPassword){
-      // Check for local backup files
-      const hasLocalBackup = checkForLocalBackup();
+      // Check if user has previously dismissed the restore prompt
+      const restorePromptDismissed = localStorage.getItem('køkkenlager_restore_prompt_dismissed');
       
-      if(hasLocalBackup) {
-        // Show restore option
+      // Only show restore option if not previously dismissed
+      if(!restorePromptDismissed) {
+        // Show restore option (non-blocking)
         const restore = confirm('⚠️ Ingen login data fundet.\n\n' +
           'Det ser ud til at browser cache er blevet tømt.\n\n' +
           'Har du en lokal backup fil?\n\n' +
@@ -1541,7 +1542,10 @@ function showLoginModal(){
         
         if(restore) {
           showRestoreFromLocalBackup();
-          return;
+          return; // Exit early if user wants to restore
+        } else {
+          // User dismissed - remember this choice for this session
+          localStorage.setItem('køkkenlager_restore_prompt_dismissed', 'true');
         }
       }
       
@@ -2277,9 +2281,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.42';
+const APP_VERSION = '4.43';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '14:05';
+const BUILD_TIME = '14:16';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -9775,6 +9779,10 @@ function createLocalBackup(backupData) {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     console.log('Lokal backup oprettet:', filename);
+    
+    // Mark that user has backup history
+    localStorage.setItem('køkkenlager_has_backup_history', 'true');
+    
     return filename;
   } catch(err) {
     console.error('Fejl ved oprettelse af lokal backup:', err);
@@ -9785,8 +9793,9 @@ function createLocalBackup(backupData) {
 // Check if user has local backup files (by checking if they've downloaded any)
 function checkForLocalBackup() {
   // We can't actually check the file system, but we can check if user has ever downloaded a backup
-  // For now, we'll always show the option - user can choose to restore or not
-  return true; // Always show restore option if no password exists
+  // Check if user has previously created a backup (stored in localStorage)
+  const hasBackupHistory = localStorage.getItem('køkkenlager_has_backup_history');
+  return hasBackupHistory === 'true';
 }
 
 // Show restore from local backup dialog
