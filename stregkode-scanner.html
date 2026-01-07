@@ -175,9 +175,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 // Versionsnummer - opdateres automatisk
-const APP_VERSION = '4.24';
+const APP_VERSION = '4.27';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '08:33';
+const BUILD_TIME = '10:12';
 
 let scannerActive = false;
 let html5QrCode = null;
@@ -1060,9 +1060,10 @@ function parseCSVToVarelager(csvContent) {
       throw new Error('CSV filen er tom eller mangler data');
     }
     
-    // Parse header
+    // Parse header - new column order: Varenavn, Varenummer, Måleenhed, Pris, Placering, Reol, Hylle, Rækkefølge
     const header = lines[0].split(';').map(h => h.trim());
-    const navnIdx = header.findIndex(h => h.toLowerCase().includes('navn'));
+    const navnIdx = header.findIndex(h => h.toLowerCase().includes('varenavn') || h.toLowerCase().includes('navn'));
+    const varenummerIdx = header.findIndex(h => h.toLowerCase().includes('varenummer'));
     const maaleenhedIdx = header.findIndex(h => h.toLowerCase().includes('måleenhed') || h.toLowerCase().includes('maaleenhed'));
     const prisIdx = header.findIndex(h => h.toLowerCase().includes('pris'));
     const placeringIdx = header.findIndex(h => h.toLowerCase().includes('placering'));
@@ -1071,7 +1072,7 @@ function parseCSVToVarelager(csvContent) {
     const raekkefoelgeIdx = header.findIndex(h => h.toLowerCase().includes('rækkefølge') || h.toLowerCase().includes('raekkefoelge'));
     
     if (navnIdx === -1) {
-      throw new Error('CSV filen mangler "Navn" kolonne');
+      throw new Error('CSV filen mangler "Varenavn" eller "Navn" kolonne');
     }
     
     const masterVarelager = [];
@@ -1083,6 +1084,7 @@ function parseCSVToVarelager(csvContent) {
       if (values.length === 0 || !values[navnIdx]) continue;
       
       const navn = values[navnIdx];
+      const varenummer = varenummerIdx >= 0 ? values[varenummerIdx] : '';
       const maaleenhed = maaleenhedIdx >= 0 ? values[maaleenhedIdx] : 'stk';
       const pris = prisIdx >= 0 ? parseFloat(values[prisIdx].replace(',', '.')) || 0 : 0;
       const placering = placeringIdx >= 0 ? values[placeringIdx] : '';
@@ -1098,6 +1100,7 @@ function parseCSVToVarelager(csvContent) {
       masterVarelager.push({
         id: id,
         navn: navn,
+        varenummer: varenummer || undefined,
         maaleenhed: maaleenhed,
         pris: pris,
         placering: placering,
@@ -1142,7 +1145,7 @@ function importVarelager(){
         }
         
         if (!importedData || !importedData.masterVarelager || !Array.isArray(importedData.masterVarelager)) {
-          alert('❌ Filen indeholder ikke varelager data i korrekt format.\n\nForventet format:\n• JSON: {masterVarelager: [...], lagerLokationer: [...]}\n• CSV: Navn;Måleenhed;Pris;Placering;Reol;Hylle;Rækkefølge');
+          alert('❌ Filen indeholder ikke varelager data i korrekt format.\n\nForventet format:\n• JSON: {masterVarelager: [...], lagerLokationer: [...]}\n• CSV: Varenavn;Varenummer;Måleenhed;Pris;Placering;Reol;Hylle;Rækkefølge');
           return;
         }
         
