@@ -902,7 +902,11 @@ a:hover{color:#45a049;text-decoration:none}
     <div class="settings-page">
       <div class="settings-sidebar" id="settingsSidebar">
         <div class="settings-category">Indstillinger</div>
-        <div class="settings-item active" onclick="showSettingsSection('password')">
+        <div class="settings-item active" onclick="showSettingsSection('manual')">
+          <span class="settings-item-icon">📖</span>
+          <span>Manual & Vejledning</span>
+        </div>
+        <div class="settings-item" onclick="showSettingsSection('password')">
           <span class="settings-item-icon">🔑</span>
           <span>Skift password</span>
         </div>
@@ -928,8 +932,23 @@ a:hover{color:#45a049;text-decoration:none}
         <h2>Opsætning</h2>
         <div class="settings-description">Administrer systemindstillinger, sikkerhed, backup og branding.</div>
         
+        <!-- Manual Section -->
+        <div id="settings-manual" class="settings-section active">
+          <div style="margin-bottom:20px;">
+            <h3 style="margin-bottom:10px;">📖 Program Manual</h3>
+            <p style="color:#666; margin-bottom:20px;">Komplet vejledning til alle funktioner i programmet. Klik på en sektion for at læse mere.</p>
+            <button onclick="downloadManualPDF()" style="background:#0078D4; color:white; padding:10px 20px; font-weight:700; border-radius:8px; margin-bottom:20px;">
+              📄 Download Manual som PDF
+            </button>
+          </div>
+          
+          <div id="manualContent" style="max-width:900px;">
+            <!-- Manual items will be added here via JavaScript -->
+          </div>
+        </div>
+        
         <!-- Password Section -->
-        <div id="settings-password" class="settings-section active">
+        <div id="settings-password" class="settings-section">
           <div class="settings-option">
             <div class="settings-option-label">
               <h3>🔑 Skift password</h3>
@@ -945,7 +964,25 @@ a:hover{color:#45a049;text-decoration:none}
         <div id="settings-backup" class="settings-section">
           <div class="settings-option">
             <div class="settings-option-label">
-              <h3>💾 Backup JSON</h3>
+              <h3>☁️ Backup til Server</h3>
+              <p>Upload en komplet backup af al din data til serveren. Alle backups gemmes i en dedikeret backup mappe på serveren.</p>
+            </div>
+            <div class="settings-option-action">
+              <button onclick="uploadBackupToServer()" style="background:#17a2b8; color:white; font-weight:700;">☁️ Upload Backup til Server</button>
+            </div>
+          </div>
+          <div class="settings-option">
+            <div class="settings-option-label">
+              <h3>📥 Hent Backup fra Server</h3>
+              <p>Hent en tidligere backup fra serveren. Vælg hvilken backup du vil gendanne.</p>
+            </div>
+            <div class="settings-option-action">
+              <button onclick="fetchBackupsFromServer()" style="background:#28a745; color:white; font-weight:700;">📥 Hent Backup fra Server</button>
+            </div>
+          </div>
+          <div class="settings-option">
+            <div class="settings-option-label">
+              <h3>💾 Download Backup (Lokal)</h3>
               <p>Download en komplet backup af al din data i JSON format. Brug til sikkerhedskopi eller overførsel.</p>
             </div>
             <div class="settings-option-action">
@@ -976,15 +1013,6 @@ a:hover{color:#45a049;text-decoration:none}
         <div id="settings-import" class="settings-section">
           <div class="settings-option">
             <div class="settings-option-label">
-              <h3>📱 Importer Manuel Optælling</h3>
-              <p>Importer data fra Manuel Optælling appen på din telefon eller tablet.</p>
-            </div>
-            <div class="settings-option-action">
-              <button onclick="importManualCountingData()" style="background:#28a745; color:white;">Importer Manuel</button>
-            </div>
-          </div>
-          <div class="settings-option">
-            <div class="settings-option-label">
               <h3>📷 Importer Scanner Data</h3>
               <p>Importer data fra Scanner appen eller eksterne stregkode læsere.</p>
             </div>
@@ -1001,46 +1029,10 @@ a:hover{color:#45a049;text-decoration:none}
               <button onclick="syncReportsFromScanner()" style="background:#4CAF50; color:white;">🔄 Synkroniser Nu</button>
             </div>
           </div>
-          <div class="settings-option">
-            <div class="settings-option-label">
-              <h3>🔑 Scanner Installation ID</h3>
-              <p>Se og synkroniser installation ID med scanner-appen for at sikre de matcher.</p>
-            </div>
-            <div class="settings-option-action">
-              <button onclick="showScannerInstallationId()" style="background:#FF9800; color:white;">🔑 Vis/Synkroniser ID</button>
-            </div>
-          </div>
         </div>
         
         <!-- Mobile Section -->
         <div id="settings-mobile" class="settings-section">
-          <div class="settings-option">
-            <div class="settings-option-label">
-              <h3>📱 Send link til telefon</h3>
-              <p>Send et link til Manuel Optælling appen til din telefon eller tablet via QR-kode eller link.</p>
-            </div>
-            <div class="settings-option-action">
-              <button onclick="showPhoneLinkModal()" style="background:#0078D4; color:white;">Send link</button>
-            </div>
-          </div>
-          <div class="settings-option">
-            <div class="settings-option-label">
-              <h3>📥 Download Manuel Optælling til telefon</h3>
-              <p>Download Manuel Optælling HTML filen til din telefon eller tablet.</p>
-            </div>
-            <div class="settings-option-action">
-              <button onclick="downloadManuelOptaeling()" style="background:#0078D4; color:white;">Download fil</button>
-            </div>
-          </div>
-          <div class="settings-option">
-            <div class="settings-option-label">
-              <h3>📷 Download Stregkode Scanner til telefon</h3>
-              <p>Download Stregkode Scanner HTML filen til din telefon eller tablet.</p>
-            </div>
-            <div class="settings-option-action">
-              <button onclick="downloadStregkodeScanner()" style="background:#0078D4; color:white;">Download fil</button>
-            </div>
-          </div>
           <div class="settings-option">
             <div class="settings-option-label">
               <h3>📱 Send Scanner Link til telefon</h3>
@@ -2311,9 +2303,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.31';
+const APP_VERSION = '4.34';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '11:38';
+const BUILD_TIME = '12:23';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -8620,6 +8612,7 @@ function showSettingsSection(sectionId){
   
   // Highlight menu item - find by section mapping (kun i systemOpsaetning)
   const sectionMap = {
+    'manual': 'Manual',
     'password': 'Skift password',
     'backup': 'Backup',
     'import': 'Import',
@@ -8640,6 +8633,737 @@ function showSettingsSection(sectionId){
     setTimeout(() => toggleSidebar('settingsSidebar'), 300);
   }
 }
+
+/* ================================
+   [JS 13] MANUAL & VEJLEDNING
+   ================================ */
+// Initialize manual content on page load
+function initializeManual() {
+  const manualContent = document.getElementById('manualContent');
+  if (!manualContent) return;
+  
+  const manualSections = [
+    {
+      title: '📦 Lager Optælling',
+      content: `
+        <h4>Hvad er Lager Optælling?</h4>
+        <p>Lager Optælling er hovedfunktionen i programmet. Her kan du optælle varer i dit lager ved at indtaste antal manuelt.</p>
+        <h4>Sådan bruger du det:</h4>
+        <ol>
+          <li>Klik på "Lager optælling" i menuen</li>
+          <li>Vælg en lokation (Køl, Frost, Tørevare, Grønt) eller vælg "Alle lokationer"</li>
+          <li>Indtast antal for hver vare ved at klikke på antallet i tabellen</li>
+          <li>Når du er færdig, klik på "Afslut optælling"</li>
+          <li>En rapport genereres automatisk med alle optalte varer</li>
+        </ol>
+        <h4>Tips:</h4>
+        <ul>
+          <li>Du kan se total værdi af optalte varer i bunden af siden</li>
+          <li>Rapporter gemmes automatisk og kan ses under "Rapporter"</li>
+          <li>Du kan eksportere rapporter som PDF</li>
+        </ul>
+      `
+    },
+    {
+      title: '⚙️ Opsætning Lager',
+      content: `
+        <h4>Hvad er Opsætning Lager?</h4>
+        <p>Her kan du administrere lagerlokationer, reoler og hylder. Du kan også arrangere varer ved hjælp af drag & drop.</p>
+        <h4>Sådan bruger du det:</h4>
+        <ol>
+          <li>Tilføj eller fjern lagerlokationer (Køl, Frost, Tørevare, Grønt)</li>
+          <li>Tilføj reoler og hylder til hver lokation</li>
+          <li>Træk og slip varer for at arrangere dem i den ønskede rækkefølge</li>
+          <li>Rækkefølgen bruges når du genererer labels og rapporter</li>
+        </ol>
+        <h4>Tips:</h4>
+        <ul>
+          <li>Du kan ikke fjerne en lokation hvis der er varer i den</li>
+          <li>Rækkefølgen påvirker hvordan varer vises i rapporter</li>
+        </ul>
+      `
+    },
+    {
+      title: '📋 Varelager Administration',
+      content: `
+        <h4>Hvad er Varelager Administration?</h4>
+        <p>Her administrerer du alle varer i dit lager. Du kan tilføje nye varer, redigere eksisterende, og søge efter varer.</p>
+        <h4>Sådan bruger du det:</h4>
+        <ol>
+          <li><strong>Tilføj ny vare:</strong> Udfyld formularen med varenavn, måleenhed, pris, placering, reol og hylle</li>
+          <li><strong>Søg og se varelager:</strong> Brug søgefeltet til at finde specifikke varer</li>
+          <li><strong>Rediger vare:</strong> Klik på en vare i tabellen for at redigere den</li>
+          <li><strong>Upload billede:</strong> Klik på billede-pladsholderen for at uploade et billede</li>
+          <li><strong>Import/Export Excel:</strong> Download skabelon, udfyld den, og importér den igen</li>
+        </ol>
+        <h4>Tips:</h4>
+        <ul>
+          <li>Varenummer genereres automatisk ved import, men kan redigeres manuelt</li>
+          <li>Du kan uploade varelager til serveren så scanner-appen kan hente det</li>
+          <li>Excel-skabelonen indeholder alle nødvendige kolonner</li>
+        </ul>
+      `
+    },
+    {
+      title: '📊 Rapporter',
+      content: `
+        <h4>Hvad er Rapporter?</h4>
+        <p>Rapporter viser alle dine optællinger. Du kan se detaljer, eksportere som PDF, og hente rapporter fra scanner-appen.</p>
+        <h4>Sådan bruger du det:</h4>
+        <ol>
+          <li>Se alle rapporter i listen</li>
+          <li>Klik på en rapport for at se detaljer</li>
+          <li>Eksporter som PDF ved at klikke på "Eksporter PDF"</li>
+          <li>Hent rapporter fra serveren ved at klikke på "☁️ Hent fra Server"</li>
+          <li>Arkiver gamle rapporter for at holde listen ren</li>
+        </ol>
+        <h4>Rapport typer:</h4>
+        <ul>
+          <li><strong>OPTA-XXXXXX:</strong> Rapporter fra hovedprogrammet</li>
+          <li><strong>SPTA-XXXXXX:</strong> Rapporter fra scanner-appen</li>
+        </ul>
+      `
+    },
+    {
+      title: '🏷️ Labels',
+      content: `
+        <h4>Hvad er Labels?</h4>
+        <p>Her kan du generere og printe labels og QR-koder til dine varer. Labels indeholder varenavn, måleenhed, placering, reol og hylle.</p>
+        <h4>Sådan bruger du det:</h4>
+        <ol>
+          <li>Vælg en lokation eller en specifik vare</li>
+          <li>Vælg antal labels per vare</li>
+          <li>Klik på "Generer labels" eller "Generer QR-koder"</li>
+          <li>Print labels ved at klikke på "Print labels"</li>
+        </ol>
+        <h4>Tips:</h4>
+        <ul>
+          <li>Labels er optimeret til A4 papir</li>
+          <li>QR-koder kan scannes med scanner-appen</li>
+          <li>Du kan generere labels for alle varer i en lokation på én gang</li>
+        </ul>
+      `
+    },
+    {
+      title: '🚚 Leverandører',
+      content: `
+        <h4>Hvad er Leverandører?</h4>
+        <p>Her kan du administrere leverandører og deres kontaktinformation.</p>
+        <h4>Sådan bruger du det:</h4>
+        <ol>
+          <li>Tilføj nye leverandører med navn, telefon, email og adresse</li>
+          <li>Rediger eksisterende leverandører</li>
+          <li>Slet leverandører der ikke længere bruges</li>
+        </ol>
+      `
+    },
+    {
+      title: '📱 Scanner App',
+      content: `
+        <h4>Hvad er Scanner App?</h4>
+        <p>Scanner-appen er en mobil app til at scanne stregkoder og optælle varer. Den synkroniseres med hovedprogrammet.</p>
+        <h4>Sådan sætter du det op:</h4>
+        <ol>
+          <li>Gå til "Opsætning" → "Mobil tilgang"</li>
+          <li>Klik på "📱 Vis Scanner Link" for at få linket til scanner-appen</li>
+          <li>Scan QR-koden med din telefon eller åbn linket</li>
+          <li>Tilføj scanner-appen til din telefons hjemmeskærm</li>
+          <li>Upload varelager til serveren så scanner-appen kan hente det</li>
+          <li>Synkroniser Installation ID mellem hovedprogram og scanner</li>
+        </ol>
+        <h4>Tips:</h4>
+        <ul>
+          <li>Scanner-appen bruger samme data som hovedprogrammet</li>
+          <li>Rapporter fra scanner-appen vises i hovedprogrammet</li>
+          <li>Du kan uploade rapporter fra scanner-appen til serveren</li>
+        </ul>
+      `
+    },
+    {
+      title: '💾 Backup & Sikkerhed',
+      content: `
+        <h4>Hvad er Backup?</h4>
+        <p>Backup sikrer at du ikke mister data hvis browser cache slettes eller computeren går i stykker.</p>
+        <h4>Sådan bruger du det:</h4>
+        <ol>
+          <li><strong>Backup til Server:</strong> Upload en komplet backup til serveren. Alle backups gemmes i en dedikeret mappe.</li>
+          <li><strong>Hent Backup fra Server:</strong> Hent en tidligere backup fra serveren og gendan data.</li>
+          <li><strong>Download Backup (Lokal):</strong> Download en JSON fil med al data til lokal gemning.</li>
+          <li><strong>Backup Login & Licens:</strong> Download login og licens data. VIGTIGT: Gem denne fil sikkert!</li>
+          <li><strong>Gendan Login & Licens:</strong> Gendan login og licens fra en backup fil.</li>
+        </ol>
+        <h4>Tips:</h4>
+        <ul>
+          <li>Lav regelmæssige backups til serveren</li>
+          <li>Gem login/licens backup på et sikkert sted</li>
+          <li>Hvis du sletter browser cache, kan du gendanne fra backup</li>
+        </ul>
+      `
+    },
+    {
+      title: '🔑 Login & Password',
+      content: `
+        <h4>Hvad er Login Systemet?</h4>
+        <p>Programmet bruger et login system med brugernavn og password for at beskytte dine data.</p>
+        <h4>Sådan bruger du det:</h4>
+        <ol>
+          <li><strong>Første gang:</strong> Opret et password når du åbner programmet første gang</li>
+          <li><strong>Skift password:</strong> Gå til "Opsætning" → "Skift password"</li>
+          <li><strong>Glemt password:</strong> Brug "Gendan Login & Licens" hvis du har en backup</li>
+        </ol>
+        <h4>Tips:</h4>
+        <ul>
+          <li>Brug et stærkt password</li>
+          <li>Lav backup af login data regelmæssigt</li>
+          <li>Uden login backup kan du ikke logge ind hvis cache slettes</li>
+        </ul>
+      `
+    }
+  ];
+  
+  let html = '';
+  manualSections.forEach((section, index) => {
+    html += `
+      <div class="manual-item" style="margin-bottom:20px; border:1px solid #e6e6e6; border-radius:8px; overflow:hidden;">
+        <div class="manual-header" onclick="toggleManualSection(${index})" style="padding:16px 20px; background:#f5f5f5; cursor:pointer; display:flex; align-items:center; justify-content:space-between; font-weight:700; font-size:18px; border-bottom:1px solid #e6e6e6;">
+          <span>${section.title}</span>
+          <span class="manual-arrow" id="manualArrow${index}" style="font-size:20px; transition:transform 0.3s;">▼</span>
+        </div>
+        <div class="manual-content" id="manualContent${index}" style="display:none; padding:20px; background:white; line-height:1.8;">
+          ${section.content}
+        </div>
+      </div>
+    `;
+  });
+  
+  manualContent.innerHTML = html;
+}
+
+function toggleManualSection(index) {
+  const content = document.getElementById(`manualContent${index}`);
+  const arrow = document.getElementById(`manualArrow${index}`);
+  
+  if (content.style.display === 'none') {
+    content.style.display = 'block';
+    arrow.style.transform = 'rotate(180deg)';
+  } else {
+    content.style.display = 'none';
+    arrow.style.transform = 'rotate(0deg)';
+  }
+}
+
+// Download manual as PDF
+function downloadManualPDF() {
+  try {
+    // Check if jsPDF is loaded
+    if (typeof jsPDF === 'undefined') {
+      alert('⚠️ PDF bibliotek ikke indlæst. Genindlæs siden og prøv igen.');
+      return;
+    }
+    
+    const doc = new jsPDF();
+    let y = 20;
+    
+    // Title
+    doc.setFontSize(20);
+    doc.setFont(undefined, 'bold');
+    doc.text('Køkkenlager Program - Komplet Manual', 14, y);
+    y += 15;
+    
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Version: ${APP_VERSION} | Dato: ${BUILD_DATE} ${BUILD_TIME}`, 14, y);
+    y += 20;
+    
+    // Manual sections
+    const manualSections = [
+      {
+        title: '📦 Lager Optælling',
+        content: `Hvad er Lager Optælling?
+Lager Optælling er hovedfunktionen i programmet. Her kan du optælle varer i dit lager ved at indtaste antal manuelt.
+
+Sådan bruger du det:
+1. Klik på "Lager optælling" i menuen
+2. Vælg en lokation (Køl, Frost, Tørevare, Grønt) eller vælg "Alle lokationer"
+3. Indtast antal for hver vare ved at klikke på antallet i tabellen
+4. Når du er færdig, klik på "Afslut optælling"
+5. En rapport genereres automatisk med alle optalte varer
+
+Tips:
+• Du kan se total værdi af optalte varer i bunden af siden
+• Rapporter gemmes automatisk og kan ses under "Rapporter"
+• Du kan eksportere rapporter som PDF`
+      },
+      {
+        title: '⚙️ Opsætning Lager',
+        content: `Hvad er Opsætning Lager?
+Her kan du administrere lagerlokationer, reoler og hylder. Du kan også arrangere varer ved hjælp af drag & drop.
+
+Sådan bruger du det:
+1. Tilføj eller fjern lagerlokationer (Køl, Frost, Tørevare, Grønt)
+2. Tilføj reoler og hylder til hver lokation
+3. Træk og slip varer for at arrangere dem i den ønskede rækkefølge
+4. Rækkefølgen bruges når du genererer labels og rapporter
+
+Tips:
+• Du kan ikke fjerne en lokation hvis der er varer i den
+• Rækkefølgen påvirker hvordan varer vises i rapporter`
+      },
+      {
+        title: '📋 Varelager Administration',
+        content: `Hvad er Varelager Administration?
+Her administrerer du alle varer i dit lager. Du kan tilføje nye varer, redigere eksisterende, og søge efter varer.
+
+Sådan bruger du det:
+1. Tilføj ny vare: Udfyld formularen med varenavn, måleenhed, pris, placering, reol og hylle
+2. Søg og se varelager: Brug søgefeltet til at finde specifikke varer
+3. Rediger vare: Klik på en vare i tabellen for at redigere den
+4. Upload billede: Klik på billede-pladsholderen for at uploade et billede
+5. Import/Export Excel: Download skabelon, udfyld den, og importér den igen
+
+Tips:
+• Varenummer genereres automatisk ved import, men kan redigeres manuelt
+• Du kan uploade varelager til serveren så scanner-appen kan hente det
+• Excel-skabelonen indeholder alle nødvendige kolonner`
+      },
+      {
+        title: '📊 Rapporter',
+        content: `Hvad er Rapporter?
+Rapporter viser alle dine optællinger. Du kan se detaljer, eksportere som PDF, og hente rapporter fra scanner-appen.
+
+Sådan bruger du det:
+1. Se alle rapporter i listen
+2. Klik på en rapport for at se detaljer
+3. Eksporter som PDF ved at klikke på "Eksporter PDF"
+4. Hent rapporter fra serveren ved at klikke på "☁️ Hent fra Server"
+5. Arkiver gamle rapporter for at holde listen ren
+
+Rapport typer:
+• OPTA-XXXXXX: Rapporter fra hovedprogrammet
+• SPTA-XXXXXX: Rapporter fra scanner-appen`
+      },
+      {
+        title: '🏷️ Labels',
+        content: `Hvad er Labels?
+Her kan du generere og printe labels og QR-koder til dine varer. Labels indeholder varenavn, måleenhed, placering, reol og hylle.
+
+Sådan bruger du det:
+1. Vælg en lokation eller en specifik vare
+2. Vælg antal labels per vare
+3. Klik på "Generer labels" eller "Generer QR-koder"
+4. Print labels ved at klikke på "Print labels"
+
+Tips:
+• Labels er optimeret til A4 papir
+• QR-koder kan scannes med scanner-appen
+• Du kan generere labels for alle varer i en lokation på én gang`
+      },
+      {
+        title: '📱 Scanner App',
+        content: `Hvad er Scanner App?
+Scanner-appen er en mobil app til at scanne stregkoder og optælle varer. Den synkroniseres med hovedprogrammet.
+
+Sådan sætter du det op:
+1. Gå til "Opsætning" → "Mobil tilgang"
+2. Klik på "📱 Vis Scanner Link" for at få linket til scanner-appen
+3. Scan QR-koden med din telefon eller åbn linket
+4. Tilføj scanner-appen til din telefons hjemmeskærm
+5. Upload varelager til serveren så scanner-appen kan hente det
+6. Synkroniser Installation ID mellem hovedprogram og scanner
+
+Tips:
+• Scanner-appen bruger samme data som hovedprogrammet
+• Rapporter fra scanner-appen vises i hovedprogrammet
+• Du kan uploade rapporter fra scanner-appen til serveren`
+      },
+      {
+        title: '💾 Backup & Sikkerhed',
+        content: `Hvad er Backup?
+Backup sikrer at du ikke mister data hvis browser cache slettes eller computeren går i stykker.
+
+Sådan bruger du det:
+1. Backup til Server: Upload en komplet backup til serveren. Alle backups gemmes i en dedikeret mappe.
+2. Hent Backup fra Server: Hent en tidligere backup fra serveren og gendan data.
+3. Download Backup (Lokal): Download en JSON fil med al data til lokal gemning.
+4. Backup Login & Licens: Download login og licens data. VIGTIGT: Gem denne fil sikkert!
+5. Gendan Login & Licens: Gendan login og licens fra en backup fil.
+
+Tips:
+• Lav regelmæssige backups til serveren
+• Gem login/licens backup på et sikkert sted
+• Hvis du sletter browser cache, kan du gendanne fra backup`
+      },
+      {
+        title: '🔑 Login & Password',
+        content: `Hvad er Login Systemet?
+Programmet bruger et login system med brugernavn og password for at beskytte dine data.
+
+Sådan bruger du det:
+1. Første gang: Opret et password når du åbner programmet første gang
+2. Skift password: Gå til "Opsætning" → "Skift password"
+3. Glemt password: Brug "Gendan Login & Licens" hvis du har en backup
+
+Tips:
+• Brug et stærkt password
+• Lav backup af login data regelmæssigt
+• Uden login backup kan du ikke logge ind hvis cache slettes`
+      }
+    ];
+    
+    manualSections.forEach((section, index) => {
+      // Check if we need a new page
+      if (y > 250) {
+        doc.addPage();
+        y = 20;
+      }
+      
+      // Section title
+      doc.setFontSize(16);
+      doc.setFont(undefined, 'bold');
+      doc.text(section.title, 14, y);
+      y += 10;
+      
+      // Section content
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'normal');
+      const lines = doc.splitTextToSize(section.content, 180);
+      lines.forEach(line => {
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.text(line, 14, y);
+        y += 7;
+      });
+      
+      y += 10; // Space between sections
+    });
+    
+    // Save PDF
+    const filename = `Køkkenlager_Manual_v${APP_VERSION}_${BUILD_DATE.replace(/-/g, '')}.pdf`;
+    doc.save(filename);
+    
+    alert(`✅ Manual downloadet som PDF!\n\n📄 Filnavn: ${filename}`);
+    
+  } catch(err) {
+    console.error('Fejl ved PDF generering:', err);
+    alert('❌ Fejl ved generering af PDF: ' + err.message);
+  }
+}
+
+/* ================================
+   [JS 14] BACKUP TIL SERVER
+   ================================ */
+// Upload backup to server
+async function uploadBackupToServer() {
+  try {
+    const storageKey = 'køkkenlager_data';
+    const dataStr = localStorage.getItem(storageKey);
+    
+    if (!dataStr) {
+      alert('⚠️ Ingen data fundet at uploade.');
+      return;
+    }
+    
+    const data = JSON.parse(dataStr);
+    
+    // Get GitHub token
+    let githubToken = localStorage.getItem('github_gist_token');
+    if (!githubToken) {
+      const token = prompt('🔑 Indtast GitHub Personal Access Token:\n\n' +
+        '1. Gå til: https://github.com/settings/tokens\n' +
+        '2. Klik "Generate new token (classic)"\n' +
+        '3. Vælg "gist" scope\n' +
+        '4. Kopiér token og indtast her\n\n' +
+        '💡 Token gemmes lokalt og bruges til fremtidige uploads.');
+      if (!token || !token.trim()) {
+        alert('❌ Ingen token indtastet. Upload annulleret.');
+        return;
+      }
+      githubToken = token.trim();
+      localStorage.setItem('github_gist_token', githubToken);
+    }
+    
+    // Create backup data
+    const backupData = {
+      ...data,
+      backupType: 'full',
+      backupVersion: APP_VERSION,
+      backupDate: new Date().toISOString(),
+      backupDescription: `Komplet backup - ${new Date().toLocaleString('da-DK')}`
+    };
+    
+    // Check for existing backup gist
+    let existingGistId = null;
+    try {
+      const gistsResponse = await fetch('https://api.github.com/gists', {
+        headers: { 'Authorization': `Bearer ${githubToken}`, 'Accept': 'application/vnd.github.v3+json' }
+      });
+      if (gistsResponse.ok) {
+        const allGists = await gistsResponse.json();
+        const backupGists = allGists.filter(gist => 
+          gist.description && gist.description.includes('Køkkenlager Backup')
+        );
+        if (backupGists.length > 0) {
+          // Find the most recent backup gist
+          backupGists.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          existingGistId = backupGists[0].id;
+        }
+      }
+    } catch (err) {
+      console.warn('Could not check for existing backup gists, will create new one:', err);
+    }
+    
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `køkkenlager_backup_${timestamp}.json`;
+    
+    const gistData = {
+      description: `Køkkenlager Backup - ${new Date().toLocaleString('da-DK')} - v${APP_VERSION}`,
+      public: false,
+      files: {
+        [filename]: {
+          content: JSON.stringify(backupData, null, 2)
+        }
+      }
+    };
+    
+    // If existing gist, add to it instead of replacing
+    if (existingGistId) {
+      try {
+        const existingGistResponse = await fetch(`https://api.github.com/gists/${existingGistId}`, {
+          headers: { 'Authorization': `Bearer ${githubToken}`, 'Accept': 'application/vnd.github.v3+json' }
+        });
+        if (existingGistResponse.ok) {
+          const existingGist = await existingGistResponse.json();
+          // Add new file to existing gist
+          Object.keys(existingGist.files).forEach(key => {
+            if (!gistData.files[key]) {
+              gistData.files[key] = existingGist.files[key];
+            }
+          });
+        }
+      } catch (err) {
+        console.warn('Could not fetch existing gist, will create new one:', err);
+        existingGistId = null;
+      }
+    }
+    
+    const url = existingGistId ? `https://api.github.com/gists/${existingGistId}` : 'https://api.github.com/gists';
+    const method = existingGistId ? 'PATCH' : 'POST';
+    
+    const response = await fetch(url, {
+      method: method,
+      headers: {
+        'Authorization': `Bearer ${githubToken}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.github.v3+json'
+      },
+      body: JSON.stringify(gistData)
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorData;
+      try { errorData = JSON.parse(errorText); } catch { errorData = { message: errorText || `HTTP ${response.status}: ${response.statusText}` }; }
+      if (response.status === 401) {
+        localStorage.removeItem('github_gist_token');
+        throw new Error('Ugyldig GitHub token. Token er blevet slettet. Prøv igen og indtast en ny token.');
+      }
+      throw new Error(errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const gist = await response.json();
+    const gistUrl = gist.html_url;
+    const updateText = existingGistId ? 'opdateret' : 'uploadet';
+    
+    alert(`✅ Backup ${updateText} til serveren!\n\n🔗 Gist URL: ${gistUrl}\n\n💡 Du kan nu hente denne backup igen via "Hent Backup fra Server".`);
+    
+  } catch(err) {
+    console.error('Fejl ved upload af backup:', err);
+    alert('❌ Fejl ved upload af backup: ' + err.message);
+  }
+}
+
+// Fetch backups from server
+async function fetchBackupsFromServer() {
+  try {
+    let githubToken = localStorage.getItem('github_gist_token');
+    if (!githubToken) {
+      const token = prompt('🔑 Indtast GitHub Personal Access Token:\n\n' +
+        '1. Gå til: https://github.com/settings/tokens\n' +
+        '2. Klik "Generate new token (classic)"\n' +
+        '3. Vælg "gist" scope\n' +
+        '4. Kopiér token og indtast her');
+      if (!token || !token.trim()) {
+        alert('❌ Ingen token indtastet. Hentning annulleret.');
+        return;
+      }
+      githubToken = token.trim();
+      localStorage.setItem('github_gist_token', githubToken);
+    }
+    
+    const response = await fetch('https://api.github.com/gists', {
+      headers: {
+        'Authorization': `Bearer ${githubToken}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('github_gist_token');
+        throw new Error('Ugyldig GitHub token. Token er blevet slettet. Prøv igen og indtast en ny token.');
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const allGists = await response.json();
+    const backupGists = allGists.filter(gist => 
+      gist.description && gist.description.includes('Køkkenlager Backup')
+    );
+    
+    if (backupGists.length === 0) {
+      alert('⚠️ Ingen backups fundet på serveren.\n\nUpload en backup først via "Backup til Server".');
+      return;
+    }
+    
+    // Sort by date (newest first)
+    backupGists.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    
+    // Show modal with backup list
+    showBackupSelectionModal(backupGists, githubToken);
+    
+  } catch(err) {
+    console.error('Fejl ved hentning af backups:', err);
+    alert('❌ Fejl ved hentning af backups: ' + err.message);
+  }
+}
+
+// Show backup selection modal
+function showBackupSelectionModal(backupGists, githubToken) {
+  const modal = document.createElement('div');
+  modal.className = 'modal-backdrop';
+  modal.id = 'backupSelectionModal';
+  modal.innerHTML = `
+    <div class="modal" style="max-width:700px;">
+      <h3>📥 Vælg Backup at Gendanne</h3>
+      <p style="color:#666; margin-bottom:20px;">Vælg hvilken backup du vil gendanne fra serveren:</p>
+      <div id="backupList" style="max-height:400px; overflow-y:auto; margin-bottom:20px;">
+        ${backupGists.map((gist, index) => {
+          const date = new Date(gist.created_at);
+          const dateStr = date.toLocaleString('da-DK');
+          const fileCount = Object.keys(gist.files || {}).length;
+          return `
+            <div style="padding:15px; margin-bottom:10px; background:#f5f5f5; border-radius:8px; border:1px solid #ddd; cursor:pointer;" 
+                 onclick="selectBackupFromServer('${gist.id}', '${githubToken}')"
+                 onmouseover="this.style.background='#e8f4f8'" 
+                 onmouseout="this.style.background='#f5f5f5'">
+              <strong style="font-size:16px; display:block; margin-bottom:5px;">${gist.description || 'Køkkenlager Backup'}</strong>
+              <span style="font-size:13px; color:#666;">📅 ${dateStr} • ${fileCount} fil(er)</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+      <div class="actions">
+        <button onclick="document.getElementById('backupSelectionModal').remove()">Annuller</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+// Select and restore backup from server
+async function selectBackupFromServer(gistId, githubToken) {
+  try {
+    const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: {
+        'Authorization': `Bearer ${githubToken}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const gist = await response.json();
+    const files = Object.values(gist.files || {});
+    
+    if (files.length === 0) {
+      alert('⚠️ Ingen backup filer fundet i denne gist.');
+      return;
+    }
+    
+    // Find the most recent backup file
+    const backupFiles = files.filter(f => f.filename && f.filename.includes('backup'));
+    if (backupFiles.length === 0) {
+      alert('⚠️ Ingen backup filer fundet i denne gist.');
+      return;
+    }
+    
+    // Get the content of the first backup file
+    const backupFile = backupFiles[0];
+    const backupContent = backupFile.content;
+    
+    // Parse and restore
+    const backupData = JSON.parse(backupContent);
+    
+    // Confirm restore
+    const confirmRestore = confirm(`⚠️ ADVARSEL: Dette vil erstatte al nuværende data!\n\n` +
+      `Vil du fortsætte med at gendanne backup fra:\n${gist.description || 'Ukendt backup'}\n\n` +
+      `Dato: ${new Date(gist.created_at).toLocaleString('da-DK')}\n\n` +
+      `Tryk OK for at fortsætte, eller Annuller for at afbryde.`);
+    
+    if (!confirmRestore) {
+      return;
+    }
+    
+    // Restore data
+    const storageKey = 'køkkenlager_data';
+    
+    // Preserve login and license if they exist in current data
+    const currentDataStr = localStorage.getItem(storageKey);
+    if (currentDataStr) {
+      try {
+        const currentData = JSON.parse(currentDataStr);
+        if (currentData.loginHash) backupData.loginHash = currentData.loginHash;
+        if (currentData.licenseKey) backupData.licenseKey = currentData.licenseKey;
+        if (currentData.username) backupData.username = currentData.username;
+      } catch (e) {
+        console.warn('Could not preserve login/license:', e);
+      }
+    }
+    
+    localStorage.setItem(storageKey, JSON.stringify(backupData));
+    
+    // Reload page to apply changes
+    alert('✅ Backup gendannet!\n\nSiden genindlæses nu for at anvende ændringerne.');
+    location.reload();
+    
+  } catch(err) {
+    console.error('Fejl ved gendannelse af backup:', err);
+    alert('❌ Fejl ved gendannelse af backup: ' + err.message);
+  }
+}
+
+// Initialize manual when settings page is shown
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize manual when systemOpsaetning page is shown
+  const observer = new MutationObserver(function(mutations) {
+    const manualSection = document.getElementById('settings-manual');
+    if (manualSection && manualSection.classList.contains('active')) {
+      const manualContent = document.getElementById('manualContent');
+      if (manualContent && manualContent.children.length === 0) {
+        initializeManual();
+      }
+    }
+  });
+  
+  const systemOpsaetning = document.getElementById('systemOpsaetning');
+  if (systemOpsaetning) {
+    observer.observe(systemOpsaetning, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+  }
+});
 
 /* small preview update */
 function updateLogPreview(){ const p=$('logPreview'); if(!p) return; if(reports.length===0){ p.textContent='Ingen optællinger endnu.'; return;} const latest = reports.slice(0,5).map(r=> `${formatTime(r.ts)} — ${r.handling} — ${r.type==='session' ? r.details.length+' linjer' : (r.vare||'') } — ${r.scope||r.placering||''}`).join('\n'); p.textContent = latest; }
