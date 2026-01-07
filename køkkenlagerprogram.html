@@ -6656,9 +6656,11 @@ function downloadExcelTemplate(){
     const alleVarer = [...koelVarer, ...frostVarer, ...toereVarer, ...groentVarer];
     const sortedVarer = sorterVarer([...alleVarer]);
     
+    const columnOrder = ['Varenavn', 'Varenummer', 'Måleenhed', 'Pris', 'Placering', 'Reol', 'Hylle', 'Rækkefølge'];
+    
     // Create sheet with explicit column order to match import format - Varenummer right after Varenavn
     const alleDataSheet = XLSX.utils.json_to_sheet(sortedVarer, {
-      header: ['Varenavn', 'Varenummer', 'Måleenhed', 'Pris', 'Placering', 'Reol', 'Hylle', 'Rækkefølge'],
+      header: columnOrder,
       skipHeader: false
     });
     
@@ -6667,13 +6669,33 @@ function downloadExcelTemplate(){
     // Add only "Alle data" sheet to workbook (simple single sheet template)
     XLSX.utils.book_append_sheet(wb, alleDataSheet, 'Alle data');
     
-    // Write file with version number in filename
-    // SheetJS free version supports frozen panes and column widths
-    // Note: Cell styling (colors, fonts) requires SheetJS Pro, but frozen panes and column widths work in free version
-    const filename = `varelager_skabelon_v${APP_VERSION}.xlsx`;
-    XLSX.writeFile(wb, filename);
+    // Write XLSX file with version number in filename
+    const filenameXlsx = `varelager_skabelon_v${APP_VERSION}.xlsx`;
+    XLSX.writeFile(wb, filenameXlsx);
     
-    alert(`✅ Excel skabelon downloadet! (v${APP_VERSION})\n\n📋 Filen indeholder:\n• Faneblad: Alle data (${alleVarer.length} varer)\n\n📦 Struktur:\n• Alle varer fra alle lokationer (Køl, Frost, Tørevare, Grønt)\n• Varer organiseret efter kategori:\n  - Køl: Mejeri (reol 1), Kød (reol 2), Fisk (reol 3), Grøntsager (reol 4)\n  - Frost: Fisk (reol 1-2), Fjerkræ (reol 3), Oksekød (reol 4), Svinekød (reol 5), Kalv/Lam (reol 6), Grønsager (reol 7-8), Bær (reol 9), Is (reol 10)\n  - Tørevare: Mel/Gryn (reol 1), Krydderier (reol 2), Konserves (reol 3), Nødder/Frø (reol 4)\n  - Grønt: Frugter (reol 1), Salater (reol 2), Grønsager (reol 3), Krydderier (reol 4)\n• Sorteret efter Placering → Reol → Hylle → Rækkefølge\n\n✨ Funktioner:\n• ✅ Versionsnummer i filnavn: varelager_skabelon_v${APP_VERSION}.xlsx\n• ✅ Første række (header) er låst ved scrolling\n• ✅ Kolonnebredder tilpasses automatisk\n• ✅ Varer organiseret logisk efter kategori\n\n📝 Sådan bruger du skabelonen:\n1. Rediger varer direkte i arket\n2. Brug Excel's filter (Data → Filter) til at filtrere efter Placering hvis du vil se specifikke lokationer\n3. Når du tilføjer en ny vare, sæt den korrekte Placering (Køl, Frost, Tørevare, eller Grønt)\n4. Gem filen og importer den igen`);
+    // ALSO write a CSV copy with semicolon separator to make import easy
+    const csvRows = [];
+    csvRows.push(columnOrder.join(';'));
+    sortedVarer.forEach(row => {
+      const cells = columnOrder.map(col => {
+        const val = row[col] !== undefined && row[col] !== null ? String(row[col]) : '';
+        // Escape quotes by doubling them
+        const escaped = val.replace(/"/g, '""');
+        return `"${escaped}"`;
+      });
+      csvRows.push(cells.join(';'));
+    });
+    const csvContent = '\uFEFF' + csvRows.join('\n'); // BOM for æøå
+    const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
+    const filenameCsv = `varelager_skabelon_v${APP_VERSION}.csv`;
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filenameCsv;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    alert(`✅ Skabelon downloadet! (v${APP_VERSION})\n\nDer er lavet TO filer:\n• Excel: ${filenameXlsx}\n• CSV (klar til import): ${filenameCsv}\n\nStruktur:\n• Varenavn; Varenummer; Måleenhed; Pris; Placering; Reol; Hylle; Rækkefølge\n• Alle varer fra alle lokationer (Køl, Frost, Tørevare, Grønt)\n• Varer organiseret efter kategori\n\nSådan bruger du skabelonen:\n1) Rediger i Excel-filen, gem som CSV eller brug den medfølgende CSV direkte\n2) Importér CSV-filen via Import/Export i programmet`);
     
   } catch(err) {
     console.error('Fejl ved generering af Excel skabelon:', err);
