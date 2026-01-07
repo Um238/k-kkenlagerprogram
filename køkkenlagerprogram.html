@@ -855,6 +855,7 @@ a:hover{color:#45a049;text-decoration:none}
             <label class="small">Filtrer placering:</label>
             <select id="filterPlacement" style="width:auto; min-width:120px; max-width:250px;" onchange="renderMasterTable()"><option value="">Alle</option></select>
             <span class="small" id="masterTableInfo" style="color:#666;"></span>
+            <button onclick="uploadVarelagerToServer()" style="background:#17a2b8; color:white; font-weight:800; padding:8px 14px; font-size:14px; box-shadow:0 2px 6px rgba(23,162,184,0.3); margin-left:auto;">☁️ Upload Varelager til Server</button>
           </div>
 
           <div style="overflow-x:auto; max-height:600px; overflow-y:auto; position:relative; border:1px solid #ddd; border-radius:4px;">
@@ -2310,9 +2311,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.30';
+const APP_VERSION = '4.31';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '10:58';
+const BUILD_TIME = '11:38';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -9006,6 +9007,202 @@ async function fetchAndImportGist(gistId, githubToken) {
   } catch(err) {
     console.error('Error fetching gist:', err);
     throw err;
+  }
+}
+
+/* Upload varelager to server (GitHub Gist) */
+async function uploadVarelagerToServer(){
+  try {
+    if (!masterVarelager || masterVarelager.length === 0) {
+      alert('⚠️ Ingen varelager data at uploade.\n\nTilføj varer i varelager administration først.');
+      return;
+    }
+    
+    // Get GitHub token from localStorage or prompt
+    let githubToken = localStorage.getItem('github_gist_token');
+    
+    if (!githubToken) {
+      const token = prompt('🔑 Indtast GitHub Personal Access Token:\n\n' +
+        '1. Gå til: https://github.com/settings/tokens\n' +
+        '2. Klik "Generate new token (classic)"\n' +
+        '3. Vælg "gist" scope\n' +
+        '4. Kopiér token og indtast her\n\n' +
+        '💡 Token gemmes lokalt og bruges til fremtidige uploads.\n' +
+        '💡 Du kan slette token i indstillinger hvis nødvendigt.');
+      
+      if (!token || !token.trim()) {
+        alert('❌ Ingen token indtastet. Upload annulleret.');
+        return;
+      }
+      
+      githubToken = token.trim();
+      localStorage.setItem('github_gist_token', githubToken);
+    }
+    
+    // Prepare export data
+    const installationId = getInstallationId();
+    const exportData = {
+      masterVarelager: masterVarelager || [],
+      lagerLokationer: lagerLokationer || [],
+      mainInstallationId: installationId,
+      version: '1.0',
+      exportedAt: Date.now()
+    };
+    
+    // Show loading
+    const originalButton = event?.target;
+    if (originalButton) {
+      originalButton.disabled = true;
+      originalButton.textContent = '⏳ Uploader...';
+    }
+    
+    // First, try to find existing varelager gist to update it
+    let existingGistId = null;
+    try {
+      const gistsResponse = await fetch('https://api.github.com/gists', {
+        headers: {
+          'Authorization': `Bearer ${githubToken}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+      
+      if (gistsResponse.ok) {
+        const allGists = await gistsResponse.json();
+        // Find the most recent varelager gist
+        const varelagerGists = allGists.filter(gist => 
+          gist.description && gist.description.includes('Varelager skabelon')
+        );
+        
+        if (varelagerGists.length > 0) {
+          // Sort by date (newest first) and use the newest one
+          varelagerGists.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          existingGistId = varelagerGists[0].id;
+          console.log('Found existing varelager gist to update:', existingGistId);
+        }
+      }
+    } catch (err) {
+      console.warn('Could not check for existing gists, will create new one:', err);
+    }
+    
+    // Prepare gist data
+    const gistData = {
+      description: `Varelager skabelon - ${masterVarelager.length} varer - ${new Date().toLocaleString('da-DK')}`,
+      public: false, // Private gist
+      files: {}
+    };
+    
+    // If updating existing gist, get the filename from the existing gist
+    if (existingGistId) {
+      try {
+        const existingGistResponse = await fetch(`https://api.github.com/gists/${existingGistId}`, {
+          headers: {
+            'Authorization': `Bearer ${githubToken}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+        
+        if (existingGistResponse.ok) {
+          const existingGist = await existingGistResponse.json();
+          const existingFiles = Object.keys(existingGist.files || {});
+          if (existingFiles.length > 0) {
+            // Use the same filename as the existing gist
+            gistData.files[existingFiles[0]] = {
+              content: JSON.stringify(exportData, null, 2)
+            };
+          } else {
+            // Fallback to new filename
+            gistData.files[`varelager-${Date.now()}.json`] = {
+              content: JSON.stringify(exportData, null, 2)
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('Could not get existing gist details, using new filename:', err);
+        gistData.files[`varelager-${Date.now()}.json`] = {
+          content: JSON.stringify(exportData, null, 2)
+        };
+      }
+    } else {
+      // New gist - use timestamp filename
+      gistData.files[`varelager-${Date.now()}.json`] = {
+        content: JSON.stringify(exportData, null, 2)
+      };
+    }
+    
+    // Upload or update GitHub Gist
+    const url = existingGistId 
+      ? `https://api.github.com/gists/${existingGistId}` 
+      : 'https://api.github.com/gists';
+    const method = existingGistId ? 'PATCH' : 'POST';
+    
+    const response = await fetch(url, {
+      method: method,
+      headers: {
+        'Authorization': `Bearer ${githubToken}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.github.v3+json'
+      },
+      body: JSON.stringify(gistData)
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { message: errorText || `HTTP ${response.status}: ${response.statusText}` };
+      }
+      
+      if (response.status === 401) {
+        localStorage.removeItem('github_gist_token');
+        throw new Error('Ugyldig GitHub token. Token er blevet slettet. Prøv igen og indtast en ny token.');
+      }
+      
+      throw new Error(errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const gist = await response.json();
+    const gistUrl = gist.html_url;
+    const gistId = gist.id;
+    
+    const updateText = existingGistId ? 'opdateret' : 'uploadet';
+    alert(`✅ Varelager ${updateText} til server!\n\n📦 ${masterVarelager.length} varer uploadet\n\n` +
+      `🔗 Gist URL: ${gistUrl}\n\n` +
+      `💡 I scanner-appen:\n` +
+      `1. Klik "☁️ Hent varelager"\n` +
+      `2. Varelageret hentes automatisk!\n\n` +
+      `🔑 Gist ID: ${gistId.substring(0, 20)}...`);
+    
+    if (originalButton) {
+      originalButton.disabled = false;
+      originalButton.textContent = '☁️ Upload Varelager til Server';
+    }
+    
+  } catch(err) {
+    console.error('Error uploading varelager:', err);
+    
+    if (event?.target) {
+      event.target.disabled = false;
+      event.target.textContent = '☁️ Upload Varelager til Server';
+    }
+    
+    // Check for network errors
+    if (err.name === 'TypeError' && err.message.includes('fetch')) {
+      alert('❌ Fejl ved upload: Ingen internetforbindelse.\n\nTjek din internetforbindelse og prøv igen.');
+      return;
+    }
+    
+    // Check for invalid token
+    if (err.message.includes('401') || err.message.includes('Bad credentials') || err.message.includes('Ugyldig') || err.message.includes('Unauthorized')) {
+      localStorage.removeItem('github_gist_token');
+      alert('❌ Ugyldig GitHub token.\n\nToken er blevet slettet. Prøv igen og indtast en ny token.\n\n' +
+        '💡 Gå til: https://github.com/settings/tokens\n' +
+        '💡 Opret et nyt token med "gist" scope.');
+      return;
+    }
+    
+    alert('❌ Fejl ved upload: ' + err.message + '\n\nTjek din internetforbindelse og prøv igen.');
   }
 }
 

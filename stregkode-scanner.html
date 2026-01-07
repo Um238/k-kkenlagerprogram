@@ -175,9 +175,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 // Versionsnummer - opdateres automatisk
-const APP_VERSION = '4.31';
+const APP_VERSION = '4.32';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '11:16';
+const BUILD_TIME = '11:38';
 
 let scannerActive = false;
 let html5QrCode = null;
@@ -509,31 +509,35 @@ function showQuantityDialog(barcode){
   const barcodeStr = String(barcode).trim();
   const barcodeNormalized = normalizeBarcode(barcode);
   
-  // First try exact and case-insensitive matches
+  // First try exact and case-insensitive matches - also match on varenummer
   let item = allItems.find(v => {
     const vId = String(v.id || '').trim();
     const vStregkode = String(v.stregkode || '').trim();
+    const vVarenummer = String(v.varenummer || '').trim();
     
-    // Exact matches
-    if (vId === barcodeStr || vStregkode === barcodeStr) return true;
+    // Exact matches on id, stregkode, or varenummer
+    if (vId === barcodeStr || vStregkode === barcodeStr || vVarenummer === barcodeStr) return true;
     
     // Case-insensitive matches
     if (vId.toLowerCase() === barcodeStr.toLowerCase() || 
-        vStregkode.toLowerCase() === barcodeStr.toLowerCase()) return true;
+        vStregkode.toLowerCase() === barcodeStr.toLowerCase() ||
+        vVarenummer.toLowerCase() === barcodeStr.toLowerCase()) return true;
     
     // Normalized matches
     const vIdNorm = normalizeBarcode(vId);
     const vStregkodeNorm = normalizeBarcode(vStregkode);
-    if (vIdNorm === barcodeNormalized || vStregkodeNorm === barcodeNormalized) return true;
+    const vVarenummerNorm = normalizeBarcode(vVarenummer);
+    if (vIdNorm === barcodeNormalized || vStregkodeNorm === barcodeNormalized || vVarenummerNorm === barcodeNormalized) return true;
     
     // Partial matches
     if (vIdNorm.includes(barcodeNormalized) || barcodeNormalized.includes(vIdNorm)) return true;
     if (vStregkodeNorm.includes(barcodeNormalized) || barcodeNormalized.includes(vStregkodeNorm)) return true;
+    if (vVarenummerNorm.includes(barcodeNormalized) || barcodeNormalized.includes(vVarenummerNorm)) return true;
     
     return false;
   });
   
-  // If not found, try fuzzy matching
+  // If not found, try fuzzy matching - also match on varenummer
   if (!item && barcodeNormalized.length >= 5) {
     let bestMatch = null;
     let bestSimilarity = 0.6;
@@ -541,10 +545,12 @@ function showQuantityDialog(barcode){
     for (const v of allItems) {
       const vId = String(v.id || '').trim();
       const vStregkode = String(v.stregkode || '').trim();
+      const vVarenummer = String(v.varenummer || '').trim();
       
       const similarity1 = calculateSimilarity(barcodeStr, vId);
       const similarity2 = calculateSimilarity(barcodeStr, vStregkode);
-      const maxSimilarity = Math.max(similarity1, similarity2);
+      const similarity3 = calculateSimilarity(barcodeStr, vVarenummer);
+      const maxSimilarity = Math.max(similarity1, similarity2, similarity3);
       
       if (maxSimilarity > bestSimilarity) {
         bestSimilarity = maxSimilarity;
@@ -710,31 +716,35 @@ function handleScannedBarcode(barcode, quantity = 1){
   const barcodeStr = String(barcode).trim();
   const barcodeNormalized = normalizeBarcode(barcode);
   
-  // First try exact and case-insensitive matches
+  // First try exact and case-insensitive matches - also match on varenummer
   let item = allItems.find(v => {
     const vId = String(v.id || '').trim();
     const vStregkode = String(v.stregkode || '').trim();
+    const vVarenummer = String(v.varenummer || '').trim();
     
-    // Exact matches
-    if (vId === barcodeStr || vStregkode === barcodeStr) return true;
+    // Exact matches on id, stregkode, or varenummer
+    if (vId === barcodeStr || vStregkode === barcodeStr || vVarenummer === barcodeStr) return true;
     
     // Case-insensitive matches
     if (vId.toLowerCase() === barcodeStr.toLowerCase() || 
-        vStregkode.toLowerCase() === barcodeStr.toLowerCase()) return true;
+        vStregkode.toLowerCase() === barcodeStr.toLowerCase() ||
+        vVarenummer.toLowerCase() === barcodeStr.toLowerCase()) return true;
     
     // Normalized matches (handles special characters)
     const vIdNorm = normalizeBarcode(vId);
     const vStregkodeNorm = normalizeBarcode(vStregkode);
-    if (vIdNorm === barcodeNormalized || vStregkodeNorm === barcodeNormalized) return true;
+    const vVarenummerNorm = normalizeBarcode(vVarenummer);
+    if (vIdNorm === barcodeNormalized || vStregkodeNorm === barcodeNormalized || vVarenummerNorm === barcodeNormalized) return true;
     
     // Partial matches (one contains the other)
     if (vIdNorm.includes(barcodeNormalized) || barcodeNormalized.includes(vIdNorm)) return true;
     if (vStregkodeNorm.includes(barcodeNormalized) || barcodeNormalized.includes(vStregkodeNorm)) return true;
+    if (vVarenummerNorm.includes(barcodeNormalized) || barcodeNormalized.includes(vVarenummerNorm)) return true;
     
     return false;
   });
   
-  // If not found, try fuzzy matching (similarity-based)
+  // If not found, try fuzzy matching (similarity-based) - also match on varenummer
   if (!item && barcodeNormalized.length >= 5) { // Only fuzzy match if barcode is reasonably long
     let bestMatch = null;
     let bestSimilarity = 0.6; // Minimum similarity threshold
@@ -742,10 +752,12 @@ function handleScannedBarcode(barcode, quantity = 1){
     for (const v of allItems) {
       const vId = String(v.id || '').trim();
       const vStregkode = String(v.stregkode || '').trim();
+      const vVarenummer = String(v.varenummer || '').trim();
       
       const similarity1 = calculateSimilarity(barcodeStr, vId);
       const similarity2 = calculateSimilarity(barcodeStr, vStregkode);
-      const maxSimilarity = Math.max(similarity1, similarity2);
+      const similarity3 = calculateSimilarity(barcodeStr, vVarenummer);
+      const maxSimilarity = Math.max(similarity1, similarity2, similarity3);
       
       if (maxSimilarity > bestSimilarity) {
         bestSimilarity = maxSimilarity;
@@ -754,7 +766,7 @@ function handleScannedBarcode(barcode, quantity = 1){
     }
     
     if (bestMatch) {
-      console.log(`Fuzzy match found: "${barcodeStr}" matched "${bestMatch.id}" or "${bestMatch.stregkode}" with similarity ${(bestSimilarity * 100).toFixed(1)}%`);
+      console.log(`Fuzzy match found: "${barcodeStr}" matched "${bestMatch.id}" or "${bestMatch.stregkode}" or "${bestMatch.varenummer}" with similarity ${(bestSimilarity * 100).toFixed(1)}%`);
       item = bestMatch;
     }
   }
@@ -764,20 +776,24 @@ function handleScannedBarcode(barcode, quantity = 1){
     const similarItems = [];
     const barcodeNormalized = normalizeBarcode(barcode);
     
-    // Find items with similar IDs or stregkoder
+    // Find items with similar IDs, stregkoder, or varenummer
     for (const v of allItems) {
       const vId = String(v.id || '').trim();
       const vStregkode = String(v.stregkode || '').trim();
+      const vVarenummer = String(v.varenummer || '').trim();
       const vIdNorm = normalizeBarcode(vId);
       const vStregkodeNorm = normalizeBarcode(vStregkode);
+      const vVarenummerNorm = normalizeBarcode(vVarenummer);
       
       // Check if any part matches (at least 5 characters)
       if (barcodeNormalized.length >= 5) {
         if (vIdNorm.includes(barcodeNormalized.substring(0, 5)) || 
             barcodeNormalized.includes(vIdNorm.substring(0, Math.min(5, vIdNorm.length))) ||
             vStregkodeNorm.includes(barcodeNormalized.substring(0, 5)) || 
-            barcodeNormalized.includes(vStregkodeNorm.substring(0, Math.min(5, vStregkodeNorm.length)))) {
-          similarItems.push({ id: vId, stregkode: vStregkode, navn: v.navn });
+            barcodeNormalized.includes(vStregkodeNorm.substring(0, Math.min(5, vStregkodeNorm.length))) ||
+            vVarenummerNorm.includes(barcodeNormalized.substring(0, 5)) || 
+            barcodeNormalized.includes(vVarenummerNorm.substring(0, Math.min(5, vVarenummerNorm.length)))) {
+          similarItems.push({ id: vId, stregkode: vStregkode, varenummer: vVarenummer, navn: v.navn });
         }
       }
     }
@@ -816,7 +832,7 @@ function handleScannedBarcode(barcode, quantity = 1){
     if (similarItems.length > 0) {
       errorMsg += '\n\n💡 Fundet lignende varer:\n';
       similarItems.slice(0, 3).forEach(s => {
-        errorMsg += `- ${s.navn} (ID: ${s.id}${s.stregkode ? ', Stregkode: ' + s.stregkode : ''})\n`;
+        errorMsg += `- ${s.navn} (ID: ${s.id}${s.stregkode ? ', Stregkode: ' + s.stregkode : ''}${s.varenummer ? ', Varenummer: ' + s.varenummer : ''})\n`;
       });
       errorMsg += '\nTjek om stregkoden er korrekt læst.';
     } else {
