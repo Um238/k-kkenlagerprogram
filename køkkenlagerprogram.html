@@ -2261,9 +2261,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.37';
+const APP_VERSION = '4.38';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '13:06';
+const BUILD_TIME = '13:18';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -8882,12 +8882,13 @@ function toggleManualSection(index) {
 // Download manual as PDF
 function downloadManualPDF() {
   try {
-    // Check if jsPDF is loaded
-    if (typeof jsPDF === 'undefined') {
+    // Check if jsPDF is loaded (UMD version)
+    if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
       alert('⚠️ PDF bibliotek ikke indlæst. Genindlæs siden og prøv igen.');
       return;
     }
     
+    const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     let y = 20;
     
@@ -8984,6 +8985,16 @@ Tips:
 • Labels er optimeret til A4 papir
 • QR-koder kan scannes med scanner-appen
 • Du kan generere labels for alle varer i en lokation på én gang`
+      },
+      {
+        title: '🚚 Leverandører',
+        content: `Hvad er Leverandører?
+Her kan du administrere leverandører og deres kontaktinformation.
+
+Sådan bruger du det:
+1. Tilføj nye leverandører med navn, telefon, email og adresse
+2. Rediger eksisterende leverandører
+3. Slet leverandører der ikke længere bruges`
       },
       {
         title: '📱 Scanner App',
@@ -9413,6 +9424,24 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
   }, 2000);
+  
+  // Force initialization when manual section becomes visible
+  const checkManualInit = setInterval(() => {
+    const manualSection = document.getElementById('settings-manual');
+    if (manualSection && manualSection.classList.contains('active')) {
+      const manualContent = document.getElementById('manualContent');
+      if (manualContent && (manualContent.children.length === 0 || manualContent.innerHTML.trim() === '<!-- Manual items will be added here via JavaScript -->')) {
+        console.log('Force initializing manual...');
+        initializeManual();
+        clearInterval(checkManualInit);
+      }
+    }
+  }, 1000);
+  
+  // Stop checking after 10 seconds
+  setTimeout(() => {
+    clearInterval(checkManualInit);
+  }, 10000);
 });
 
 /* small preview update */
