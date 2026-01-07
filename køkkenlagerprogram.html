@@ -2312,9 +2312,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.27';
+const APP_VERSION = '4.29';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '09:56';
+const BUILD_TIME = '10:35';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -5233,8 +5233,10 @@ async function generateReportPDF(r, forView = false){
   doc.setFont('helvetica','bold'); doc.setFontSize(9);
   // Use fixed column widths to prevent overlap - varenavn gets most space
   const colVarenavn = titleStartX; // Start at same position as title (margin+2)
-  const colVarenavnWidth = 80; // Varenavn column width (mm) - wide enough for full names
-  const colReol = colVarenavn + colVarenavnWidth + 2; // 2mm padding
+  const colVarenavnWidth = 60; // Varenavn column width (mm) - reduced to make room for varenummer
+  const colVarenummer = colVarenavn + colVarenavnWidth + 2; // 2mm padding
+  const colVarenummerWidth = 20; // Varenummer column width
+  const colReol = colVarenummer + colVarenummerWidth + 2;
   const colReolWidth = 12;
   const colHylle = colReol + colReolWidth + 2;
   const colHylleWidth = 12;
@@ -5280,6 +5282,7 @@ async function generateReportPDF(r, forView = false){
     doc.rect(tableLeft, y-3, tableWidth, 5, 'FD');
     doc.setFont('helvetica','bold'); doc.setFontSize(10);
     doc.text('Varenavn', colVarenavn, y+1);
+    doc.text('Varenummer', colVarenummer, y+1);
     doc.text('Reol', colReol, y+1);
     doc.text('Hylle', colHylle, y+1);
     doc.text('Antal optalt varer', colAntal, y+1);
@@ -5313,6 +5316,7 @@ async function generateReportPDF(r, forView = false){
               doc.rect(tableLeft, y-3, tableWidth, 5, 'FD');
               doc.setFont('helvetica','bold'); doc.setFontSize(10);
               doc.text('Varenavn', colVarenavn, y+1);
+              doc.text('Varenummer', colVarenummer, y+1);
               doc.text('Reol', colReol, y+1);
               doc.text('Hylle', colHylle, y+1);
               doc.text('Antal optalt varer', colAntal, y+1);
@@ -5346,24 +5350,18 @@ async function generateReportPDF(r, forView = false){
               }
             }
             
-            // Combine varenavn and varenummer
-            let displayVareTekst = vareTekst;
-            if(varenummer){
-              displayVareTekst += ` (${varenummer})`;
-            }
-            
-            // Use fixed width for varenavn column - adjust font size to fit
+            // Use fixed width for varenavn column - adjust font size to fit (varenummer has its own column)
             const availableWidth = colVarenavnWidth; // Use fixed width
             
             // Use smaller font if text is too long, but keep on one line
             let fontSize = 10;
             doc.setFontSize(fontSize);
-            let textWidth = doc.getTextWidth(displayVareTekst);
+            let textWidth = doc.getTextWidth(vareTekst);
             if(textWidth > availableWidth){
               // Try smaller font sizes
               for(let fs = 9; fs >= 7; fs -= 0.5){
                 doc.setFontSize(fs);
-                textWidth = doc.getTextWidth(displayVareTekst);
+                textWidth = doc.getTextWidth(vareTekst);
                 if(textWidth <= availableWidth){
                   fontSize = fs;
                   break;
@@ -5375,17 +5373,21 @@ async function generateReportPDF(r, forView = false){
             doc.setFontSize(fontSize);
             if(textWidth > availableWidth){
               // Truncate text to fit
-              let truncated = displayVareTekst;
+              let truncated = vareTekst;
               while(doc.getTextWidth(truncated + '...') > availableWidth && truncated.length > 0){
                 truncated = truncated.slice(0, -1);
               }
               doc.text(truncated + '...', colVarenavn, y+1);
             } else {
-            doc.text(displayVareTekst, colVarenavn, y+1);
+              doc.text(vareTekst, colVarenavn, y+1);
             }
             
             // Reset font size for other columns
             doc.setFontSize(10);
+            
+            // Varenummer - in its own column
+            const varenummerTekst = varenummer || '-';
+            doc.text(varenummerTekst, colVarenummer, y+1);
             
             // Reol
             let reolTekst = '-';
