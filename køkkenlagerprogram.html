@@ -361,6 +361,14 @@ a:hover{color:#45a049;text-decoration:none}
       </div>
     </div>
     <div id="createPasswordForm" style="display:none">
+      <div id="restoreBackupSection" style="display:none; background:#e3f2fd; border:2px solid #2196F3; border-radius:8px; padding:16px; margin-bottom:16px;">
+        <h3 style="margin:0 0 8px 0; color:#1976D2;">🔄 Gendan fra Backup</h3>
+        <p style="margin:0; color:#1976D2; font-size:13px; line-height:1.5;">
+          <strong>Vælg din backup fil for at gendanne data.</strong><br>
+          Klik på knappen nedenfor for at vælge din backup fil (JSON format).
+        </p>
+        <button onclick="showRestoreFromLocalBackup()" style="background:#2196F3; color:white; padding:10px 20px; border-radius:6px; border:none; font-weight:700; margin-top:12px; cursor:pointer;">📁 Vælg Backup Fil</button>
+      </div>
       <div style="background:#fff3cd; border:2px solid #ffc107; border-radius:8px; padding:16px; margin-bottom:16px;">
         <h3 style="margin:0 0 8px 0; color:#856404;">⚠️ PRØVEVERSION</h3>
         <p style="margin:0; color:#856404; font-size:13px; line-height:1.5;">
@@ -474,7 +482,7 @@ a:hover{color:#45a049;text-decoration:none}
     <button class="secondary" onclick="showPage('licens'); updateLicenseStatusDisplay();" style="background:rgba(255,255,255,0.2); color:#fff; border-color:rgba(255,255,255,0.3);">🔑 Licens</button>
     <button class="secondary" onclick="logout()">🚪 Log ud</button>
     </div>
-    <div id="versionDisplay" style="color:#fff; font-size:16px; font-weight:700; text-align:right; padding:8px 12px; background:rgba(255,255,255,0.25); border-radius:6px; border:1px solid rgba(255,255,255,0.35); box-shadow:0 4px 12px rgba(0,0,0,0.15); font-family:'Segoe UI', sans-serif; line-height:1.5;">v4.47<br><span style="font-size:12px; opacity:0.95; letter-spacing:0.2px;">2026-01-07 14:46</span></div>
+    <div id="versionDisplay" style="color:#fff; font-size:16px; font-weight:700; text-align:right; padding:8px 12px; background:rgba(255,255,255,0.25); border-radius:6px; border:1px solid rgba(255,255,255,0.35); box-shadow:0 4px 12px rgba(0,0,0,0.15); font-family:'Segoe UI', sans-serif; line-height:1.5;">v4.49<br><span style="font-size:12px; opacity:0.95; letter-spacing:0.2px;">2026-01-07 15:20</span></div>
   </div>
 </header>
 
@@ -1541,7 +1549,8 @@ function showLoginModal(){
           'Klik "OK" for at gendanne fra lokal backup, eller "Annuller" for at oprette ny konto.');
         
         if(restore) {
-          showRestoreFromLocalBackup();
+          // Show restore button instead of opening file chooser directly
+          showRestoreButton();
           return; // Exit early if user wants to restore
         } else {
           // User dismissed - remember this choice for this session
@@ -2281,9 +2290,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.47';
+const APP_VERSION = '4.49';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '14:46';
+const BUILD_TIME = '15:20';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -9798,7 +9807,19 @@ function checkForLocalBackup() {
   return hasBackupHistory === 'true';
 }
 
-// Show restore from local backup dialog
+// Show restore button in create password form
+function showRestoreButton() {
+  const createForm = $('createPasswordForm');
+  const restoreSection = $('restoreBackupSection');
+  if (createForm && restoreSection) {
+    createForm.style.display = 'block';
+    restoreSection.style.display = 'block';
+    const title = $('loginTitle');
+    if (title) title.textContent = 'Gendan fra Backup';
+  }
+}
+
+// Show restore from local backup dialog (called from button click - user activation)
 function showRestoreFromLocalBackup() {
   const input = document.createElement('input');
   input.type = 'file';
@@ -9822,6 +9843,7 @@ function showRestoreFromLocalBackup() {
   };
   
   document.body.appendChild(input);
+  // This is now called from a button click, so it's a direct user activation
   input.click();
   document.body.removeChild(input);
 }
