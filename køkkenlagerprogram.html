@@ -482,7 +482,7 @@ a:hover{color:#45a049;text-decoration:none}
     <button class="secondary" onclick="showPage('licens'); updateLicenseStatusDisplay();" style="background:rgba(255,255,255,0.2); color:#fff; border-color:rgba(255,255,255,0.3);">🔑 Licens</button>
     <button class="secondary" onclick="logout()">🚪 Log ud</button>
     </div>
-    <div id="versionDisplay" style="color:#fff; font-size:16px; font-weight:700; text-align:right; padding:8px 12px; background:rgba(255,255,255,0.25); border-radius:6px; border:1px solid rgba(255,255,255,0.35); box-shadow:0 4px 12px rgba(0,0,0,0.15); font-family:'Segoe UI', sans-serif; line-height:1.5;">v4.49<br><span style="font-size:12px; opacity:0.95; letter-spacing:0.2px;">2026-01-07 15:20</span></div>
+    <div id="versionDisplay" style="color:#fff; font-size:16px; font-weight:700; text-align:right; padding:8px 12px; background:rgba(255,255,255,0.25); border-radius:6px; border:1px solid rgba(255,255,255,0.35); box-shadow:0 4px 12px rgba(0,0,0,0.15); font-family:'Segoe UI', sans-serif; line-height:1.5;">v4.50<br><span style="font-size:12px; opacity:0.95; letter-spacing:0.2px;">2026-01-07 15:25</span></div>
   </div>
 </header>
 
@@ -2290,9 +2290,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.49';
+const APP_VERSION = '4.50';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '15:20';
+const BUILD_TIME = '15:25';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -9821,31 +9821,53 @@ function showRestoreButton() {
 
 // Show restore from local backup dialog (called from button click - user activation)
 function showRestoreFromLocalBackup() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.json';
-  input.style.display = 'none';
-  
-  input.onchange = function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+  // Create input element if it doesn't exist
+  let input = document.getElementById('restoreBackupFileInput');
+  if (!input) {
+    input = document.createElement('input');
+    input.id = 'restoreBackupFileInput';
+    input.type = 'file';
+    input.accept = '.json';
+    input.style.display = 'none';
+    input.style.position = 'absolute';
+    input.style.left = '-9999px';
     
-    const reader = new FileReader();
-    reader.onload = function(event) {
-      try {
-        const backupData = JSON.parse(event.target.result);
-        restoreFromBackupData(backupData);
-      } catch(err) {
-        alert('❌ Fejl ved indlæsning af backup fil: ' + err.message);
+    input.onchange = function(e) {
+      const file = e.target.files[0];
+      if (!file) {
+        // Reset input so same file can be selected again
+        input.value = '';
+        return;
       }
+      
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        try {
+          const backupData = JSON.parse(event.target.result);
+          restoreFromBackupData(backupData);
+          // Reset input after successful restore
+          input.value = '';
+        } catch(err) {
+          alert('❌ Fejl ved indlæsning af backup fil: ' + err.message);
+          // Reset input on error
+          input.value = '';
+        }
+      };
+      reader.onerror = function() {
+        alert('❌ Fejl ved læsning af fil. Prøv igen.');
+        input.value = '';
+      };
+      reader.readAsText(file);
     };
-    reader.readAsText(file);
-  };
+    
+    document.body.appendChild(input);
+  }
   
-  document.body.appendChild(input);
-  // This is now called from a button click, so it's a direct user activation
-  input.click();
-  document.body.removeChild(input);
+  // Trigger click - this is called from a button click, so it's a direct user activation
+  // Use setTimeout to ensure it's in the same event loop as the button click
+  setTimeout(() => {
+    input.click();
+  }, 0);
 }
 
 // Restore from backup data
