@@ -864,7 +864,8 @@ a:hover{color:#45a049;text-decoration:none}
               <thead style="position:sticky; top:0; z-index:10; background:#fff;">
                 <tr>
                   <th style="background:#f5f5f5; padding:12px; text-align:center; border-bottom:2px solid #ddd; font-weight:bold;">Billede</th>
-                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Vare</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Varenavn</th>
+                  <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Varenummer</th>
                   <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Måleenhed</th>
                   <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Pris</th>
                   <th style="background:#f5f5f5; padding:12px; text-align:left; border-bottom:2px solid #ddd; font-weight:bold;">Lager</th>
@@ -2311,9 +2312,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.26';
+const APP_VERSION = '4.27';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '09:29';
+const BUILD_TIME = '09:56';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -4099,7 +4100,9 @@ function confirmFinishSession(){
       const linjetotal = antal * pris; 
       grandTotal += linjetotal; 
       const detailItem = { vareId: vid, navn, maaleenhed, pris, antal, linjetotal, placering: loc }; 
-      if(v && v.reolNr) detailItem.reolNr = v.reolNr; 
+      if(v && v.reolNr) detailItem.reolNr = v.reolNr;
+      if(v && v.hylleNr) detailItem.hylleNr = v.hylleNr;
+      if(v && v.varenummer) detailItem.varenummer = v.varenummer; 
       if(v && v.hylleNr) detailItem.hylleNr = v.hylleNr; 
       details.push(detailItem); 
     }); 
