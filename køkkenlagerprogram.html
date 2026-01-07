@@ -513,10 +513,7 @@ a:hover{color:#45a049;text-decoration:none}
       <div style="flex:1; min-width:340px;">
 
         <div class="section-row" style="margin-top:8px;">
-          <button onclick="startScanner()" id="scannerBtn" style="background:#0078D4; color:white;">📷 Start scanner (Kamera)</button>
-          <button onclick="showManualBarcodeInput()" style="background:#2196F3; color:white;">✏️ Indtast Stregkode Manuel</button>
           <button class="secondary" onclick="stopScanner()" id="stopScannerBtn" style="display:none;">⏹️ Stop scanner</button>
-          <span class="small">Brug kamera scanner eller indtast stregkode manuelt. Manuel metode virker på alle enheder!</span>
         </div>
 
         <div style="margin-top:10px;">
@@ -624,7 +621,7 @@ a:hover{color:#45a049;text-decoration:none}
             </div>
             <label class="small">Vælg lokation</label>
             <select id="reportsLocation" onchange="renderReports()"><option value="">Alle</option></select>
-            <button onclick="fetchReportsFromServer()" class="secondary" style="margin-left:auto;">☁️ Hent fra Server</button>
+            <button onclick="fetchReportsFromServer()" style="margin-left:auto; background:#17a2b8; color:white; font-weight:800; padding:10px 16px; font-size:15px; box-shadow:0 2px 8px rgba(23,162,184,0.3);">☁️ Hent fra Server</button>
           </div>
           
           <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-radius:6px; border:1px solid #ddd;">
@@ -745,6 +742,7 @@ a:hover{color:#45a049;text-decoration:none}
       <input type="number" id="labelCount" value="1" min="1" style="width:100px" />
       <div class="right">
         <button onclick="generateLabels()">🏷️ Generer labels</button>
+        <button onclick="generateQRCodes()" style="background:#28a745; color:white;">📱 Generer QR-koder</button>
         <button onclick="window.print()">🖨️ Print labels</button>
       </div>
     </div>
@@ -2312,9 +2310,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.29';
+const APP_VERSION = '4.30';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '10:35';
+const BUILD_TIME = '10:58';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -5728,6 +5726,87 @@ function generateLabels(){
         }); 
       }catch(e){
         console.error('Barcode generation error:', e);
+      }
+    }
+  });
+}
+
+function generateQRCodes(){
+  const container = $('labelContainer'); if(!container) return; container.innerHTML='';
+  const count = parseInt($('labelCount')?.value) || 1;
+  const selectedLoc = $('labelSelect')?.value || '';
+  const selectedReol = $('labelReolSelect')?.value || '';
+  const single = $('labelSingle')?.value || '';
+  let items = [];
+  if(single){ 
+    const found = masterVarelager.find(v=>v.id===single); 
+    if(found) items=[found]; 
+  }
+  else if(selectedLoc){
+    items = masterVarelager.filter(v => {
+      if(v.placering !== selectedLoc) return false;
+      // Hvis reol er valgt, filtrer også på reol
+      if(selectedReol && v.reolNr !== selectedReol) return false;
+      return true;
+    });
+  }
+  items.forEach(v=>{
+    for(let i=0;i<count;i++){
+      const d = document.createElement('div'); d.className='label'; d.style.width='90mm'; d.style.height='50mm';
+      
+      // Build info text - show mængde, lokation, reol but hide ID
+      let infoText = '';
+      if (v.maaleenhed) {
+        infoText += v.maaleenhed;
+      }
+      if (v.placering) {
+        if (infoText) infoText += ' • ';
+        infoText += v.placering;
+      }
+      if (v.reolNr) {
+        if (infoText) infoText += ' ';
+        infoText += 'Reol ' + v.reolNr;
+      }
+      if (v.hylleNr) {
+        if (infoText) infoText += ' ';
+        infoText += 'Hylle ' + v.hylleNr;
+      }
+      
+      // Use stregkode if available, otherwise use id (for backward compatibility)
+      const qrCodeValue = v.stregkode || v.id;
+      
+      // Create a div for QR code
+      const qrDiv = document.createElement('div');
+      qrDiv.id = `qrcode-${v.id}-${i}`;
+      qrDiv.style.width = '100%';
+      qrDiv.style.height = 'auto';
+      qrDiv.style.display = 'flex';
+      qrDiv.style.justifyContent = 'center';
+      qrDiv.style.alignItems = 'center';
+      qrDiv.style.marginTop = '8px';
+      
+      d.innerHTML = `<strong style="font-size:14px; margin-bottom:4px;">${v.navn}</strong>${infoText ? `<div style="font-size:11px; color:#666; margin-bottom:6px;">${infoText}</div>` : ''}`;
+      d.appendChild(qrDiv);
+      container.appendChild(d);
+      
+      try{ 
+        // Generate QR code using QRCode library
+        if (typeof QRCode !== 'undefined') {
+          new QRCode(qrDiv, {
+            text: qrCodeValue,
+            width: 120,
+            height: 120,
+            colorDark: '#000000',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.H
+          });
+        } else {
+          console.error('QRCode library not loaded');
+          qrDiv.innerHTML = '<div style="color:#999; font-size:10px;">QR-kode bibliotek ikke indlæst</div>';
+        }
+      }catch(e){
+        console.error('QR code generation error:', e);
+        qrDiv.innerHTML = '<div style="color:#999; font-size:10px;">Fejl ved generering af QR-kode</div>';
       }
     }
   });
