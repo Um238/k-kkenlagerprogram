@@ -902,7 +902,7 @@ a:hover{color:#45a049;text-decoration:none}
     <div class="settings-page">
       <div class="settings-sidebar" id="settingsSidebar">
         <div class="settings-category">Indstillinger</div>
-        <div class="settings-item active" onclick="showSettingsSection('manual')">
+        <div class="settings-item active" onclick="showSettingsSection('manual'); setTimeout(function(){ var mc = document.getElementById('manualContent'); if(mc && (!mc.children.length || !mc.querySelector('.manual-item'))) { console.log('Force initializing manual from menu click'); initializeManual(); } }, 300);">
           <span class="settings-item-icon">📖</span>
           <span>Manual & Vejledning</span>
         </div>
@@ -1276,7 +1276,7 @@ a:hover{color:#45a049;text-decoration:none}
      ========================= -->
 <!-- jsPDF (for PDF generation) -->
 <!-- Pre-genereret installations-ID (hvis tilgængelig) -->
-<script src="installation_id.js" onerror="console.log('installation_id.js ikke fundet - genererer ID ved første opstart')"></script>
+<!-- installation_id.js er valgfri - hvis den ikke findes, genereres ID automatisk -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <!-- JsBarcode (for labels) -->
@@ -2261,9 +2261,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.39';
+const APP_VERSION = '4.40';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '13:31';
+const BUILD_TIME = '13:39';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -8854,7 +8854,12 @@ function initializeManual() {
     `;
   });
   
+  // Clear any existing content first
+  manualContent.innerHTML = '';
+  
+  // Insert HTML
   manualContent.innerHTML = html;
+  
   console.log('Manual HTML inserted, items count:', manualContent.children.length);
   
   // Ensure all sections are closed when page is shown
@@ -8870,6 +8875,13 @@ function initializeManual() {
   });
   
   console.log('Manual initialization complete. Total sections:', manualSections.length);
+  console.log('Manual items in DOM:', manualContent.querySelectorAll('.manual-item').length);
+  
+  // Force a re-render by triggering a repaint
+  manualContent.style.display = 'none';
+  setTimeout(() => {
+    manualContent.style.display = '';
+  }, 10);
 }
 
 function toggleManualSection(index) {
