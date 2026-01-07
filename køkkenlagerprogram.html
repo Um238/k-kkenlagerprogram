@@ -2311,9 +2311,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.16';
-const BUILD_DATE = '2026-01-06';
-const BUILD_TIME = '14:48';
+const APP_VERSION = '4.22';
+const BUILD_DATE = '2026-01-07';
+const BUILD_TIME = '07:50';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -5260,7 +5260,7 @@ async function generateReportPDF(r, forView = false){
     doc.setFillColor(240, 240, 240);
     doc.setLineWidth(0.3);
     doc.rect(tableLeft, y-3, tableWidth, 5, 'FD');
-    doc.setFont('helvetica','bold'); doc.setFontSize(9);
+    doc.setFont('helvetica','bold'); doc.setFontSize(10);
     doc.text('Varenavn', colVarenavn, y+1);
     doc.text('Reol', colReol, y+1);
     doc.text('Hylle', colHylle, y+1);
@@ -5293,7 +5293,7 @@ async function generateReportPDF(r, forView = false){
               doc.setFillColor(240, 240, 240);
               doc.setLineWidth(0.3);
               doc.rect(tableLeft, y-3, tableWidth, 5, 'FD');
-              doc.setFont('helvetica','bold'); doc.setFontSize(9);
+              doc.setFont('helvetica','bold'); doc.setFontSize(10);
               doc.text('Varenavn', colVarenavn, y+1);
               doc.text('Reol', colReol, y+1);
               doc.text('Hylle', colHylle, y+1);
@@ -5316,7 +5316,7 @@ async function generateReportPDF(r, forView = false){
             doc.rect(tableLeft, y-2, tableWidth, 4, 'F');
             
             // Varenavn - truncate to match header width exactly
-            doc.setFont('helvetica','normal'); doc.setFontSize(9);
+            doc.setFont('helvetica','normal'); doc.setFontSize(10);
             const vareTekst = String(it.navn || '');
             let displayVareTekst = vareTekst;
             if(doc.getTextWidth(displayVareTekst) > headerVarenavnWidth){
