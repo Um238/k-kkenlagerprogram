@@ -2311,9 +2311,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.25';
+const APP_VERSION = '4.26';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '08:52';
+const BUILD_TIME = '09:29';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -5378,7 +5378,7 @@ async function generateReportPDF(r, forView = false){
               }
               doc.text(truncated + '...', colVarenavn, y+1);
             } else {
-              doc.text(displayVareTekst, colVarenavn, y+1);
+            doc.text(displayVareTekst, colVarenavn, y+1);
             }
             
             // Reset font size for other columns
@@ -5946,6 +5946,7 @@ function downloadExcelTemplate(){
       const resultat = [];
       let totalVarer = 0;
       let globalRaekkefoelge = 1; // Global rækkefølge across all categories
+      let varenummerCounter = 1000; // Start varenummer counter
       
       // Process each category
       Object.keys(kategorier).forEach((kategori, katIndex) => {
@@ -5986,14 +5987,14 @@ function downloadExcelTemplate(){
                 // Ensure price is a number, not a string
                 const pris = parseFloat(vare[2]) || 0;
                 resultat.push({
-                  Navn: String(vare[0] || ''),
+                  Varenavn: String(vare[0] || ''),
+                  Varenummer: String(varenummerCounter++), // Auto-generate varenummer starting from 1000
                   Måleenhed: String(vare[1] || 'stk'),
                   Pris: pris,
                   Placering: String(placering || ''),
                   Reol: String(reol || ''),
                   Hylle: String(hylle || ''),
-                  Rækkefølge: String(globalRaekkefoelge || '0'),
-                  Varenummer: '' // Empty varenummer column - user can fill in
+                  Rækkefølge: String(globalRaekkefoelge || '0')
                 });
           vareIndex++;
                 totalVarer++;
@@ -6651,13 +6652,13 @@ function downloadExcelTemplate(){
     }
     
     // Create "Alle data" sheet with ALL items - simple single sheet template
-    // IMPORTANT: Column order must match import function: Navn, Måleenhed, Pris, Placering, Reol, Hylle, Rækkefølge, Varenummer
+    // IMPORTANT: Column order must match import function: Varenavn, Varenummer, Måleenhed, Pris, Placering, Reol, Hylle, Rækkefølge
     const alleVarer = [...koelVarer, ...frostVarer, ...toereVarer, ...groentVarer];
     const sortedVarer = sorterVarer([...alleVarer]);
     
-    // Create sheet with explicit column order to match import format - include Varenummer
+    // Create sheet with explicit column order to match import format - Varenummer right after Varenavn
     const alleDataSheet = XLSX.utils.json_to_sheet(sortedVarer, {
-      header: ['Navn', 'Måleenhed', 'Pris', 'Placering', 'Reol', 'Hylle', 'Rækkefølge', 'Varenummer'],
+      header: ['Varenavn', 'Varenummer', 'Måleenhed', 'Pris', 'Placering', 'Reol', 'Hylle', 'Rækkefølge'],
       skipHeader: false
     });
     
@@ -7286,26 +7287,27 @@ function processImportText(text, importType = 'add'){
     // Trim alle dele og fjern quotes
     const cleanParts = parts.map(p => p.trim().replace(/^["']|["']$/g, ''));
     
+    // New column order: Varenavn, Varenummer, Måleenhed, Pris, Placering, Reol, Hylle, Rækkefølge
     const navn = cleanParts[0] || '';
     if(!navn || navn === '') return;
     
-    const maale = cleanParts[1]?.trim() || 'stk';
+    const varenummer = cleanParts[1]?.trim() || null;
+    const maale = cleanParts[2]?.trim() || 'stk';
     // Håndter både komma og punktum som decimal-separator
-    const prisStr = (cleanParts[2] || '0').replace(',', '.');
+    const prisStr = (cleanParts[3] || '0').replace(',', '.');
     const pris = parseFloat(prisStr) || 0;
-    const placering = cleanParts[3]?.trim() || '';
-    // Læs reol, hylle, rækkefølge og varenummer kolonnerne (hvis de findes)
-    const reol = cleanParts[4]?.trim() || null;
-    const hylle = cleanParts[5]?.trim() || null;
-    const raekkefoelgeStr = cleanParts[6]?.trim() || '0';
+    const placering = cleanParts[4]?.trim() || '';
+    // Læs reol, hylle og rækkefølge kolonnerne (hvis de findes)
+    const reol = cleanParts[5]?.trim() || null;
+    const hylle = cleanParts[6]?.trim() || null;
+    const raekkefoelgeStr = cleanParts[7]?.trim() || '0';
     const raekkefoelge = parseFloat(raekkefoelgeStr) || 0;
-    const varenummer = cleanParts[7]?.trim() || null;
     
     fileVarer.push({ navn, maaleenhed: maale, pris, placering, reolNr: reol, hylleNr: hylle, raekkefoelge, varenummer: varenummer });
   });
   
   if(fileVarer.length === 0){
-    alert('Ingen varer fundet i filen. Tjek at filen har korrekt format:\nNavn;Måleenhed;Pris;Placering;Reol;Hylle;Rækkefølge;Varenummer\n\nReol, hylle, rækkefølge og varenummer er valgfrie.');
+    alert('Ingen varer fundet i filen. Tjek at filen har korrekt format:\nVarenavn;Varenummer;Måleenhed;Pris;Placering;Reol;Hylle;Rækkefølge\n\nVarenummer, Reol, hylle og rækkefølge er valgfrie.');
     return;
   }
   
