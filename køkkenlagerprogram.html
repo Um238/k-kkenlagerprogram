@@ -2261,9 +2261,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.38';
+const APP_VERSION = '4.39';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '13:18';
+const BUILD_TIME = '13:31';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -8603,10 +8603,25 @@ function showSettingsSection(sectionId){
   
   // Initialize manual if showing manual section
   if (sectionId === 'manual') {
-    const manualContent = document.getElementById('manualContent');
-    if (manualContent && manualContent.children.length === 0) {
-      initializeManual();
-    }
+    // Always try to initialize manual when showing the section
+    setTimeout(() => {
+      const manualContent = document.getElementById('manualContent');
+      if (manualContent) {
+        // Check if content is empty or only contains the comment
+        const isEmpty = manualContent.children.length === 0 || 
+                        manualContent.innerHTML.trim() === '<!-- Manual items will be added here via JavaScript -->' ||
+                        manualContent.innerHTML.trim() === '' ||
+                        !manualContent.querySelector('.manual-item');
+        if (isEmpty) {
+          console.log('Initializing manual in showSettingsSection...');
+          initializeManual();
+        } else {
+          console.log('Manual already initialized, items count:', manualContent.children.length);
+        }
+      } else {
+        console.error('manualContent not found when trying to initialize!');
+      }
+    }, 100);
   }
   
   // Highlight menu item - find by section mapping (kun i systemOpsaetning)
@@ -8638,7 +8653,12 @@ function showSettingsSection(sectionId){
 // Initialize manual content on page load
 function initializeManual() {
   const manualContent = document.getElementById('manualContent');
-  if (!manualContent) return;
+  if (!manualContent) {
+    console.error('manualContent element not found!');
+    return;
+  }
+  
+  console.log('initializeManual called, manualContent found:', manualContent);
   
   const manualSections = [
     {
@@ -8835,16 +8855,21 @@ function initializeManual() {
   });
   
   manualContent.innerHTML = html;
+  console.log('Manual HTML inserted, items count:', manualContent.children.length);
   
   // Ensure all sections are closed when page is shown
   const allContents = document.querySelectorAll('[id^="manualContent"]');
   const allArrows = document.querySelectorAll('[id^="manualArrow"]');
   allContents.forEach(content => {
-    if (content) content.style.display = 'none';
+    if (content && content.id !== 'manualContent') { // Don't hide the container
+      content.style.display = 'none';
+    }
   });
   allArrows.forEach(arrow => {
     if (arrow) arrow.style.transform = 'rotate(0deg)';
   });
+  
+  console.log('Manual initialization complete. Total sections:', manualSections.length);
 }
 
 function toggleManualSection(index) {
