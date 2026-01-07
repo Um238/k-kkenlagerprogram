@@ -914,10 +914,6 @@ a:hover{color:#45a049;text-decoration:none}
           <span class="settings-item-icon">💾</span>
           <span>Backup & Sikkerhed</span>
         </div>
-        <div class="settings-item" onclick="showSettingsSection('import')">
-          <span class="settings-item-icon">📥</span>
-          <span>Import data</span>
-        </div>
         <div class="settings-item" onclick="showSettingsSection('mobile')">
           <span class="settings-item-icon">📱</span>
           <span>Mobil tilgang</span>
@@ -1005,28 +1001,6 @@ a:hover{color:#45a049;text-decoration:none}
             </div>
             <div class="settings-option-action">
               <button onclick="importLoginAndLicense()" style="background:#28a745; color:white;">📤 Gendan Login/Licens</button>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Import Section -->
-        <div id="settings-import" class="settings-section">
-          <div class="settings-option">
-            <div class="settings-option-label">
-              <h3>📷 Importer Scanner Data</h3>
-              <p>Importer data fra Scanner appen eller eksterne stregkode læsere.</p>
-            </div>
-            <div class="settings-option-action">
-              <button onclick="importScannerData()" style="background:#2196F3; color:white;">Importer Scanner</button>
-            </div>
-          </div>
-          <div class="settings-option">
-            <div class="settings-option-label">
-              <h3>🔄 Synkroniser Rapporter</h3>
-              <p>Tjek automatisk for nye rapporter fra scanner-appen og opdater listen.</p>
-            </div>
-            <div class="settings-option-action">
-              <button onclick="syncReportsFromScanner()" style="background:#4CAF50; color:white;">🔄 Synkroniser Nu</button>
             </div>
           </div>
         </div>
@@ -2287,9 +2261,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.35';
+const APP_VERSION = '4.37';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '12:45';
+const BUILD_TIME = '13:06';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -8484,7 +8458,16 @@ function showPage(id){
   if(id==='leverandor') renderLeverandorTable(); 
   if(id==='master') { showMasterSection('add'); updateAllSelects(); } 
   if(id==='scanner') { loadScannerIntoPage(); }
-  if(id==='systemOpsaetning') { showSettingsSection('password'); } 
+  if(id==='systemOpsaetning') { 
+    showSettingsSection('manual'); // Show manual section by default
+    // Initialize manual if not already initialized
+    setTimeout(() => {
+      const manualContent = document.getElementById('manualContent');
+      if (manualContent && manualContent.children.length === 0) {
+        initializeManual();
+      }
+    }, 100);
+  } 
   if(id==='licens') { updateLicenseStatusDisplay(); } 
 }
 function toggleSidebar(sidebarId){
@@ -8618,12 +8601,19 @@ function showSettingsSection(sectionId){
   const section = document.getElementById('settings-' + sectionId);
   if(section) section.classList.add('active');
   
+  // Initialize manual if showing manual section
+  if (sectionId === 'manual') {
+    const manualContent = document.getElementById('manualContent');
+    if (manualContent && manualContent.children.length === 0) {
+      initializeManual();
+    }
+  }
+  
   // Highlight menu item - find by section mapping (kun i systemOpsaetning)
   const sectionMap = {
     'manual': 'Manual',
     'password': 'Skift password',
     'backup': 'Backup',
-    'import': 'Import',
     'mobile': 'Mobil',
     'branding': 'Logo'
   };
@@ -9390,7 +9380,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const manualSection = document.getElementById('settings-manual');
     if (manualSection && manualSection.classList.contains('active')) {
       const manualContent = document.getElementById('manualContent');
-      if (manualContent && manualContent.children.length === 0) {
+      if (manualContent && (manualContent.children.length === 0 || manualContent.innerHTML.trim() === '<!-- Manual items will be added here via JavaScript -->')) {
         initializeManual();
       }
     }
@@ -9400,6 +9390,29 @@ document.addEventListener('DOMContentLoaded', function() {
   if (systemOpsaetning) {
     observer.observe(systemOpsaetning, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
   }
+  
+  // Also try to initialize immediately if manual section is already visible
+  setTimeout(() => {
+    const manualSection = document.getElementById('settings-manual');
+    if (manualSection && manualSection.classList.contains('active')) {
+      const manualContent = document.getElementById('manualContent');
+      if (manualContent && (manualContent.children.length === 0 || manualContent.innerHTML.trim() === '<!-- Manual items will be added here via JavaScript -->')) {
+        initializeManual();
+      }
+    }
+  }, 500);
+  
+  // Also check after a longer delay to ensure it's initialized
+  setTimeout(() => {
+    const manualSection = document.getElementById('settings-manual');
+    if (manualSection && manualSection.classList.contains('active')) {
+      const manualContent = document.getElementById('manualContent');
+      if (manualContent && (manualContent.children.length === 0 || manualContent.innerHTML.trim() === '<!-- Manual items will be added here via JavaScript -->')) {
+        console.log('Initializing manual after delay...');
+        initializeManual();
+      }
+    }
+  }, 2000);
 });
 
 /* small preview update */
