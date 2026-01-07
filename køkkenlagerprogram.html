@@ -474,7 +474,7 @@ a:hover{color:#45a049;text-decoration:none}
     <button class="secondary" onclick="showPage('licens'); updateLicenseStatusDisplay();" style="background:rgba(255,255,255,0.2); color:#fff; border-color:rgba(255,255,255,0.3);">🔑 Licens</button>
     <button class="secondary" onclick="logout()">🚪 Log ud</button>
     </div>
-    <div id="versionDisplay" style="color:#fff; font-size:16px; font-weight:700; text-align:right; padding:8px 12px; background:rgba(255,255,255,0.25); border-radius:6px; border:1px solid rgba(255,255,255,0.35); box-shadow:0 4px 12px rgba(0,0,0,0.15); font-family:'Segoe UI', sans-serif; line-height:1.5;">v4.45<br><span style="font-size:12px; opacity:0.95; letter-spacing:0.2px;">2026-01-07 14:32</span></div>
+    <div id="versionDisplay" style="color:#fff; font-size:16px; font-weight:700; text-align:right; padding:8px 12px; background:rgba(255,255,255,0.25); border-radius:6px; border:1px solid rgba(255,255,255,0.35); box-shadow:0 4px 12px rgba(0,0,0,0.15); font-family:'Segoe UI', sans-serif; line-height:1.5;">v4.46<br><span style="font-size:12px; opacity:0.95; letter-spacing:0.2px;">2026-01-07 14:38</span></div>
   </div>
 </header>
 
@@ -2281,9 +2281,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.45';
+const APP_VERSION = '4.46';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '14:32';
+const BUILD_TIME = '14:38';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -9029,7 +9029,7 @@ function downloadManualPDF() {
       manualSections = [
         {
           title: '📦 Lager Optælling',
-        content: `Hvad er Lager Optælling?
+          content: `Hvad er Lager Optælling?
 Lager Optælling er hovedfunktionen i programmet. Her kan du optælle varer i dit lager ved at indtaste antal manuelt.
 
 Sådan bruger du det:
