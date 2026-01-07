@@ -2261,9 +2261,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.40';
+const APP_VERSION = '4.41';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '13:39';
+const BUILD_TIME = '13:47';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -8885,19 +8885,34 @@ function initializeManual() {
 }
 
 function toggleManualSection(index) {
-  // Close all other sections first
-  const allContents = document.querySelectorAll('[id^="manualContent"]');
-  const allArrows = document.querySelectorAll('[id^="manualArrow"]');
+  console.log('toggleManualSection called with index:', index);
   
-  allContents.forEach((content, idx) => {
-    if (idx !== index) {
-      content.style.display = 'none';
+  // Get all manual content sections (but NOT the container)
+  const allContents = [];
+  const allArrows = [];
+  
+  // Find all manual content divs (manualContent0, manualContent1, etc.) but NOT manualContent container
+  for (let i = 0; i < 20; i++) { // Check up to 20 sections
+    const content = document.getElementById(`manualContent${i}`);
+    const arrow = document.getElementById(`manualArrow${i}`);
+    if (content && arrow) {
+      allContents.push({ element: content, index: i });
+      allArrows.push({ element: arrow, index: i });
+    }
+  }
+  
+  console.log('Found manual sections:', allContents.length);
+  
+  // Close all other sections first
+  allContents.forEach((item) => {
+    if (item.index !== index) {
+      item.element.style.display = 'none';
     }
   });
   
-  allArrows.forEach((arrow, idx) => {
-    if (idx !== index) {
-      arrow.style.transform = 'rotate(0deg)';
+  allArrows.forEach((item) => {
+    if (item.index !== index) {
+      item.element.style.transform = 'rotate(0deg)';
     }
   });
   
@@ -8906,13 +8921,20 @@ function toggleManualSection(index) {
   const arrow = document.getElementById(`manualArrow${index}`);
   
   if (content && arrow) {
-    if (content.style.display === 'none' || !content.style.display) {
+    const isHidden = content.style.display === 'none' || !content.style.display || content.style.display === '';
+    console.log('Section', index, 'isHidden:', isHidden);
+    
+    if (isHidden) {
       content.style.display = 'block';
       arrow.style.transform = 'rotate(180deg)';
+      console.log('Section', index, 'opened');
     } else {
       content.style.display = 'none';
       arrow.style.transform = 'rotate(0deg)';
+      console.log('Section', index, 'closed');
     }
+  } else {
+    console.error('Could not find content or arrow for index', index);
   }
 }
 
