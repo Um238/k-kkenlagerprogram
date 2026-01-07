@@ -2311,9 +2311,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.24';
+const APP_VERSION = '4.25';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '08:33';
+const BUILD_TIME = '08:52';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -2861,6 +2861,7 @@ function renderMasterTable(){
         tr.innerHTML = `
             ${imageCell}
             <td onclick="editMasterName('${v.id}')" style="cursor:pointer">${v.navn}</td>
+            <td onclick="editMasterVarenummer('${v.id}')" style="cursor:pointer; color:#0066cc; font-weight:600;">${v.varenummer || '-'}</td>
             <td onclick="editMasterUnit('${v.id}')" style="cursor:pointer">${v.maaleenhed}</td>
             <td onclick="editMasterPrice('${v.id}')" style="cursor:pointer">${v.pris.toFixed(2)} kr.</td>
             <td onclick="editMasterLocation('${v.id}')" style="cursor:pointer">${v.placering || '-'}</td>
@@ -2878,7 +2879,7 @@ function renderMasterTable(){
         const paginationRow = document.createElement('tr');
         paginationRow.style.background = '#f9f9f9';
         paginationRow.innerHTML = `
-            <td colspan="9" style="text-align:center; padding:12px;">
+            <td colspan="10" style="text-align:center; padding:12px;">
                 <button class="secondary small" onclick="window.masterTablePage = Math.max(1, (window.masterTablePage || 1) - 1); renderMasterTable();" ${currentPage === 1 ? 'disabled' : ''}>◀ Forrige</button>
                 <span style="margin:0 12px; color:#666;">Side ${currentPage} af ${totalPages} (${sorted.length} varer)</span>
                 <button class="secondary small" onclick="window.masterTablePage = Math.min(${totalPages}, (window.masterTablePage || 1) + 1); renderMasterTable();" ${currentPage === totalPages ? 'disabled' : ''}>Næste ▶</button>
@@ -2895,7 +2896,10 @@ function renderMasterTable(){
     const masterSelect = $('masterSelect');
     if (masterSelect) {
         masterSelect.innerHTML = "";
-        masterVarelager.forEach(v => masterSelect.add(new Option(v.navn, v.id)));
+        masterVarelager.forEach(v => {
+            const displayText = v.varenummer ? `${v.navn} (${v.varenummer})` : v.navn;
+            masterSelect.add(new Option(displayText, v.id));
+        });
     }
 }
 
@@ -3036,6 +3040,16 @@ function editMasterHylleNr(id){
       updateHylleHylleSelect();
       renderHylleRaekkefoelge();
     }
+    saveAllData();
+}
+
+function editMasterVarenummer(id){
+    const v = masterVarelager.find(x=>x.id===id);
+    const ny = prompt("Varenummer:", v.varenummer || '');
+    if(ny===null) return;
+    v.varenummer = ny.trim() || null;
+    renderMasterTable();
+    renderLagerTable();
     saveAllData();
 }
 
@@ -4185,8 +4199,10 @@ function renderLagerTable(){
         const antal = aggregated[vid].antal;
         const sum = antal * pris; total += sum;
         const breakdownText = Object.entries(aggregated[vid].breakdown).map(e=>`${e[0]}:${e[1]}`).join(', ');
+        const varenummer = v ? (v.varenummer || '') : '';
+        const varenummerDisplay = varenummer ? `<br><small style="color:#0066cc;font-weight:600;">Varenr: ${varenummer}</small>` : '';
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${navn}<br><small style="color:#666">${breakdownText}</small></td><td>${maale}</td><td class="lager-antal" style="cursor:pointer" onclick="editSessionCount('${vid}','')">${antal}</td><td>${pris.toFixed(2)} kr.</td><td>${sum.toFixed(2)} kr.</td>`;
+        tr.innerHTML = `<td>${navn}${varenummerDisplay}<br><small style="color:#666">${breakdownText}</small></td><td>${maale}</td><td class="lager-antal" style="cursor:pointer" onclick="editSessionCount('${vid}','')">${antal}</td><td>${pris.toFixed(2)} kr.</td><td>${sum.toFixed(2)} kr.</td>`;
         tbody.appendChild(tr);
       });
     } else {
@@ -4198,8 +4214,10 @@ function renderLagerTable(){
         const maale = v ? (v.maaleenhed||'-') : '-';
         const pris = v ? (Number(v.pris)||0) : 0;
         const sum = antal * pris; total += sum;
+        const varenummer = v ? (v.varenummer || '') : '';
+        const varenummerDisplay = varenummer ? `<br><small style="color:#0066cc;font-weight:600;">Varenr: ${varenummer}</small>` : '';
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${navn}</td><td>${maale}</td><td class="lager-antal" style="cursor:pointer" onclick="editSessionCount('${vid}','${loc}')">${antal}</td><td>${pris.toFixed(2)} kr.</td><td>${sum.toFixed(2)} kr.</td>`;
+        tr.innerHTML = `<td>${navn}${varenummerDisplay}</td><td>${maale}</td><td class="lager-antal" style="cursor:pointer" onclick="editSessionCount('${vid}','${loc}')">${antal}</td><td>${pris.toFixed(2)} kr.</td><td>${sum.toFixed(2)} kr.</td>`;
         tbody.appendChild(tr);
       });
     }
@@ -5210,22 +5228,19 @@ async function generateReportPDF(r, forView = false){
   
   // Calculate column positions based on header text widths - exactly match header width
   doc.setFont('helvetica','bold'); doc.setFontSize(9);
-  const headerPadding = 4; // Padding between columns
-  // Calculate exact header widths
-  const headerVarenavnWidth = doc.getTextWidth('Varenavn');
-  const headerReolWidth = doc.getTextWidth('Reol');
-  const headerHylleWidth = doc.getTextWidth('Hylle');
-  const headerAntalWidth = doc.getTextWidth('Antal optalt varer');
-  const headerPrisWidth = doc.getTextWidth('Pris');
-  const headerLinjetotalWidth = doc.getTextWidth('Linjetotal');
-  
-  // Column start positions (left edge of each column) - start at same X as title
+  // Use fixed column widths to prevent overlap - varenavn gets most space
   const colVarenavn = titleStartX; // Start at same position as title (margin+2)
-  const colReol = colVarenavn + headerVarenavnWidth + headerPadding;
-  const colHylle = colReol + headerReolWidth + headerPadding;
-  const colAntal = colHylle + headerHylleWidth + headerPadding;
-  const colPris = colAntal + headerAntalWidth + headerPadding;
-  const colLinjetotal = colPris + headerPrisWidth + headerPadding;
+  const colVarenavnWidth = 80; // Varenavn column width (mm) - wide enough for full names
+  const colReol = colVarenavn + colVarenavnWidth + 2; // 2mm padding
+  const colReolWidth = 12;
+  const colHylle = colReol + colReolWidth + 2;
+  const colHylleWidth = 12;
+  const colAntal = colHylle + colHylleWidth + 2;
+  const colAntalWidth = 25;
+  const colPris = colAntal + colAntalWidth + 2;
+  const colPrisWidth = 20;
+  const colLinjetotal = colPris + colPrisWidth + 2;
+  const colLinjetotalWidth = 25;
   
   if(r.type === 'session' && r.details && r.details.length > 0){
     // Sorter efter placering, derefter reolNr, derefter hylleNr
@@ -5334,11 +5349,12 @@ async function generateReportPDF(r, forView = false){
               displayVareTekst += ` (${varenummer})`;
             }
             
-            // Calculate available width for varenavn column - use more space (extend to colAntal)
-            const availableWidth = colAntal - colVarenavn - 4; // Use more space, leave 4mm padding
+            // Use fixed width for varenavn column - adjust font size to fit
+            const availableWidth = colVarenavnWidth; // Use fixed width
             
             // Use smaller font if text is too long, but keep on one line
             let fontSize = 10;
+            doc.setFontSize(fontSize);
             let textWidth = doc.getTextWidth(displayVareTekst);
             if(textWidth > availableWidth){
               // Try smaller font sizes
@@ -5352,11 +5368,23 @@ async function generateReportPDF(r, forView = false){
               }
             }
             
-            // Set font size and display on one line
+            // Set font size and display on one line - truncate if still too long
             doc.setFontSize(fontSize);
-            doc.text(displayVareTekst, colVarenavn, y+1, { maxWidth: availableWidth });
+            if(textWidth > availableWidth){
+              // Truncate text to fit
+              let truncated = displayVareTekst;
+              while(doc.getTextWidth(truncated + '...') > availableWidth && truncated.length > 0){
+                truncated = truncated.slice(0, -1);
+              }
+              doc.text(truncated + '...', colVarenavn, y+1);
+            } else {
+              doc.text(displayVareTekst, colVarenavn, y+1);
+            }
             
-            // Reol - truncate to match header width exactly
+            // Reset font size for other columns
+            doc.setFontSize(10);
+            
+            // Reol
             let reolTekst = '-';
             if(it.reolNr){
               reolTekst = String(it.reolNr);
@@ -5366,14 +5394,9 @@ async function generateReportPDF(r, forView = false){
                 reolTekst = String(v.reolNr);
               }
             }
-            if(doc.getTextWidth(reolTekst) > headerReolWidth){
-              while(doc.getTextWidth(reolTekst) > headerReolWidth && reolTekst.length > 0){
-                reolTekst = reolTekst.slice(0, -1);
-              }
-            }
             doc.text(reolTekst, colReol, y+1);
             
-            // Hylle - truncate to match header width exactly
+            // Hylle
             let hylleTekst = '-';
             if(it.hylleNr){
               hylleTekst = String(it.hylleNr);
@@ -5383,42 +5406,19 @@ async function generateReportPDF(r, forView = false){
                 hylleTekst = String(v.hylleNr);
               }
             }
-            if(doc.getTextWidth(hylleTekst) > headerHylleWidth){
-              while(doc.getTextWidth(hylleTekst) > headerHylleWidth && hylleTekst.length > 0){
-                hylleTekst = hylleTekst.slice(0, -1);
-              }
-            }
             doc.text(hylleTekst, colHylle, y+1);
             
-            // Antal med enhed - truncate to match header width exactly
+            // Antal med enhed
             const antalMedEnhed = `${it.antal || 0} ${it.maaleenhed || ''}`;
-            let displayAntal = antalMedEnhed;
-            if(doc.getTextWidth(displayAntal) > headerAntalWidth){
-              while(doc.getTextWidth(displayAntal) > headerAntalWidth && displayAntal.length > 0){
-                displayAntal = displayAntal.slice(0, -1);
-              }
-            }
-            doc.text(displayAntal, colAntal, y+1);
+            doc.text(antalMedEnhed, colAntal, y+1);
             
-            // Pris - truncate to match header width exactly
+            // Pris
             const prisText = (it.pris||0).toFixed(2)+' kr.';
-            let displayPris = prisText;
-            if(doc.getTextWidth(displayPris) > headerPrisWidth){
-              while(doc.getTextWidth(displayPris) > headerPrisWidth && displayPris.length > 0){
-                displayPris = displayPris.slice(0, -1);
-              }
-            }
-            doc.text(displayPris, colPris, y+1);
+            doc.text(prisText, colPris, y+1);
             
-            // Linjetotal - truncate to match header width exactly
+            // Linjetotal
             const linjetotalText = (it.linjetotal||0).toFixed(2)+' kr.';
-            let displayLinjetotal = linjetotalText;
-            if(doc.getTextWidth(displayLinjetotal) > headerLinjetotalWidth){
-              while(doc.getTextWidth(displayLinjetotal) > headerLinjetotalWidth && displayLinjetotal.length > 0){
-                displayLinjetotal = displayLinjetotal.slice(0, -1);
-              }
-            }
-            doc.text(displayLinjetotal, colLinjetotal, y+1);
+            doc.text(linjetotalText, colLinjetotal, y+1);
             
             // Linje under række
             doc.setDrawColor(220, 220, 220);
@@ -5992,7 +5992,8 @@ function downloadExcelTemplate(){
                   Placering: String(placering || ''),
                   Reol: String(reol || ''),
                   Hylle: String(hylle || ''),
-                  Rækkefølge: String(globalRaekkefoelge || '0')
+                  Rækkefølge: String(globalRaekkefoelge || '0'),
+                  Varenummer: '' // Empty varenummer column - user can fill in
                 });
           vareIndex++;
                 totalVarer++;
@@ -6650,13 +6651,13 @@ function downloadExcelTemplate(){
     }
     
     // Create "Alle data" sheet with ALL items - simple single sheet template
-    // IMPORTANT: Column order must match import function: Navn, Måleenhed, Pris, Placering, Reol, Hylle, Rækkefølge
+    // IMPORTANT: Column order must match import function: Navn, Måleenhed, Pris, Placering, Reol, Hylle, Rækkefølge, Varenummer
     const alleVarer = [...koelVarer, ...frostVarer, ...toereVarer, ...groentVarer];
     const sortedVarer = sorterVarer([...alleVarer]);
     
-    // Create sheet with explicit column order to match import format
+    // Create sheet with explicit column order to match import format - include Varenummer
     const alleDataSheet = XLSX.utils.json_to_sheet(sortedVarer, {
-      header: ['Navn', 'Måleenhed', 'Pris', 'Placering', 'Reol', 'Hylle', 'Rækkefølge'],
+      header: ['Navn', 'Måleenhed', 'Pris', 'Placering', 'Reol', 'Hylle', 'Rækkefølge', 'Varenummer'],
       skipHeader: false
     });
     
@@ -7293,17 +7294,18 @@ function processImportText(text, importType = 'add'){
     const prisStr = (cleanParts[2] || '0').replace(',', '.');
     const pris = parseFloat(prisStr) || 0;
     const placering = cleanParts[3]?.trim() || '';
-    // Læs reol, hylle og rækkefølge kolonnerne (hvis de findes)
+    // Læs reol, hylle, rækkefølge og varenummer kolonnerne (hvis de findes)
     const reol = cleanParts[4]?.trim() || null;
     const hylle = cleanParts[5]?.trim() || null;
     const raekkefoelgeStr = cleanParts[6]?.trim() || '0';
     const raekkefoelge = parseFloat(raekkefoelgeStr) || 0;
+    const varenummer = cleanParts[7]?.trim() || null;
     
-    fileVarer.push({ navn, maaleenhed: maale, pris, placering, reolNr: reol, hylleNr: hylle, raekkefoelge });
+    fileVarer.push({ navn, maaleenhed: maale, pris, placering, reolNr: reol, hylleNr: hylle, raekkefoelge, varenummer: varenummer });
   });
   
   if(fileVarer.length === 0){
-    alert('Ingen varer fundet i filen. Tjek at filen har korrekt format:\nNavn;Måleenhed;Pris;Placering;Reol;Hylle;Rækkefølge\n\nReol, hylle og rækkefølge er valgfrie.');
+    alert('Ingen varer fundet i filen. Tjek at filen har korrekt format:\nNavn;Måleenhed;Pris;Placering;Reol;Hylle;Rækkefølge;Varenummer\n\nReol, hylle, rækkefølge og varenummer er valgfrie.');
     return;
   }
   
@@ -7346,7 +7348,7 @@ function processImportText(text, importType = 'add'){
     // Overskriv hele varelageret
     masterVarelager = [];
     fileVarer.forEach(v => {
-      masterVarelager.push({ id: genId(), navn: v.navn, maaleenhed: v.maaleenhed, pris: v.pris, placering: v.placering, reolNr: v.reolNr || null, hylleNr: v.hylleNr || null, raekkefoelge: v.raekkefoelge || 0 });
+      masterVarelager.push({ id: genId(), navn: v.navn, maaleenhed: v.maaleenhed, pris: v.pris, placering: v.placering, reolNr: v.reolNr || null, hylleNr: v.hylleNr || null, raekkefoelge: v.raekkefoelge || 0, varenummer: v.varenummer || null });
       imported++;
     });
   } else if(importType === 'add'){
@@ -7354,7 +7356,7 @@ function processImportText(text, importType = 'add'){
     fileVarer.forEach(v => {
       const exists = masterVarelager.find(existing => existing.navn.toLowerCase() === v.navn.toLowerCase());
       if(!exists){
-        masterVarelager.push({ id: genId(), navn: v.navn, maaleenhed: v.maaleenhed, pris: v.pris, placering: v.placering, reolNr: v.reolNr || null, hylleNr: v.hylleNr || null, raekkefoelge: v.raekkefoelge || 0 });
+        masterVarelager.push({ id: genId(), navn: v.navn, maaleenhed: v.maaleenhed, pris: v.pris, placering: v.placering, reolNr: v.reolNr || null, hylleNr: v.hylleNr || null, raekkefoelge: v.raekkefoelge || 0, varenummer: v.varenummer || null });
         imported++;
       } else {
         skipped++;
@@ -7365,17 +7367,18 @@ function processImportText(text, importType = 'add'){
     fileVarer.forEach(v => {
       const existing = masterVarelager.find(existing => existing.navn.toLowerCase() === v.navn.toLowerCase());
       if(existing){
-        // Opdater pris (og måske måleenhed, placering, reol, hylle, rækkefølge hvis de er angivet)
+        // Opdater pris (og måske måleenhed, placering, reol, hylle, rækkefølge, varenummer hvis de er angivet)
         existing.pris = v.pris;
         if(v.maaleenhed) existing.maaleenhed = v.maaleenhed;
         if(v.placering) existing.placering = v.placering;
         if(v.reolNr !== undefined && v.reolNr !== null && v.reolNr !== '') existing.reolNr = v.reolNr;
         if(v.hylleNr !== undefined && v.hylleNr !== null && v.hylleNr !== '') existing.hylleNr = v.hylleNr;
         if(v.raekkefoelge !== undefined) existing.raekkefoelge = v.raekkefoelge || 0;
+        if(v.varenummer !== undefined && v.varenummer !== null && v.varenummer !== '') existing.varenummer = v.varenummer;
         updated++;
       } else {
         // Tilføj ny vare
-        masterVarelager.push({ id: genId(), navn: v.navn, maaleenhed: v.maaleenhed, pris: v.pris, placering: v.placering, reolNr: v.reolNr || null, hylleNr: v.hylleNr || null, raekkefoelge: v.raekkefoelge || 0 });
+        masterVarelager.push({ id: genId(), navn: v.navn, maaleenhed: v.maaleenhed, pris: v.pris, placering: v.placering, reolNr: v.reolNr || null, hylleNr: v.hylleNr || null, raekkefoelge: v.raekkefoelge || 0, varenummer: v.varenummer || null });
         imported++;
       }
     });
