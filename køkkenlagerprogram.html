@@ -1527,8 +1527,24 @@ function showLoginModal(){
     
     const hasPassword = checkPasswordExists();
     
-    // Hvis der ikke er password, vis ALTID registreringsformularen
+    // Hvis der ikke er password, tjek om der er lokal backup til gendannelse
     if(!hasPassword){
+      // Check for local backup files
+      const hasLocalBackup = checkForLocalBackup();
+      
+      if(hasLocalBackup) {
+        // Show restore option
+        const restore = confirm('⚠️ Ingen login data fundet.\n\n' +
+          'Det ser ud til at browser cache er blevet tømt.\n\n' +
+          'Har du en lokal backup fil?\n\n' +
+          'Klik "OK" for at gendanne fra lokal backup, eller "Annuller" for at oprette ny konto.');
+        
+        if(restore) {
+          showRestoreFromLocalBackup();
+          return;
+        }
+      }
+      
       const title = $('loginTitle');
       const loginForm = $('loginForm');
       const createForm = $('createPasswordForm');
@@ -2261,9 +2277,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.41';
+const APP_VERSION = '4.42';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '13:47';
+const BUILD_TIME = '14:05';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -8948,22 +8964,65 @@ function downloadManualPDF() {
     }
     
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+    const doc = new jsPDF({
+      unit: 'mm',
+      format: 'a4',
+      compress: true
+    });
     let y = 20;
     
-    // Title
-    doc.setFontSize(20);
-    doc.setFont(undefined, 'bold');
-    doc.text('Køkkenlager Program - Komplet Manual', 14, y);
-    y += 15;
+    // Use the same manual sections as in initializeManual - extract from DOM
+    const manualContent = document.getElementById('manualContent');
+    let manualSections = [];
     
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'normal');
-    doc.text(`Version: ${APP_VERSION} | Dato: ${BUILD_DATE} ${BUILD_TIME}`, 14, y);
-    y += 20;
+    if (manualContent) {
+      // Extract text from HTML content in manual sections
+      const manualItems = manualContent.querySelectorAll('.manual-item');
+      
+      manualItems.forEach((item, index) => {
+        const header = item.querySelector('.manual-header span:first-child');
+        const contentDiv = item.querySelector('.manual-content');
+        
+        if (header && contentDiv) {
+          const title = header.textContent.trim();
+          // Extract text from HTML, removing HTML tags
+          let content = contentDiv.innerHTML;
+          // Convert HTML to plain text while preserving structure
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = content;
+          
+          // Convert to readable text
+          let textContent = '';
+          const elements = tempDiv.querySelectorAll('h4, p, ol, ul, li, strong');
+          elements.forEach(el => {
+            const tag = el.tagName.toLowerCase();
+            if (tag === 'h4') {
+              textContent += '\n' + el.textContent.trim() + '\n';
+            } else if (tag === 'p') {
+              textContent += el.textContent.trim() + '\n';
+            } else if (tag === 'ol' || tag === 'ul') {
+              textContent += '\n';
+            } else if (tag === 'li') {
+              const parent = el.parentElement;
+              const isOrdered = parent && parent.tagName.toLowerCase() === 'ol';
+              const number = isOrdered ? (Array.from(parent.children).indexOf(el) + 1) + '. ' : '• ';
+              textContent += number + el.textContent.trim() + '\n';
+            } else if (tag === 'strong') {
+              textContent += el.textContent.trim() + ' ';
+            }
+          });
+          
+          manualSections.push({
+            title: title,
+            content: textContent.trim()
+          });
+        }
+      });
+    }
     
-    // Manual sections
-    const manualSections = [
+    // Fallback: Use same structure as initializeManual if extraction fails
+    if (manualSections.length === 0) {
+      manualSections = [
       {
         title: '📦 Lager Optælling',
         content: `Hvad er Lager Optælling?
@@ -9114,21 +9173,25 @@ Tips:
         y = 20;
       }
       
-      // Section title
+      // Section title - remove emojis for PDF
+      const titleText = section.title.replace(/[📦⚙️📋📊🏷️🚚📱💾🔑]/g, '').trim();
       doc.setFontSize(16);
       doc.setFont(undefined, 'bold');
-      doc.text(section.title, 14, y);
+      // Use UTF-8 encoding for Danish characters
+      doc.text(titleText, 14, y);
       y += 10;
       
       // Section content
       doc.setFontSize(11);
       doc.setFont(undefined, 'normal');
+      // Split text to fit page width (180mm = A4 width - margins)
       const lines = doc.splitTextToSize(section.content, 180);
       lines.forEach(line => {
         if (y > 270) {
           doc.addPage();
           y = 20;
         }
+        // Use UTF-8 encoding for Danish characters (æ, ø, å)
         doc.text(line, 14, y);
         y += 7;
       });
@@ -9136,8 +9199,8 @@ Tips:
       y += 10; // Space between sections
     });
     
-    // Save PDF
-    const filename = `Køkkenlager_Manual_v${APP_VERSION}_${BUILD_DATE.replace(/-/g, '')}.pdf`;
+    // Save PDF with proper encoding (avoid special chars in filename)
+    const filename = `Kokkenlager_Manual_v${APP_VERSION}_${BUILD_DATE.replace(/-/g, '')}.pdf`;
     doc.save(filename);
     
     alert(`✅ Manual downloadet som PDF!\n\n📄 Filnavn: ${filename}`);
@@ -9273,11 +9336,41 @@ async function uploadBackupToServer() {
     const gistUrl = gist.html_url;
     const updateText = existingGistId ? 'opdateret' : 'uploadet';
     
+    // Also create local backup
+    try {
+      createLocalBackup(backupData);
+    } catch (localErr) {
+      console.warn('Kunne ikke lave lokal backup:', localErr);
+    }
+    
     alert(`✅ Backup ${updateText} til serveren!\n\n🔗 Gist URL: ${gistUrl}\n\n💡 Du kan nu hente denne backup igen via "Hent Backup fra Server".`);
     
   } catch(err) {
     console.error('Fejl ved upload af backup:', err);
     alert('❌ Fejl ved upload af backup: ' + err.message);
+  }
+}
+
+// Create local backup file
+function createLocalBackup(backupData) {
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+    const filename = `Kokkenlager_Backup_v${APP_VERSION}_${timestamp}.json`;
+    const jsonStr = JSON.stringify(backupData, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    console.log('Lokal backup oprettet:', filename);
+  } catch(err) {
+    console.error('Fejl ved oprettelse af lokal backup:', err);
+    throw err;
   }
 }
 
@@ -9636,6 +9729,15 @@ async function performAutomaticBackup() {
     
     if (response.ok) {
       console.log('✅ Automatisk backup gennemført');
+      
+      // Also create local backup
+      try {
+        createLocalBackup(backupData);
+        console.log('Lokal backup også oprettet');
+      } catch (localErr) {
+        console.warn('Kunne ikke lave lokal backup:', localErr);
+      }
+      
       // Show subtle notification (optional)
       const notification = document.createElement('div');
       notification.style.cssText = 'position:fixed;top:20px;right:20px;background:#28a745;color:white;padding:12px 20px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:10000;font-weight:700;';
@@ -9653,6 +9755,83 @@ async function performAutomaticBackup() {
   } catch(err) {
     console.error('Fejl ved automatisk backup:', err);
     // Silent fail - don't bother user
+  }
+}
+
+// Create local backup file (downloads to user's default download folder)
+function createLocalBackup(backupData) {
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+    const filename = `Kokkenlager_Backup_v${APP_VERSION}_${timestamp}.json`;
+    const jsonStr = JSON.stringify(backupData, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    console.log('Lokal backup oprettet:', filename);
+    return filename;
+  } catch(err) {
+    console.error('Fejl ved oprettelse af lokal backup:', err);
+    throw err;
+  }
+}
+
+// Check if user has local backup files (by checking if they've downloaded any)
+function checkForLocalBackup() {
+  // We can't actually check the file system, but we can check if user has ever downloaded a backup
+  // For now, we'll always show the option - user can choose to restore or not
+  return true; // Always show restore option if no password exists
+}
+
+// Show restore from local backup dialog
+function showRestoreFromLocalBackup() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.style.display = 'none';
+  
+  input.onchange = function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      try {
+        const backupData = JSON.parse(event.target.result);
+        restoreFromBackupData(backupData);
+      } catch(err) {
+        alert('❌ Fejl ved indlæsning af backup fil: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  
+  document.body.appendChild(input);
+  input.click();
+  document.body.removeChild(input);
+}
+
+// Restore from backup data
+function restoreFromBackupData(backupData) {
+  try {
+    const storageKey = 'køkkenlager_data';
+    
+    // Restore all data
+    if (backupData.masterVarelager !== undefined || backupData.backupType) {
+      localStorage.setItem(storageKey, JSON.stringify(backupData));
+      alert('✅ Backup gendannet!\n\nGenindlæs siden for at se dine data.');
+      location.reload();
+    } else {
+      alert('⚠️ Backup filen ser ikke ud til at være gyldig.');
+    }
+  } catch(err) {
+    alert('❌ Fejl ved gendannelse: ' + err.message);
   }
 }
 
