@@ -136,6 +136,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
       <button class="button" onclick="finishVinSession()" style="font-size:26px; padding:32px; min-height:110px; border-radius:12px; font-weight:800; box-shadow:0 4px 12px rgba(139,69,19,0.3); letter-spacing:0.4px; background:#8B4513; color:white; display:flex; flex-direction:row; align-items:center; justify-content:center; gap:10px; flex:1; min-width:calc(25% - 9px);"><span style="font-size:32px;">🍷</span><span>Afslut optælling</span></button>
     </div>
   </div>
+  
+  <!-- Pending Reports / Upload Status Section -->
+  <div id="pendingReportsList" style="display:none; margin-top:20px; padding:20px; background:#fff3cd; border-radius:12px; border-left:6px solid #ffc107; width:100%; box-sizing:border-box;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
+      <h3 style="font-size:28px; font-weight:800; color:#856404; margin:0; letter-spacing:0.3px;">⚠️ Uuploadede rapporter</h3>
+      <button onclick="uploadReportsToServer()" style="background:#ffc107; color:#000; border:none; padding:12px 20px; border-radius:8px; font-size:22px; font-weight:700; cursor:pointer; touch-action:manipulation;">☁️ Upload nu</button>
+    </div>
+    <div id="pendingReportsContent"></div>
+  </div>
+  
+  <!-- All Reports Uploaded Status -->
+  <div id="allReportsUploadedStatus" style="display:none; margin-top:20px; padding:20px; background:#d4edda; border-radius:12px; border-left:6px solid #28a745; width:100%; box-sizing:border-box;">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <span style="font-size:36px;">✅</span>
+      <div>
+        <h3 style="font-size:28px; font-weight:800; color:#155724; margin:0 0 5px 0; letter-spacing:0.3px;">Alle rapporter er uploadet</h3>
+        <p style="font-size:20px; color:#155724; margin:0; font-weight:600;">Alle dine optællinger er synkroniseret med serveren.</p>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Modal til lokationsvalg -->
@@ -175,9 +195,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 // Versionsnummer - opdateres automatisk
-const APP_VERSION = '4.32';
+const APP_VERSION = '4.33';
 const BUILD_DATE = '2026-01-07';
-const BUILD_TIME = '11:38';
+const BUILD_TIME = '11:53';
 
 let scannerActive = false;
 let html5QrCode = null;
@@ -1922,11 +1942,14 @@ function updatePendingReportsList(){
     const dataStr = localStorage.getItem(storageKey);
     const pendingListEl = document.getElementById('pendingReportsList');
     const pendingContentEl = document.getElementById('pendingReportsContent');
+    const allUploadedStatusEl = document.getElementById('allReportsUploadedStatus');
     
     if(!pendingListEl || !pendingContentEl) return;
+    if(!allUploadedStatusEl) return;
     
     if (!dataStr) {
       pendingListEl.style.display = 'none';
+      allUploadedStatusEl.style.display = 'none';
       return;
     }
     
@@ -1934,40 +1957,60 @@ function updatePendingReportsList(){
     
     if (!data.reports || !Array.isArray(data.reports) || data.reports.length === 0) {
       pendingListEl.style.display = 'none';
+      allUploadedStatusEl.style.display = 'none';
+      return;
+    }
+    
+    // Filter scanner reports
+    const scannerReports = data.reports.filter(r => 
+      r.handling && (r.handling.startsWith('SPTA-') || r.handling.startsWith('OPTA-') || r.handling.startsWith('Stregkode scanner'))
+    );
+    
+    if (scannerReports.length === 0) {
+      pendingListEl.style.display = 'none';
+      allUploadedStatusEl.style.display = 'none';
       return;
     }
     
     // Filter scanner reports that haven't been uploaded (no gistId)
-    const pendingReports = data.reports.filter(r => 
-      r.handling && (r.handling.startsWith('SPTA-') || r.handling.startsWith('OPTA-') || r.handling.startsWith('Stregkode scanner')) &&
+    const pendingReports = scannerReports.filter(r => 
       !r.gistId && !r.uploadedToServer
     );
     
-    if (pendingReports.length === 0) {
+    // Check if all reports are uploaded
+    const allUploaded = pendingReports.length === 0 && scannerReports.length > 0;
+    
+    if (pendingReports.length > 0) {
+      // Show pending reports list
+      pendingListEl.style.display = 'block';
+      allUploadedStatusEl.style.display = 'none';
+      
+      // Sort by timestamp (newest first)
+      pendingReports.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+      
+      // Build list HTML
+      let listHTML = '';
+      pendingReports.forEach((r, idx) => {
+        const date = new Date(r.ts || Date.now());
+        const dateStr = date.toLocaleDateString('da-DK', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const itemCount = r.details ? r.details.length : 0;
+        const total = r.total ? r.total.toFixed(2) : '0.00';
+        listHTML += `<div style="margin-bottom:12px; padding:16px; background:#fff; border-radius:8px; border-left:4px solid #ffc107; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+          <strong style="font-size:24px; color:#856404; display:block; margin-bottom:8px; font-weight:800;">${r.handling || 'Ukendt rapport'}</strong>
+          <span style="font-size:20px; color:#856404; font-weight:600;">📅 ${dateStr} • ${itemCount} varer • ${total} kr.</span>
+        </div>`;
+      });
+      
+      pendingContentEl.innerHTML = listHTML;
+    } else if (allUploaded) {
+      // Show "all uploaded" status
       pendingListEl.style.display = 'none';
-      return;
+      allUploadedStatusEl.style.display = 'block';
+    } else {
+      // No reports at all
+      pendingListEl.style.display = 'none';
+      allUploadedStatusEl.style.display = 'none';
     }
-    
-    // Show list
-    pendingListEl.style.display = 'block';
-    
-    // Sort by timestamp (newest first)
-    pendingReports.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-    
-    // Build list HTML
-    let listHTML = '';
-    pendingReports.forEach((r, idx) => {
-      const date = new Date(r.ts || Date.now());
-      const dateStr = date.toLocaleDateString('da-DK', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-      const itemCount = r.details ? r.details.length : 0;
-      const total = r.total ? r.total.toFixed(2) : '0.00';
-      listHTML += `<div style="margin-bottom:12px; padding:12px; background:#fff; border-radius:8px; border-left:4px solid #ffc107;">
-        <strong style="font-size:22px; color:#856404;">${r.handling || 'Ukendt rapport'}</strong><br>
-        <span style="font-size:18px; color:#856404;">📅 ${dateStr} • ${itemCount} varer • ${total} kr.</span>
-      </div>`;
-    });
-    
-    pendingContentEl.innerHTML = listHTML;
     
   } catch(err) {
     console.error('Error updating pending reports list:', err);
