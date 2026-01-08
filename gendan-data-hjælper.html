@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Gendan Data Hjælper - Køkkenlager Program</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:#f5f5f5;padding:20px;line-height:1.6}
+.container{max-width:800px;margin:0 auto;background:white;padding:30px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1)}
+h1{color:#0078D4;margin-bottom:10px;font-size:28px}
+h2{color:#333;margin-top:30px;margin-bottom:15px;font-size:22px;border-bottom:2px solid #0078D4;padding-bottom:8px}
+p{margin-bottom:15px;color:#555}
+.step{background:#f9f9f9;padding:20px;margin-bottom:20px;border-radius:8px;border-left:4px solid #0078D4}
+.step h3{color:#0078D4;margin-bottom:10px;font-size:18px}
+.step ol{margin-left:20px;margin-top:10px}
+.step li{margin-bottom:8px;color:#555}
+button{background:#0078D4;color:white;border:none;padding:12px 24px;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;margin-top:10px}
+button:hover{background:#005A9E}
+button:disabled{background:#ccc;cursor:not-allowed}
+.warning{background:#fff3cd;border:1px solid #ffc107;padding:15px;border-radius:8px;margin:20px 0;color:#856404}
+.success{background:#d4edda;border:1px solid #28a745;padding:15px;border-radius:8px;margin:20px 0;color:#155724}
+.error{background:#f8d7da;border:1px solid #dc3545;padding:15px;border-radius:8px;margin:20px 0;color:#721c24}
+input[type="text"],input[type="password"]{width:100%;padding:10px;border:2px solid #ddd;border-radius:6px;font-size:16px;margin-top:10px;box-sizing:border-box}
+input[type="text"]:focus,input[type="password"]:focus{outline:none;border-color:#0078D4}
+#status{margin-top:20px;padding:15px;border-radius:8px;display:none}
+#backupList{margin-top:20px}
+.backup-item{background:#f9f9f9;padding:15px;margin-bottom:10px;border-radius:8px;border:1px solid #ddd;cursor:pointer}
+.backup-item:hover{background:#e8f4f8;border-color:#0078D4}
+.backup-item strong{display:block;margin-bottom:5px;color:#333}
+.backup-item span{font-size:13px;color:#666}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🔄 Gendan Data Hjælper</h1>
+  <p>Dette program hjælper dig med at gendanne data fra serveren, hvis du har slettet browser cache eller mistet adgang til programmet.</p>
+  
+  <div class="warning">
+    <strong>⚠️ VIGTIGT:</strong> Dette program kræver at du har uploadet backups til serveren først. Hvis du ikke har uploadet backups, kan du ikke gendanne data.
+  </div>
+  
+  <h2>Trin 1: Indtast GitHub Token</h2>
+  <div class="step">
+    <p>For at hente backups fra serveren skal du bruge en GitHub Personal Access Token.</p>
+    <ol>
+      <li>Gå til: <a href="https://github.com/settings/tokens" target="_blank">https://github.com/settings/tokens</a></li>
+      <li>Klik på "Generate new token (classic)"</li>
+      <li>Giv tokenen et navn (f.eks. "Køkkenlager Backup")</li>
+      <li>Vælg "gist" scope</li>
+      <li>Klik "Generate token"</li>
+      <li>Kopiér tokenen og indtast den nedenfor</li>
+    </ol>
+    <input type="password" id="githubToken" placeholder="Indtast GitHub Personal Access Token" />
+    <button onclick="saveToken()">Gem Token</button>
+  </div>
+  
+  <h2>Trin 2: Hent Backups fra Server</h2>
+  <div class="step">
+    <p>Når du har gemt tokenen, kan du hente listen over tilgængelige backups.</p>
+    <button onclick="fetchBackups()" id="fetchBtn">Hent Backups</button>
+    <div id="status"></div>
+    <div id="backupList"></div>
+  </div>
+  
+  <h2>Trin 3: Gendan Data</h2>
+  <div class="step">
+    <p>Når du har valgt en backup, kan du gendanne data ved at følge instruktionerne nedenfor.</p>
+    
+    <h3>Gendan fra Lokal Backup Fil</h3>
+    <p>Hvis du har en lokal backup fil (JSON fil) på din computer:</p>
+    <ol>
+      <li>Klik på knappen nedenfor for at vælge din backup fil</li>
+      <li>Vælg filen fra din computer</li>
+      <li>Data gendannes automatisk</li>
+    </ol>
+    <input type="file" id="localBackupFile" accept=".json" style="display:none;" onchange="restoreFromLocalFile(event)" />
+    <button onclick="document.getElementById('localBackupFile').click()">📁 Vælg Lokal Backup Fil</button>
+    <div id="localRestoreStatus" style="margin-top:10px;"></div>
+    
+    <div id="restoreInstructions" style="display:none;margin-top:20px;">
+      <h3>Gendan Data fra Server til Browser</h3>
+      <ol>
+        <li>Åbn hovedprogrammet (køkkenlagerprogram.html) i din browser</li>
+        <li>Gå til "Opsætning" → "Backup & Sikkerhed"</li>
+        <li>Klik på "📥 Hent Backup fra Server"</li>
+        <li>Vælg den backup du vil gendanne</li>
+        <li>Bekræft gendannelse</li>
+        <li>Siden genindlæses automatisk med gendannet data</li>
+      </ol>
+      <p><strong>Alternativ metode (hvis du ikke kan åbne hovedprogrammet):</strong></p>
+      <ol>
+        <li>Kopiér backup data nedenfor</li>
+        <li>Åbn hovedprogrammet i din browser</li>
+        <li>Åbn browserens Developer Tools (F12)</li>
+        <li>Gå til "Console" tab</li>
+        <li>Indsæt og kør følgende kommando:</li>
+      </ol>
+      <pre id="restoreCode" style="background:#f5f5f5;padding:15px;border-radius:6px;margin-top:10px;overflow-x:auto;font-size:14px;"></pre>
+      <button onclick="copyRestoreCode()">Kopiér Gendan Kode</button>
+    </div>
+  </div>
+  
+  <h2>Lokal Backup (Kun PC)</h2>
+  <div class="step">
+    <p>Lav en komplet backup af hele systemet og gem den lokalt på din PC.</p>
+    <p><strong>Dette inkluderer:</strong></p>
+    <ul>
+      <li>Alle varelager data</li>
+      <li>Rapporter og optællinger</li>
+      <li>Login og password information</li>
+      <li>Licens nøgler</li>
+      <li>Alle indstillinger</li>
+    </ul>
+    <button onclick="createLocalBackup()" id="localBackupBtn">💾 Lav Lokal Backup</button>
+    <div id="localBackupStatus" style="margin-top:10px;"></div>
+  </div>
+  
+  <h2>Hjælp</h2>
+  <div class="step">
+    <p><strong>Hvad gør dette program?</strong></p>
+    <p>Dette program hjælper dig med at finde og gendanne backups fra serveren, hvis du har mistet adgang til dine data.</p>
+    
+    <p><strong>Hvornår skal jeg bruge dette?</strong></p>
+    <ul>
+      <li>Hvis du har slettet browser cache</li>
+      <li>Hvis du har mistet adgang til programmet</li>
+      <li>Hvis du har fået en ny computer</li>
+      <li>Hvis data er blevet korrupt</li>
+    </ul>
+    
+    <p><strong>Hvad hvis jeg ikke har uploadet backups?</strong></p>
+    <p>Hvis du ikke har uploadet backups til serveren, kan du ikke gendanne data via dette program. Du skal kontakte support eller prøve at gendanne fra lokale backup filer hvis du har dem.</p>
+  </div>
+</div>
+
+<script>
+let selectedBackupData = null;
+
+function saveToken() {
+  const token = document.getElementById('githubToken').value.trim();
+  if (!token) {
+    showStatus('Indtast venligst en token.', 'error');
+    return;
+  }
+  localStorage.setItem('github_gist_token', token);
+  showStatus('✅ Token gemt! Du kan nu hente backups.', 'success');
+  document.getElementById('githubToken').value = '';
+}
+
+async function fetchBackups() {
+  const token = localStorage.getItem('github_gist_token');
+  if (!token) {
+    showStatus('⚠️ Ingen token fundet. Indtast og gem en token først.', 'error');
+    return;
+  }
+  
+  const fetchBtn = document.getElementById('fetchBtn');
+  fetchBtn.disabled = true;
+  fetchBtn.textContent = 'Henter...';
+  showStatus('Henter backups fra serveren...', 'warning');
+  
+  try {
+    const response = await fetch('https://api.github.com/gists', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('github_gist_token');
+        throw new Error('Ugyldig token. Token er blevet slettet. Prøv igen med en ny token.');
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const allGists = await response.json();
+    const backupGists = allGists.filter(gist => 
+      gist.description && gist.description.includes('Køkkenlager Backup')
+    );
+    
+    if (backupGists.length === 0) {
+      showStatus('⚠️ Ingen backups fundet på serveren. Upload en backup først via hovedprogrammet.', 'error');
+      fetchBtn.disabled = false;
+      fetchBtn.textContent = 'Hent Backups';
+      return;
+    }
+    
+    // Sort by date (newest first)
+    backupGists.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    
+    // Display backups
+    const backupList = document.getElementById('backupList');
+    backupList.innerHTML = backupGists.map((gist, index) => {
+      const date = new Date(gist.created_at);
+      const dateStr = date.toLocaleString('da-DK');
+      const fileCount = Object.keys(gist.files || {}).length;
+      return `
+        <div class="backup-item" onclick="selectBackup('${gist.id}', '${token}')">
+          <strong>${gist.description || 'Køkkenlager Backup'}</strong>
+          <span>📅 ${dateStr} • ${fileCount} fil(er)</span>
+        </div>
+      `;
+    }).join('');
+    
+    showStatus(`✅ ${backupGists.length} backup(s) fundet. Klik på en backup for at se gendan instruktioner.`, 'success');
+    
+  } catch(err) {
+    console.error('Fejl ved hentning af backups:', err);
+    showStatus('❌ Fejl: ' + err.message, 'error');
+  } finally {
+    fetchBtn.disabled = false;
+    fetchBtn.textContent = 'Hent Backups';
+  }
+}
+
+async function selectBackup(gistId, token) {
+  try {
+    showStatus('Henter backup data...', 'warning');
+    
+    const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const gist = await response.json();
+    const files = Object.values(gist.files || {});
+    
+    if (files.length === 0) {
+      showStatus('⚠️ Ingen backup filer fundet i denne gist.', 'error');
+      return;
+    }
+    
+    // Find backup file
+    const backupFiles = files.filter(f => f.filename && f.filename.includes('backup'));
+    if (backupFiles.length === 0) {
+      showStatus('⚠️ Ingen backup filer fundet i denne gist.', 'error');
+      return;
+    }
+    
+    const backupFile = backupFiles[0];
+    selectedBackupData = backupFile.content;
+    
+    // Show restore instructions
+    const restoreInstructions = document.getElementById('restoreInstructions');
+    restoreInstructions.style.display = 'block';
+    
+    // Generate restore code
+    const restoreCode = `localStorage.setItem('køkkenlager_data', \`${selectedBackupData.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`); location.reload();`;
+    document.getElementById('restoreCode').textContent = restoreCode;
+    
+    showStatus(`✅ Backup valgt: ${gist.description || 'Køkkenlager Backup'}\n\nFølg instruktionerne nedenfor for at gendanne data.`, 'success');
+    
+  } catch(err) {
+    console.error('Fejl ved valg af backup:', err);
+    showStatus('❌ Fejl: ' + err.message, 'error');
+  }
+}
+
+function copyRestoreCode() {
+  const code = document.getElementById('restoreCode').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    showStatus('✅ Kode kopieret til udklipsholder! Indsæt den i browserens Console.', 'success');
+  }).catch(err => {
+    showStatus('❌ Kunne ikke kopiere kode. Prøv at markere og kopiere manuelt.', 'error');
+  });
+}
+
+function restoreFromLocalFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const statusDiv = document.getElementById('localRestoreStatus');
+  statusDiv.innerHTML = '<div class="warning">Indlæser backup fil...</div>';
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const backupData = JSON.parse(e.target.result);
+      
+      // Validate backup data
+      if (!backupData.masterVarelager && !backupData.backupType) {
+        statusDiv.innerHTML = '<div class="error">⚠️ Backup filen ser ikke ud til at være gyldig. Filen skal indeholde backup data fra Køkkenlager programmet.</div>';
+        return;
+      }
+      
+      // Store backup data in localStorage
+      const storageKey = 'køkkenlager_data';
+      localStorage.setItem(storageKey, JSON.stringify(backupData));
+      
+      statusDiv.innerHTML = '<div class="success">✅ Backup gendannet!<br><br>Åbn nu hovedprogrammet (køkkenlagerprogram.html) i din browser for at se dine gendannede data.</div>';
+      
+    } catch(err) {
+      console.error('Fejl ved indlæsning af backup:', err);
+      statusDiv.innerHTML = '<div class="error">❌ Fejl ved indlæsning af backup fil: ' + err.message + '</div>';
+    }
+  };
+  
+  reader.onerror = function() {
+    statusDiv.innerHTML = '<div class="error">❌ Fejl ved læsning af fil. Prøv igen.</div>';
+  };
+  
+  reader.readAsText(file);
+}
+
+function showStatus(message, type) {
+  const status = document.getElementById('status');
+  status.textContent = message;
+  status.className = type;
+  status.style.display = 'block';
+  setTimeout(() => {
+    if (type === 'success' || type === 'warning') {
+      status.style.display = 'none';
+    }
+  }, 10000);
+}
+
+// Create local backup (all data from main program)
+async function createLocalBackup() {
+  try {
+    const backupBtn = document.getElementById('localBackupBtn');
+    const statusDiv = document.getElementById('localBackupStatus');
+    
+    backupBtn.disabled = true;
+    backupBtn.textContent = 'Opretter backup...';
+    statusDiv.innerHTML = '<div class="warning">Henter data fra hovedprogrammet...</div>';
+    
+    // Get data from main program's localStorage
+    const storageKey = 'køkkenlager_data';
+    const dataStr = localStorage.getItem(storageKey);
+    
+    if (!dataStr) {
+      statusDiv.innerHTML = '<div class="error">⚠️ Ingen data fundet. Åbn hovedprogrammet (køkkenlagerprogram.html) først og log ind, så data kan hentes.</div>';
+      backupBtn.disabled = false;
+      backupBtn.textContent = '💾 Lav Lokal Backup';
+      return;
+    }
+    
+    const data = JSON.parse(dataStr);
+    
+    // Create complete backup including login and license
+    const completeBackup = {
+      ...data,
+      // Include login data
+      loginData: {
+        passwordHash: localStorage.getItem('køkkenlager_password'),
+        username: localStorage.getItem('køkkenlager_username'),
+        recoveryEmail: localStorage.getItem('køkkenlager_recovery_email')
+      },
+      // Include license data
+      licenseData: localStorage.getItem('app_license'),
+      // Include installation ID
+      installationId: localStorage.getItem('køkkenlager_installation_id') || 'unknown',
+      // Backup metadata
+      backupType: 'complete',
+      backupVersion: '1.0',
+      backupDate: new Date().toISOString(),
+      backupDescription: `Komplet system backup - ${new Date().toLocaleString('da-DK')}`,
+      createdBy: 'Gendan Data Hjælper'
+    };
+    
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+    const defaultFilename = `Kokkenlager_Komplet_Backup_${timestamp}.json`;
+    const jsonStr = JSON.stringify(completeBackup, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+    
+    // Try to use File System Access API (Chrome/Edge) for folder selection
+    if ('showSaveFilePicker' in window) {
+      try {
+        const fileHandle = await window.showSaveFilePicker({
+          suggestedName: defaultFilename,
+          types: [{
+            description: 'JSON Backup Fil',
+            accept: { 'application/json': ['.json'] }
+          }]
+        });
+        
+        const writable = await fileHandle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        
+        statusDiv.innerHTML = `<div class="success">✅ Komplet backup gemt!<br><br>📄 Filnavn: ${fileHandle.name}<br>💾 Filen er gemt hvor du valgte.<br><br>💡 Gem denne fil sikkert - den indeholder al din data!</div>`;
+        
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error('Fejl ved filvælger:', err);
+          // Fallback to normal download
+          downloadBackupFallback(blob, defaultFilename, statusDiv);
+        } else {
+          // User cancelled
+          statusDiv.innerHTML = '<div class="warning">Backup annulleret.</div>';
+        }
+      }
+    } else {
+      // Fallback for browsers without File System Access API
+      downloadBackupFallback(blob, defaultFilename, statusDiv);
+    }
+    
+    backupBtn.disabled = false;
+    backupBtn.textContent = '💾 Lav Lokal Backup';
+    
+  } catch(err) {
+    console.error('Fejl ved oprettelse af lokal backup:', err);
+    const statusDiv = document.getElementById('localBackupStatus');
+    statusDiv.innerHTML = `<div class="error">❌ Fejl ved backup: ${err.message}</div>`;
+    const backupBtn = document.getElementById('localBackupBtn');
+    backupBtn.disabled = false;
+    backupBtn.textContent = '💾 Lav Lokal Backup';
+  }
+}
+
+// Fallback download method
+function downloadBackupFallback(blob, filename, statusDiv) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  
+  statusDiv.innerHTML = `<div class="success">✅ Komplet backup downloadet!<br><br>📄 Filnavn: ${filename}<br>💾 Din browser vil spørge hvor filen skal gemmes. Vælg ønsket mappe.<br><br>💡 Gem denne fil sikkert - den indeholder al din data!</div>`;
+}
+
+// Check if token is already saved
+window.addEventListener('DOMContentLoaded', function() {
+  const token = localStorage.getItem('github_gist_token');
+  if (token) {
+    document.getElementById('githubToken').value = '••••••••••••••••';
+    showStatus('✅ Token allerede gemt. Du kan hente backups nu.', 'success');
+  }
+});
+</script>
+</body>
+</html>
+
