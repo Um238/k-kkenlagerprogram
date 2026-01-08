@@ -757,22 +757,71 @@ a:hover{color:#45a049;text-decoration:none}
 
     <!-- Vinlager Administration -->
     <div id="vinAdmin" class="vinlager-section hidden">
-      <div class="card">
+      <div class="card" style="margin-bottom:20px;">
         <h2>🍷 Vin Administration</h2>
-        <p>Administrer dine vine her.</p>
-        <div style="margin-top:20px;">
-          <button onclick="addVin()">➕ Tilføj Vin</button>
-          <div id="vinList" style="margin-top:20px;"></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:15px; align-items:center;">
+          <button onclick="showAddVinModal()" style="background:#28a745; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">➕ Tilføj Vin</button>
+          <button onclick="exportVinlagerCSV()" style="background:#17a2b8; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">📥 Eksporter til CSV</button>
+          <div style="margin-left:auto; display:flex; gap:10px; align-items:center;">
+            <input type="text" id="vinSearchInput" placeholder="🔍 Søg (navn, producent, årgang)..." style="padding:8px 12px; border:1px solid #ddd; border-radius:6px; min-width:250px;" onkeyup="filterVine()">
+            <select id="vinFilterLand" onchange="filterVine()" style="padding:8px 12px; border:1px solid #ddd; border-radius:6px;">
+              <option value="">Alle lande</option>
+            </select>
+            <select id="vinFilterLagerplacering" onchange="filterVine()" style="padding:8px 12px; border:1px solid #ddd; border-radius:6px;">
+              <option value="">Alle placeringer</option>
+            </select>
+            <label style="display:flex; align-items:center; gap:5px; cursor:pointer;">
+              <input type="checkbox" id="vinFilterLavLager" onchange="filterVine()">
+              <span>Lav lager (&lt;6 flasker)</span>
+            </label>
+          </div>
         </div>
+      </div>
+      
+      <!-- Lageroversigt -->
+      <div class="card" style="margin-bottom:20px; background:linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+        <h3 style="margin-top:0;">📊 Lageroversigt</h3>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-top:15px;">
+          <div style="background:white; padding:15px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+            <div style="font-size:24px; font-weight:800; color:#8B0000;" id="vinTotalFlasker">0</div>
+            <div style="color:#666; font-size:14px;">Samlet antal flasker</div>
+          </div>
+          <div style="background:white; padding:15px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+            <div style="font-size:24px; font-weight:800; color:#8B0000;" id="vinTotalVaerdi">0 kr</div>
+            <div style="color:#666; font-size:14px;">Samlet lagerværdi</div>
+          </div>
+          <div style="background:white; padding:15px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+            <div style="font-size:24px; font-weight:800; color:#dc3545;" id="vinLavLagerCount">0</div>
+            <div style="color:#666; font-size:14px;">Vine med lav lager</div>
+          </div>
+          <div style="background:white; padding:15px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+            <div style="font-size:24px; font-weight:800; color:#8B0000;" id="vinTotalAntal">0</div>
+            <div style="color:#666; font-size:14px;">Antal forskellige vine</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Vinliste -->
+      <div class="card">
+        <div id="vinList" style="margin-top:20px;"></div>
       </div>
     </div>
 
     <!-- Vinlager Rapporter -->
     <div id="vinRapporter" class="vinlager-section hidden">
       <div class="card">
-        <h2>📊 Rapporter</h2>
-        <p>Se og administrer vinlager rapporter her.</p>
-        <div id="vinRapporterList" style="margin-top:20px;"></div>
+        <h2>📊 Rapporter & Grupperinger</h2>
+        <div style="margin-top:20px;">
+          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px;">
+            <button onclick="showVinGruppering('land')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">🌍 Grupper efter Land</button>
+            <button onclick="showVinGruppering('producent')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">🏭 Grupper efter Producent</button>
+            <button onclick="showVinGruppering('årgang')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">📅 Grupper efter Årgang</button>
+            <button onclick="showVinGruppering('lagerplacering')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">📍 Grupper efter Placering</button>
+          </div>
+          <div id="vinGrupperingContainer" style="margin-bottom:30px;"></div>
+          <h3>📜 Lagerhistorik</h3>
+          <div id="vinHistorikList" style="margin-top:15px;"></div>
+        </div>
       </div>
     </div>
 
@@ -2463,9 +2512,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.56';
+const APP_VERSION = '4.57';
 const BUILD_DATE = '2026-01-08';
-const BUILD_TIME = '08:45';
+const BUILD_TIME = '12:42';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -2489,6 +2538,10 @@ let sessionCounter = 0;
 let postnummerCache = {};
 let postnrLookupTimeout = null;
 let editingLeverandorIndex = null;
+
+// Vinlager data
+let vinlagerVine = []; // Array af vin objekter
+let vinlagerHistorik = []; // Array af historik entries
 
 // $, genId og formatTime er allerede defineret tidligere i koden
 function downloadFile(content, filename, type='text/plain'){ const b = new Blob([content], {type}); const url = URL.createObjectURL(b); const a = document.createElement('a'); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url); }
@@ -2514,6 +2567,10 @@ function saveAllData(){
       archivePeriod,
       sessionCounter,
       activeSession,
+      // Vinlager data
+      vinlagerVine: vinlagerVine || [],
+      vinlagerHistorik: vinlagerHistorik || [],
+      vinlagerLokationer: (typeof vinlagerLokationer !== 'undefined' ? vinlagerLokationer : []),
       version: '1.0',
       savedAt: Date.now()
     };
@@ -2548,6 +2605,9 @@ function loadAllData(){
     if(data.archivePeriod !== undefined) archivePeriod = data.archivePeriod;
     if(data.sessionCounter !== undefined) sessionCounter = data.sessionCounter;
     if(data.activeSession) activeSession = data.activeSession;
+    // Vinlager data
+    if(data.vinlagerVine) vinlagerVine = data.vinlagerVine;
+    if(data.vinlagerHistorik) vinlagerHistorik = data.vinlagerHistorik;
     return true;
   }catch(err){
     console.warn('Kunne ikke indlæse data:', err);
@@ -11274,6 +11334,13 @@ function vinNavClick(event) {
   if (targetSection) {
     targetSection.classList.remove('hidden');
     targetSection.style.display = 'block';
+    
+    // Initialize section data when shown
+    if (target === 'vinAdmin') {
+      setTimeout(() => initializeVinlager(), 100);
+    } else if (target === 'vinRapporter') {
+      setTimeout(() => renderVinHistorik(), 100);
+    }
   }
 }
 
@@ -11323,9 +11390,493 @@ function removeVinlagerLocation(index) {
   }
 }
 
-// Vin administration
+// ============================================
+// VINLAGER - KOMPLET IMPLEMENTERING
+// ============================================
+
+// Generer unikt ID til vine
+function genVinId() {
+  return 'vin_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
+// Vis modal til at tilføje/redigere vin
+function showAddVinModal(vinId = null) {
+  const vin = vinId ? vinlagerVine.find(v => v.id === vinId) : null;
+  const data = loadAllData() || {};
+  const lokationer = data.vinlagerLokationer || [];
+  
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.style.display = 'block';
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width:700px; max-height:90vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2>${vin ? '✏️ Rediger Vin' : '➕ Tilføj Ny Vin'}</h2>
+        <button onclick="this.closest('.modal').remove()" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+      </div>
+      <form id="vinForm" onsubmit="saveVin(event, '${vinId || ''}')">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+          <div>
+            <label><strong>Navn *</strong></label>
+            <input type="text" id="vinNavn" value="${vin ? vin.navn : ''}" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          </div>
+          <div>
+            <label><strong>Producent *</strong></label>
+            <input type="text" id="vinProducent" value="${vin ? vin.producent : ''}" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          </div>
+          <div>
+            <label><strong>Land *</strong></label>
+            <input type="text" id="vinLand" value="${vin ? vin.land : ''}" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          </div>
+          <div>
+            <label><strong>Region</strong></label>
+            <input type="text" id="vinRegion" value="${vin ? vin.region || '' : ''}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          </div>
+          <div>
+            <label><strong>Årgang</strong></label>
+            <input type="number" id="vinÅrgang" value="${vin ? vin.årgang || '' : ''}" min="1900" max="2100" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          </div>
+          <div>
+            <label><strong>Druetype</strong></label>
+            <input type="text" id="vinDruetype" value="${vin ? vin.druetype || '' : ''}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          </div>
+          <div>
+            <label><strong>Alkoholprocent (%)</strong></label>
+            <input type="number" id="vinAlkoholprocent" value="${vin ? vin.alkoholprocent || '' : ''}" step="0.1" min="0" max="100" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          </div>
+          <div>
+            <label><strong>Flasketype *</strong></label>
+            <select id="vinFlasketype" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+              <option value="75 cl" ${vin && vin.flasketype === '75 cl' ? 'selected' : ''}>75 cl</option>
+              <option value="Magnum (1,5 L)" ${vin && vin.flasketype === 'Magnum (1,5 L)' ? 'selected' : ''}>Magnum (1,5 L)</option>
+              <option value="Jeroboam (3 L)" ${vin && vin.flasketype === 'Jeroboam (3 L)' ? 'selected' : ''}>Jeroboam (3 L)</option>
+              <option value="Andet" ${vin && vin.flasketype && !['75 cl', 'Magnum (1,5 L)', 'Jeroboam (3 L)'].includes(vin.flasketype) ? 'selected' : ''}>Andet</option>
+            </select>
+          </div>
+          <div>
+            <label><strong>Indkøbspris (kr) *</strong></label>
+            <input type="number" id="vinIndkøbspris" value="${vin ? vin.indkøbspris || '' : ''}" step="0.01" min="0" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          </div>
+          <div>
+            <label><strong>Salgspris (kr)</strong></label>
+            <input type="number" id="vinSalgspris" value="${vin ? vin.salgspris || '' : ''}" step="0.01" min="0" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          </div>
+          <div>
+            <label><strong>Antal flasker *</strong></label>
+            <input type="number" id="vinAntalFlasker" value="${vin ? vin.antal_flasker || 0 : 0}" min="0" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          </div>
+          <div>
+            <label><strong>Lagerplacering *</strong></label>
+            <select id="vinLagerplacering" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+              <option value="">Vælg placering</option>
+              ${lokationer.map(loc => `<option value="${loc}" ${vin && vin.lagerplacering === loc ? 'selected' : ''}>${loc}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:15px;">
+          <label><strong>Noter</strong></label>
+          <textarea id="vinNoter" rows="3" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">${vin ? vin.noter || '' : ''}</textarea>
+        </div>
+        <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;">
+          <button type="button" onclick="this.closest('.modal').remove()" style="padding:10px 20px; background:#6c757d; color:white; border:none; border-radius:6px; cursor:pointer;">Annuller</button>
+          <button type="submit" style="padding:10px 20px; background:#28a745; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:700;">💾 Gem</button>
+        </div>
+      </form>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+// Gem vin
+function saveVin(event, vinId) {
+  event.preventDefault();
+  const data = loadAllData() || {};
+  
+  const oldAntal = vinId ? (vinlagerVine.find(v => v.id === vinId)?.antal_flasker || 0) : 0;
+  
+  const vin = {
+    id: vinId || genVinId(),
+    navn: document.getElementById('vinNavn').value.trim(),
+    producent: document.getElementById('vinProducent').value.trim(),
+    land: document.getElementById('vinLand').value.trim(),
+    region: document.getElementById('vinRegion').value.trim() || null,
+    årgang: document.getElementById('vinÅrgang').value ? parseInt(document.getElementById('vinÅrgang').value) : null,
+    druetype: document.getElementById('vinDruetype').value.trim() || null,
+    alkoholprocent: document.getElementById('vinAlkoholprocent').value ? parseFloat(document.getElementById('vinAlkoholprocent').value) : null,
+    flasketype: document.getElementById('vinFlasketype').value,
+    indkøbspris: parseFloat(document.getElementById('vinIndkøbspris').value),
+    salgspris: document.getElementById('vinSalgspris').value ? parseFloat(document.getElementById('vinSalgspris').value) : null,
+    antal_flasker: parseInt(document.getElementById('vinAntalFlasker').value),
+    lagerplacering: document.getElementById('vinLagerplacering').value,
+    noter: document.getElementById('vinNoter').value.trim() || null,
+    oprettet_dato: vinId && vinlagerVine.find(v => v.id === vinId) ? vinlagerVine.find(v => v.id === vinId).oprettet_dato : new Date().toISOString(),
+    sidst_opdateret: new Date().toISOString()
+  };
+  
+  if (vinId) {
+    const index = vinlagerVine.findIndex(v => v.id === vinId);
+    if (index !== -1) {
+      const ændring = vin.antal_flasker - oldAntal;
+      vinlagerVine[index] = vin;
+      if (ændring !== 0) {
+        logVinHistorik(vinId, ændring, 'justering', 'Vin opdateret');
+      }
+    }
+  } else {
+    vinlagerVine.push(vin);
+    logVinHistorik(vin.id, vin.antal_flasker, 'indkøb', 'Ny vin tilføjet');
+  }
+  
+  saveAllData();
+  document.querySelector('.modal').remove();
+  renderVineList();
+  updateVinStats();
+  updateVinFilters();
+}
+
+// Log historik
+function logVinHistorik(vinId, ændring, årsag, kommentar) {
+  vinlagerHistorik.push({
+    id: 'hist_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+    vin_id: vinId,
+    dato_tid: new Date().toISOString(),
+    ændring: ændring,
+    årsag: årsag, // optælling, indkøb, salg, justering, kassation
+    kommentar: kommentar || ''
+  });
+  saveAllData();
+}
+
+// Render vinliste
+let filteredVine = [];
+function renderVineList() {
+  const container = document.getElementById('vinList');
+  if (!container) return;
+  
+  if (filteredVine.length === 0) {
+    container.innerHTML = '<p style="text-align:center; color:#666; padding:40px;">Ingen vine fundet. Tilføj din første vin!</p>';
+    return;
+  }
+  
+  container.innerHTML = `
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="background:#8B0000; color:white;">
+          <th style="padding:12px; text-align:left;">Navn</th>
+          <th style="padding:12px; text-align:left;">Producent</th>
+          <th style="padding:12px; text-align:left;">Land</th>
+          <th style="padding:12px; text-align:left;">Årgang</th>
+          <th style="padding:12px; text-align:center;">Antal</th>
+          <th style="padding:12px; text-align:right;">Indkøbspris</th>
+          <th style="padding:12px; text-align:left;">Placering</th>
+          <th style="padding:12px; text-align:center;">Handlinger</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filteredVine.map(vin => {
+          const lavLager = vin.antal_flasker < 6;
+          return `
+            <tr style="border-bottom:1px solid #eee; ${lavLager ? 'background:#fff3cd;' : ''}">
+              <td style="padding:12px;"><strong>${vin.navn}</strong>${lavLager ? ' <span style="color:#dc3545;">⚠️</span>' : ''}</td>
+              <td style="padding:12px;">${vin.producent}</td>
+              <td style="padding:12px;">${vin.land}</td>
+              <td style="padding:12px;">${vin.årgang || '-'}</td>
+              <td style="padding:12px; text-align:center;"><strong>${vin.antal_flasker}</strong></td>
+              <td style="padding:12px; text-align:right;">${vin.indkøbspris.toFixed(2).replace('.', ',')} kr</td>
+              <td style="padding:12px;">${vin.lagerplacering}</td>
+              <td style="padding:12px; text-align:center;">
+                <button onclick="editVin('${vin.id}')" style="background:#007bff; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-right:5px;">✏️</button>
+                <button onclick="updateVinAntal('${vin.id}')" style="background:#28a745; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-right:5px;">📊</button>
+                <button onclick="deleteVin('${vin.id}')" style="background:#dc3545; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">🗑️</button>
+              </td>
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+// Rediger vin
+function editVin(vinId) {
+  showAddVinModal(vinId);
+}
+
+// Opdater antal flasker
+function updateVinAntal(vinId) {
+  const vin = vinlagerVine.find(v => v.id === vinId);
+  if (!vin) return;
+  
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.style.display = 'block';
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width:500px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2>📊 Opdater Antal Flasker</h2>
+        <button onclick="this.closest('.modal').remove()" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+      </div>
+      <div style="margin-bottom:15px;">
+        <strong>Vin:</strong> ${vin.navn}<br>
+        <strong>Nuværende antal:</strong> ${vin.antal_flasker} flasker
+      </div>
+      <form onsubmit="confirmUpdateVinAntal(event, '${vinId}')">
+        <div style="margin-bottom:15px;">
+          <label><strong>Årsag *</strong></label>
+          <select id="updateÅrsag" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+            <option value="">Vælg årsag</option>
+            <option value="optælling">Optælling</option>
+            <option value="indkøb">Indkøb</option>
+            <option value="salg">Salg/Forbrug</option>
+            <option value="kassation">Kassation/Spild</option>
+            <option value="justering">Manuel justering</option>
+          </select>
+        </div>
+        <div style="margin-bottom:15px;">
+          <label><strong>Ændring (antal flasker) *</strong></label>
+          <input type="number" id="updateÆndring" step="1" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" placeholder="F.eks. +5 eller -2">
+          <small style="color:#666;">Positivt tal for at tilføje, negativt for at fjerne</small>
+        </div>
+        <div style="margin-bottom:15px;">
+          <label><strong>Kommentar/Begrundelse *</strong></label>
+          <textarea id="updateKommentar" rows="3" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" placeholder="Beskriv ændringen..."></textarea>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+          <button type="button" onclick="this.closest('.modal').remove()" style="padding:10px 20px; background:#6c757d; color:white; border:none; border-radius:6px; cursor:pointer;">Annuller</button>
+          <button type="submit" style="padding:10px 20px; background:#28a745; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:700;">💾 Opdater</button>
+        </div>
+      </form>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+// Bekræft opdatering af antal
+function confirmUpdateVinAntal(event, vinId) {
+  event.preventDefault();
+  const vin = vinlagerVine.find(v => v.id === vinId);
+  if (!vin) return;
+  
+  const ændring = parseInt(document.getElementById('updateÆndring').value);
+  const årsag = document.getElementById('updateÅrsag').value;
+  const kommentar = document.getElementById('updateKommentar').value.trim();
+  
+  if (vin.antal_flasker + ændring < 0) {
+    alert('❌ Fejl: Antal flasker kan ikke blive negativt!');
+    return;
+  }
+  
+  vin.antal_flasker += ændring;
+  vin.sidst_opdateret = new Date().toISOString();
+  logVinHistorik(vinId, ændring, årsag, kommentar);
+  saveAllData();
+  document.querySelector('.modal').remove();
+  renderVineList();
+  updateVinStats();
+  renderVinHistorik();
+}
+
+// Slet vin
+function deleteVin(vinId) {
+  if (!confirm('Er du sikker på at du vil slette denne vin?')) return;
+  vinlagerVine = vinlagerVine.filter(v => v.id !== vinId);
+  saveAllData();
+  renderVineList();
+  updateVinStats();
+}
+
+// Opdater statistik
+function updateVinStats() {
+  const totalFlasker = vinlagerVine.reduce((sum, v) => sum + v.antal_flasker, 0);
+  const totalVaerdi = vinlagerVine.reduce((sum, v) => sum + (v.antal_flasker * v.indkøbspris), 0);
+  const lavLagerCount = vinlagerVine.filter(v => v.antal_flasker < 6).length;
+  
+  const totalFlaskerEl = document.getElementById('vinTotalFlasker');
+  const totalVaerdiEl = document.getElementById('vinTotalVaerdi');
+  const lavLagerCountEl = document.getElementById('vinLavLagerCount');
+  const totalAntalEl = document.getElementById('vinTotalAntal');
+  
+  if (totalFlaskerEl) totalFlaskerEl.textContent = totalFlasker.toLocaleString('da-DK');
+  if (totalVaerdiEl) totalVaerdiEl.textContent = totalVaerdi.toFixed(2).replace('.', ',') + ' kr';
+  if (lavLagerCountEl) lavLagerCountEl.textContent = lavLagerCount;
+  if (totalAntalEl) totalAntalEl.textContent = vinlagerVine.length;
+}
+
+// Opdater filtre
+function updateVinFilters() {
+  const data = loadAllData() || {};
+  const lokationer = data.vinlagerLokationer || [];
+  const lande = [...new Set(vinlagerVine.map(v => v.land).filter(Boolean))].sort();
+  
+  const landSelect = document.getElementById('vinFilterLand');
+  const placeringSelect = document.getElementById('vinFilterLagerplacering');
+  
+  if (landSelect) {
+    landSelect.innerHTML = '<option value="">Alle lande</option>' + lande.map(l => `<option value="${l}">${l}</option>`).join('');
+  }
+  
+  if (placeringSelect) {
+    placeringSelect.innerHTML = '<option value="">Alle placeringer</option>' + lokationer.map(l => `<option value="${l}">${l}</option>`).join('');
+  }
+}
+
+// Filtrer vine
+function filterVine() {
+  const search = (document.getElementById('vinSearchInput')?.value || '').toLowerCase();
+  const filterLand = document.getElementById('vinFilterLand')?.value || '';
+  const filterPlacering = document.getElementById('vinFilterLagerplacering')?.value || '';
+  const filterLavLager = document.getElementById('vinFilterLavLager')?.checked || false;
+  
+  filteredVine = vinlagerVine.filter(vin => {
+    const matchSearch = !search || 
+      vin.navn.toLowerCase().includes(search) ||
+      vin.producent.toLowerCase().includes(search) ||
+      (vin.årgang && vin.årgang.toString().includes(search));
+    const matchLand = !filterLand || vin.land === filterLand;
+    const matchPlacering = !filterPlacering || vin.lagerplacering === filterPlacering;
+    const matchLavLager = !filterLavLager || vin.antal_flasker < 6;
+    
+    return matchSearch && matchLand && matchPlacering && matchLavLager;
+  });
+  
+  renderVineList();
+}
+
+// Vis gruppering
+function showVinGruppering(type) {
+  const container = document.getElementById('vinGrupperingContainer');
+  if (!container) return;
+  
+  const grupperet = {};
+  vinlagerVine.forEach(vin => {
+    const key = vin[type] || 'Ikke angivet';
+    if (!grupperet[key]) {
+      grupperet[key] = { vine: [], totalFlasker: 0, totalVaerdi: 0 };
+    }
+    grupperet[key].vine.push(vin);
+    grupperet[key].totalFlasker += vin.antal_flasker;
+    grupperet[key].totalVaerdi += vin.antal_flasker * vin.indkøbspris;
+  });
+  
+  const labels = {
+    'land': 'Land',
+    'producent': 'Producent',
+    'årgang': 'Årgang',
+    'lagerplacering': 'Lagerplacering'
+  };
+  
+  container.innerHTML = `
+    <div class="card" style="background:#f8f9fa;">
+      <h3>Grupperet efter ${labels[type]}</h3>
+      <div style="display:grid; gap:15px; margin-top:15px;">
+        ${Object.entries(grupperet).sort((a, b) => b[1].totalFlasker - a[1].totalFlasker).map(([key, data]) => `
+          <div style="background:white; padding:15px; border-radius:8px; border-left:4px solid #8B0000;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <h4 style="margin:0; color:#8B0000;">${key}</h4>
+              <div style="text-align:right;">
+                <div><strong>${data.totalFlasker}</strong> flasker</div>
+                <div style="color:#666; font-size:14px;">${data.totalVaerdi.toFixed(2).replace('.', ',')} kr</div>
+              </div>
+            </div>
+            <div style="color:#666; font-size:14px;">${data.vine.length} ${data.vine.length === 1 ? 'vin' : 'vine'}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// Render historik
+function renderVinHistorik() {
+  const container = document.getElementById('vinHistorikList');
+  if (!container) return;
+  
+  const sorted = [...vinlagerHistorik].sort((a, b) => new Date(b.dato_tid) - new Date(a.dato_tid));
+  
+  if (sorted.length === 0) {
+    container.innerHTML = '<p style="text-align:center; color:#666; padding:20px;">Ingen historik endnu.</p>';
+    return;
+  }
+  
+  container.innerHTML = `
+    <div style="max-height:500px; overflow-y:auto;">
+      <table style="width:100%; border-collapse:collapse;">
+        <thead style="position:sticky; top:0; background:#8B0000; color:white;">
+          <tr>
+            <th style="padding:12px; text-align:left;">Dato/Tid</th>
+            <th style="padding:12px; text-align:left;">Vin</th>
+            <th style="padding:12px; text-align:center;">Ændring</th>
+            <th style="padding:12px; text-align:left;">Årsag</th>
+            <th style="padding:12px; text-align:left;">Kommentar</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sorted.map(hist => {
+            const vin = vinlagerVine.find(v => v.id === hist.vin_id);
+            const dato = new Date(hist.dato_tid);
+            return `
+              <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:12px;">${dato.toLocaleString('da-DK')}</td>
+                <td style="padding:12px;">${vin ? vin.navn : 'Slettet vin'}</td>
+                <td style="padding:12px; text-align:center; ${hist.ændring > 0 ? 'color:#28a745;' : 'color:#dc3545;'}">
+                  <strong>${hist.ændring > 0 ? '+' : ''}${hist.ændring}</strong>
+                </td>
+                <td style="padding:12px;">${hist.årsag}</td>
+                <td style="padding:12px;">${hist.kommentar || '-'}</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// Eksporter til CSV
+function exportVinlagerCSV() {
+  const headers = ['Navn', 'Producent', 'Land', 'Region', 'Årgang', 'Druetype', 'Alkoholprocent', 'Flasketype', 'Indkøbspris', 'Salgspris', 'Antal flasker', 'Lagerplacering', 'Noter', 'Oprettet', 'Opdateret'];
+  const rows = vinlagerVine.map(vin => [
+    vin.navn,
+    vin.producent,
+    vin.land,
+    vin.region || '',
+    vin.årgang || '',
+    vin.druetype || '',
+    vin.alkoholprocent || '',
+    vin.flasketype,
+    vin.indkøbspris,
+    vin.salgspris || '',
+    vin.antal_flasker,
+    vin.lagerplacering,
+    vin.noter || '',
+    vin.oprettet_dato,
+    vin.sidst_opdateret
+  ]);
+  
+  const csv = [headers.join(';'), ...rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';'))].join('\n');
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `vinlager_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Når vinlager sektion vises
+function initializeVinlager() {
+  if (!vinlagerVine) vinlagerVine = [];
+  if (!vinlagerHistorik) vinlagerHistorik = [];
+  
+  filteredVine = [...vinlagerVine];
+  renderVineList();
+  updateVinStats();
+  updateVinFilters();
+}
+
+// Alias for addVin
 function addVin() {
-  alert('Vin administration funktionalitet kommer snart!');
+  showAddVinModal();
 }
 
 function generateVinLabels() {
