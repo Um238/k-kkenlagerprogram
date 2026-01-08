@@ -748,9 +748,14 @@ a:hover{color:#45a049;text-decoration:none}
         <h2>⚙️ Opsætning Lager</h2>
         <p>Konfigurer vinlager indstillinger her.</p>
         <div style="margin-top:20px;">
-          <label>Vinlager Lokationer</label>
+          <label><strong>Vinlager Lokationer</strong></label>
           <div id="vinlagerLocations"></div>
-          <button onclick="addVinlagerLocation()">➕ Tilføj Lokation</button>
+          <button onclick="addVinlagerLocation()" style="margin-top:10px;">➕ Tilføj Lokation</button>
+        </div>
+        
+        <div style="margin-top:40px;">
+          <h3 style="margin-bottom:20px;">🌍 Vindistrikter</h3>
+          <div id="vinlagerDistrikter" style="display:flex; flex-direction:column; gap:15px;"></div>
         </div>
       </div>
     </div>
@@ -2595,9 +2600,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.58';
+const APP_VERSION = '4.59';
 const BUILD_DATE = '2026-01-08';
-const BUILD_TIME = '13:40';
+const BUILD_TIME = '14:17';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -8813,6 +8818,8 @@ function showPage(id){
       vinNavClick({currentTarget: firstMenuItem});
     }
     renderVinlagerLocations();
+    renderVinlagerDistrikter();
+    collapseAllVinlagerDistrikter();
   } 
   if(id==='labels') { updateAllSelects(); renderMasterTable(); updateLabelReolSelect(); } 
   if(id==='leverandor') renderLeverandorTable(); 
@@ -11419,12 +11426,21 @@ function vinNavClick(event) {
     targetSection.style.display = 'block';
     
     // Initialize section data when shown
-    if (target === 'vinAdmin') {
+    if (target === 'vinOpsaetning') {
+      setTimeout(() => {
+        renderVinlagerLocations();
+        renderVinlagerDistrikter();
+        collapseAllVinlagerDistrikter(); // Luk alle når man går ind på siden
+      }, 100);
+    } else if (target === 'vinAdmin') {
       setTimeout(() => initializeVinlager(), 100);
     } else if (target === 'vinRapporter') {
       setTimeout(() => renderVinHistorik(), 100);
     } else if (target === 'vinLabels') {
       setTimeout(() => updateVinLabelSelect(), 100);
+    } else {
+      // Luk alle distrikter når man går væk fra opsætning
+      collapseAllVinlagerDistrikter();
     }
   }
 }
@@ -11473,6 +11489,126 @@ function removeVinlagerLocation(index) {
     saveAllData();
     renderVinlagerLocations();
   }
+}
+
+// Vindistrikter data
+const vinlagerDistrikter = {
+  'Europa': [
+    'Frankrig', 'Italien', 'Spanien', 'Portugal', 'Tyskland', 'Østrig', 'Schweiz',
+    'Ungarn', 'Tjekkiet', 'Slovakiet', 'Slovenien', 'Kroatien', 'Serbien',
+    'Rumænien', 'Bulgarien', 'Grækenland', 'Cypern', 'Nordmakedonien',
+    'Bosnien-Hercegovina', 'Montenegro', 'Georgien', 'Armenien', 'Aserbajdsjan',
+    'Storbritannien', 'Danmark', 'Sverige', 'Norge', 'Belgien', 'Holland', 'Polen',
+    'Letland', 'Litauen'
+  ],
+  'Amerika': [
+    'USA', 'Canada', 'Mexico', 'Argentina', 'Chile', 'Uruguay', 'Brasilien',
+    'Peru', 'Bolivia'
+  ],
+  'Afrika': [
+    'Sydafrika', 'Marokko', 'Tunesien', 'Algeriet', 'Egypten', 'Etiopien'
+  ],
+  'Asien': [
+    'Kina', 'Japan', 'Sydkorea', 'Indien', 'Thailand', 'Israel', 'Libanon',
+    'Tyrkiet', 'Iran'
+  ],
+  'Oceanien': [
+    'Australien', 'New Zealand'
+  ]
+};
+
+// Render vindistrikter med dropdown
+function renderVinlagerDistrikter() {
+  const container = document.getElementById('vinlagerDistrikter');
+  if (!container) return;
+  
+  const kontinenter = Object.keys(vinlagerDistrikter);
+  const kontinentLabels = {
+    'Europa': '🌍 Europa',
+    'Amerika': '🌎 Amerika',
+    'Afrika': '🌏 Afrika',
+    'Asien': '🌏 Asien',
+    'Oceanien': '🌏 Oceanien'
+  };
+  
+  container.innerHTML = kontinenter.map(kontinent => {
+    const lande = vinlagerDistrikter[kontinent];
+    const kontinentId = `kontinent-${kontinent.toLowerCase().replace(/\s+/g, '-')}`;
+    
+    return `
+      <div class="vinlager-kontinent" style="border:1px solid #ddd; border-radius:8px; overflow:hidden; background:#fff;">
+        <div class="vinlager-kontinent-header" onclick="toggleVinlagerKontinent('${kontinentId}')" style="padding:15px; background:#8B0000; color:white; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-weight:700; user-select:none;">
+          <span>${kontinentLabels[kontinent]}</span>
+          <span class="vinlager-arrow" id="arrow-${kontinentId}" style="transition:transform 0.3s;">▼</span>
+        </div>
+        <div class="vinlager-kontinent-content" id="${kontinentId}" style="display:none; padding:15px; background:#f9f9f9;">
+          <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:8px;">
+            ${lande.map(land => `
+              <div style="padding:8px 12px; background:white; border-radius:4px; border:1px solid #e0e0e0; cursor:pointer; transition:all 0.2s;" 
+                   onmouseover="this.style.background='#f0f0f0'; this.style.borderColor='#8B0000';" 
+                   onmouseout="this.style.background='white'; this.style.borderColor='#e0e0e0';"
+                   onclick="addVinlagerLocationFromDistrikt('${land}')">
+                ${land}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Toggle kontinent dropdown
+function toggleVinlagerKontinent(kontinentId) {
+  const content = document.getElementById(kontinentId);
+  const arrow = document.getElementById(`arrow-${kontinentId}`);
+  
+  if (!content || !arrow) return;
+  
+  // Luk alle andre kontinenter
+  document.querySelectorAll('.vinlager-kontinent-content').forEach(c => {
+    if (c.id !== kontinentId && c.style.display !== 'none') {
+      c.style.display = 'none';
+      const otherArrow = document.getElementById(`arrow-${c.id}`);
+      if (otherArrow) {
+        otherArrow.style.transform = 'rotate(0deg)';
+      }
+    }
+  });
+  
+  // Toggle denne kontinent
+  if (content.style.display === 'none') {
+    content.style.display = 'block';
+    arrow.style.transform = 'rotate(180deg)';
+  } else {
+    content.style.display = 'none';
+    arrow.style.transform = 'rotate(0deg)';
+  }
+}
+
+// Tilføj lokation fra distrikt
+function addVinlagerLocationFromDistrikt(land) {
+  const data = loadAllData() || {};
+  if (!data.vinlagerLokationer) data.vinlagerLokationer = [];
+  
+  if (!data.vinlagerLokationer.includes(land)) {
+    data.vinlagerLokationer.push(land);
+    saveAllData();
+    renderVinlagerLocations();
+    alert(`✅ ${land} er tilføjet til vinlager lokationer!`);
+  } else {
+    alert(`ℹ️ ${land} findes allerede i vinlager lokationer.`);
+  }
+}
+
+// Luk alle kontinenter når man forlader siden
+function collapseAllVinlagerDistrikter() {
+  document.querySelectorAll('.vinlager-kontinent-content').forEach(c => {
+    c.style.display = 'none';
+  });
+  document.querySelectorAll('.vinlager-arrow').forEach(a => {
+    a.style.transform = 'rotate(0deg)';
+  });
 }
 
 // ============================================
