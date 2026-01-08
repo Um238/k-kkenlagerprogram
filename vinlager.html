@@ -39,7 +39,7 @@ table th{background:#f5f5f5;font-weight:700;color:#333}
 <header>
   <h1>🍷 Vinlager</h1>
   <div class="header-controls">
-    <button class="secondary" onclick="window.location.href='køkkenlagerprogram.html'" style="background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.3);">🏠 Tilbage til Køkken</button>
+    <button class="secondary" onclick="goBackToKitchen()" style="background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.3);">🏠 Tilbage til Køkken</button>
   </div>
 </header>
 
@@ -214,6 +214,13 @@ function addVin() {
 
 function generateVinLabels() {
   alert('Label generering funktionalitet kommer snart!');
+}
+
+// Go back to kitchen program
+function goBackToKitchen() {
+  // Sæt session flag så brugeren ikke skal logge ind igen
+  sessionStorage.setItem('køkkenlager_session_active', 'true');
+  window.location.href = 'køkkenlagerprogram.html';
 }
 
 // Initialize

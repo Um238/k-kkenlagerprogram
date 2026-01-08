@@ -521,7 +521,7 @@ a:hover{color:#45a049;text-decoration:none}
   <span class="menu-item" data-target="labels" onclick="navClick(event)">🏷️ Labels</span>
   <span class="menu-item" data-target="leverandor" onclick="navClick(event)">🚚 Leverandører</span>
   <span class="menu-item" data-target="systemOpsaetning" onclick="navClick(event)">⚙️ Opsætning</span>
-  <span class="menu-item" data-target="vinlager" onclick="window.location.href='vinlager.html'">🍷 Vinlager</span>
+  <span class="menu-item" data-target="vinlager" onclick="navClick(event)">🍷 Vinlager</span>
 </nav>
 
 <!-- =========================
@@ -1427,6 +1427,8 @@ function attemptLogin(){
     if(loginValid){
       console.log('Login succesfuld');
       isLoggedIn = true;
+      // Sæt session flag så brugeren ikke skal logge ind igen hvis de går til vinlager.html og tilbage
+      sessionStorage.setItem('køkkenlager_session_active', 'true');
       
       // Track login count and perform security check
       performLoginSecurityCheck();
@@ -1557,6 +1559,8 @@ async function logout(){
   
   isLoggedIn = false;
   appInitialized = false;
+  // Fjern session flag ved logout
+  sessionStorage.removeItem('køkkenlager_session_active');
   showLoginModal();
 }
 
@@ -2523,8 +2527,18 @@ function loadAllData(){
 /* Ensure modals hidden at load og setup event listeners */
 document.addEventListener('DOMContentLoaded', ()=>{
   try {
-    // Vis login først
-    showLoginModal();
+    // Tjek om brugeren allerede er logget ind (hvis de kommer fra vinlager.html)
+    const passwordExists = checkPasswordExists();
+    const sessionActive = sessionStorage.getItem('køkkenlager_session_active') === 'true';
+    
+    if (passwordExists && sessionActive) {
+      // Brugeren er allerede logget ind, spring login over
+      isLoggedIn = true;
+      initializeApp();
+    } else {
+      // Vis login først
+      showLoginModal();
+    }
     
     // Allow Enter key to submit i login forms
     const loginUser = $('loginUsername');
@@ -8625,6 +8639,9 @@ function showPage(id){
   if(id==='leverandor') renderLeverandorTable(); 
   if(id==='master') { showMasterSection('add'); updateAllSelects(); } 
   if(id==='scanner') { loadScannerIntoPage(); }
+  if(id==='licens') { 
+    updateLicenseStatusDisplay(); // Opdater licens information når siden vises
+  }
   if(id==='systemOpsaetning') { 
     showSettingsSection('manual'); // Show manual section by default
     // Initialize manual if not already initialized
