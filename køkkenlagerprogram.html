@@ -1516,6 +1516,31 @@ a:hover{color:#45a049;text-decoration:none}
   </div>
 </div>
 
+<!-- Vinlager import type selection modal -->
+<div id="vinImportModal" class="modal-backdrop hidden" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:500px;">
+    <h3>Vælg import type</h3>
+    <p style="margin-bottom:16px;">Hvordan vil du importere vinlager filen?</p>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <button onclick="selectVinImportType('overwrite')" style="text-align:left; padding:12px; background:#fff; border:2px solid #ddd; border-radius:8px; cursor:pointer;">
+        <strong>Overskriv vinlager</strong><br>
+        <small style="color:#666;">Erstat hele vinlageret med data fra filen</small>
+      </button>
+      <button onclick="selectVinImportType('add')" style="text-align:left; padding:12px; background:#fff; border:2px solid #ddd; border-radius:8px; cursor:pointer;">
+        <strong>Tilføj til vinlager</strong><br>
+        <small style="color:#666;">Tilføj kun nye vine, ignorer eksisterende</small>
+      </button>
+      <button onclick="selectVinImportType('update')" style="text-align:left; padding:12px; background:#fff; border:2px solid #ddd; border-radius:8px; cursor:pointer;">
+        <strong>Opdater eksisterende</strong><br>
+        <small style="color:#666;">Opdater eksisterende vine, tilføj nye vine</small>
+      </button>
+    </div>
+    <div class="actions" style="margin-top:16px;">
+      <button class="secondary" onclick="closeVinImportModal()">Annuller</button>
+    </div>
+  </div>
+</div>
+
 <!-- =========================
      [EXTERNAL LIBRARIES]
      ========================= -->
@@ -2645,9 +2670,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.63';
+const APP_VERSION = '4.64';
 const BUILD_DATE = '2026-01-08';
-const BUILD_TIME = '15:35';
+const BUILD_TIME = '16:05';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -12505,10 +12530,10 @@ function downloadVinlagerExcelTemplate() {
     // Column order: Navn, Producent, Land, Region, Årgang, Druetype, Alkoholprocent, Flasketype, Indkøbspris, Salgspris, Antal flasker, Lagerplacering, Reol, Hylle, Rækkefølge, Noter
     const columnOrder = ['Navn', 'Producent', 'Land', 'Region', 'Årgang', 'Druetype', 'Alkoholprocent', 'Flasketype', 'Indkøbspris', 'Salgspris', 'Antal flasker', 'Lagerplacering', 'Reol', 'Hylle', 'Rækkefølge', 'Noter'];
     
-    // Brug eksisterende vine
-    let vineData = [...vinlagerVine];
+    // Lav tom skabelon (kun header række)
+    let vineData = [];
     
-    // Konverter til Excel format
+    // Konverter til Excel format (tom array = kun header)
     const excelData = vineData.map(vin => ({
       Navn: vin.navn || vin.Navn || '',
       Producent: vin.producent || vin.Producent || '',
@@ -12528,19 +12553,29 @@ function downloadVinlagerExcelTemplate() {
       Noter: vin.noter || vin.Noter || ''
     }));
     
-    const ws = XLSX.utils.json_to_sheet(excelData, {
-      header: columnOrder,
-      skipHeader: false
-    });
+    // Create sheet with just headers if no data
+    let ws;
+    if (excelData.length === 0) {
+      // Create empty sheet with headers only
+      ws = XLSX.utils.aoa_to_sheet([columnOrder]);
+    } else {
+      ws = XLSX.utils.json_to_sheet(excelData, {
+        header: columnOrder,
+        skipHeader: false
+      });
+    }
     
     // Konfigurer sheet (frozen panes, auto-size columns)
-    if(ws && ws['!ref']) {
-      const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
-      ws['!freeze'] = { xSplit: 0, ySplit: 1, topLeftCell: 'A2', activePane: 'bottomLeft', state: 'frozen' };
-      
-      const colWidths = [];
-      for(let C = range.s.c; C <= range.e.c; C++) {
-        let maxWidth = columnOrder[C] ? columnOrder[C].length : 10;
+    const range = excelData.length === 0 
+      ? XLSX.utils.decode_range('A1:' + String.fromCharCode(64 + columnOrder.length) + '1')
+      : XLSX.utils.decode_range(ws['!ref'] || 'A1');
+    
+    ws['!freeze'] = { xSplit: 0, ySplit: 1, topLeftCell: 'A2', activePane: 'bottomLeft', state: 'frozen' };
+    
+    const colWidths = [];
+    for(let C = range.s.c; C <= range.e.c; C++) {
+      let maxWidth = columnOrder[C] ? columnOrder[C].length : 10;
+      if (excelData.length > 0) {
         for(let R = range.s.r; R <= range.e.r; R++) {
           const cellAddress = XLSX.utils.encode_cell({r: R, c: C});
           const cell = ws[cellAddress];
@@ -12548,9 +12583,27 @@ function downloadVinlagerExcelTemplate() {
             maxWidth = Math.max(maxWidth, String(cell.v).length);
           }
         }
-        colWidths.push({ wch: Math.min(Math.max(maxWidth + 2, 8), 50) });
       }
-      ws['!cols'] = colWidths;
+      colWidths.push({ wch: Math.min(Math.max(maxWidth + 2, 8), 50) });
+    }
+    ws['!cols'] = colWidths;
+    
+    // Style header row
+    for(let C = range.s.c; C <= range.e.c; C++) {
+      const cellAddress = XLSX.utils.encode_cell({r: 0, c: C});
+      if(!ws[cellAddress]) {
+        ws[cellAddress] = { t: 's', v: columnOrder[C] || '' };
+      }
+      if(!ws[cellAddress].s) ws[cellAddress].s = {};
+      ws[cellAddress].s.font = { bold: true, sz: 11 };
+      ws[cellAddress].s.fill = { fgColor: { rgb: 'D3D3D3' } };
+      ws[cellAddress].s.alignment = { vertical: 'center', horizontal: 'center', wrapText: true };
+      ws[cellAddress].s.border = {
+        top: { style: 'thin', color: { rgb: '000000' } },
+        bottom: { style: 'thin', color: { rgb: '000000' } },
+        left: { style: 'thin', color: { rgb: '000000' } },
+        right: { style: 'thin', color: { rgb: '000000' } }
+      };
     }
     
     XLSX.utils.book_append_sheet(wb, ws, 'Alle vine');
@@ -12559,16 +12612,18 @@ function downloadVinlagerExcelTemplate() {
     const filenameXlsx = `vinlager_skabelon_v${APP_VERSION}.xlsx`;
     XLSX.writeFile(wb, filenameXlsx);
     
-    // Også download CSV
+    // Også download CSV (kun header hvis ingen data)
     const csvRows = [];
     csvRows.push(columnOrder.join(';'));
-    excelData.forEach(row => {
-      const cells = columnOrder.map(col => {
-        const val = row[col] !== undefined && row[col] !== null ? String(row[col]) : '';
-        return `"${val.replace(/"/g, '""')}"`;
+    if (excelData.length > 0) {
+      excelData.forEach(row => {
+        const cells = columnOrder.map(col => {
+          const val = row[col] !== undefined && row[col] !== null ? String(row[col]) : '';
+          return `"${val.replace(/"/g, '""')}"`;
+        });
+        csvRows.push(cells.join(';'));
       });
-      csvRows.push(cells.join(';'));
-    });
+    }
     const csvContent = '\uFEFF' + csvRows.join('\n');
     const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
     const filenameCsv = `vinlager_skabelon_v${APP_VERSION}.csv`;
@@ -12579,7 +12634,7 @@ function downloadVinlagerExcelTemplate() {
     link.click();
     document.body.removeChild(link);
     
-    alert(`✅ Vinlager skabelon downloadet! (v${APP_VERSION})\n\nDer er lavet TO filer:\n• Excel: ${filenameXlsx}\n• CSV (klar til import): ${filenameCsv}\n\nStruktur:\n• Navn; Producent; Land; Region; Årgang; Druetype; Alkoholprocent; Flasketype; Indkøbspris; Salgspris; Antal flasker; Lagerplacering; Reol; Hylle; Rækkefølge; Noter\n\nAntal vine i skabelon: ${excelData.length}\n\nSådan bruger du skabelonen:\n1) Rediger i Excel-filen, gem som CSV eller brug den medfølgende CSV direkte\n2) Importér CSV-filen via Import/Export i programmet`);
+    alert(`✅ Vinlager skabelon downloadet! (v${APP_VERSION})\n\nDer er lavet TO filer:\n• Excel: ${filenameXlsx}\n• CSV (klar til import): ${filenameCsv}\n\nStruktur:\n• Navn; Producent; Land; Region; Årgang; Druetype; Alkoholprocent; Flasketype; Indkøbspris; Salgspris; Antal flasker; Lagerplacering; Reol; Hylle; Rækkefølge; Noter\n\nSkabelonen er tom og klar til at udfyldes.\n\nSådan bruger du skabelonen:\n1) Udfyld skabelonen i Excel med dine vine\n2) Gem Excel-filen eller brug CSV-versionen\n3) Importér filen via Import/Export i programmet`);
     
   } catch(err) {
     console.error('Fejl ved generering af vinlager Excel skabelon:', err);
@@ -12805,6 +12860,9 @@ function processVinlagerImportText(text, importType = 'add') {
         salgspris: v.salgspris,
         antal_flasker: v.antal_flasker,
         lagerplacering: v.lagerplacering,
+        reolNr: v.reolNr || null,
+        hylleNr: v.hylleNr || null,
+        raekkefoelge: v.raekkefoelge || 0,
         noter: v.noter,
         oprettet_dato: new Date().toISOString(),
         sidst_opdateret: new Date().toISOString()
@@ -12909,9 +12967,11 @@ function processVinlagerImportText(text, importType = 'add') {
   
   saveAllData();
   renderVineList();
+  renderVinMasterTable(); // Opdater master table
   updateVinStats();
   updateVinFilters();
   updateVinLabelSelect();
+  updateVinAdminSelects(); // Opdater alle selects
   renderVinlagerLocations();
   
   alert(`✅ Import færdig!\n\nImporteret: ${imported}\nOpdateret: ${updated}\nSprunget over: ${skipped}`);
