@@ -35,6 +35,8 @@ nav .menu-item.active{background:var(--accent);border:1px solid #93c5fd}
 #content{padding:18px}
 .page{display:block}
 .hidden{display:none !important}
+.vinlager-section{display:block}
+.vinlager-section.hidden{display:none !important}
 .card{background:#fff;padding:12px;border-radius:8px;border:1px solid #e6e6e6}
 .section-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .right{margin-left:auto}
@@ -726,33 +728,56 @@ a:hover{color:#45a049;text-decoration:none}
 
   <!-- [HTML 3.4] VINLAGER -->
   <section id="vinlager" class="page hidden">
-    <div style="min-height:100vh; background:linear-gradient(135deg, #8B0000 0%, #4B0000 100%); padding:40px 20px; position:relative; overflow:hidden;">
-      <!-- Dekorativ baggrund -->
-      <div style="position:absolute; top:0; left:0; right:0; bottom:0; opacity:0.1; background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext x=%2250%22 y=%2250%22 font-size=%2280%22 fill=%22white%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3E🍷%3C/text%3E%3C/svg%3E'); background-repeat:repeat; background-size:200px 200px;"></div>
-      
-      <!-- Indhold -->
-      <div style="position:relative; z-index:1; max-width:1200px; margin:0 auto;">
-        <!-- Header med skift knap -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:40px; flex-wrap:wrap; gap:20px;">
-          <div>
-            <h1 style="color:#fff; font-size:48px; margin:0; text-shadow:2px 2px 4px rgba(0,0,0,0.3); display:flex; align-items:center; gap:20px;">
-              <span style="font-size:64px;">🍷</span>
-              <span>Vinlager</span>
-            </h1>
-            <p style="color:rgba(255,255,255,0.9); font-size:18px; margin:10px 0 0 0;">Din professionelle vinlager administration</p>
-          </div>
-          <button onclick="showPage('lageropt')" style="background:rgba(255,255,255,0.2); color:#fff; border:2px solid rgba(255,255,255,0.5); padding:12px 24px; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer; transition:all 0.3s; backdrop-filter:blur(10px);">
-            📦 Skift til Køkken
-          </button>
-        </div>
+    <!-- Vinlager Navigation -->
+    <nav id="vinlagerNav" style="background:#eee;padding:10px 18px;display:flex;gap:12px;flex-wrap:wrap;border-bottom:1px solid #e6e6e6;margin-bottom:18px;">
+      <span class="menu-item active" data-target="vinOpsaetning" onclick="vinNavClick(event)">⚙️ Opsætning Lager</span>
+      <span class="menu-item" data-target="vinAdmin" onclick="vinNavClick(event)">🍷 Vin Administration</span>
+      <span class="menu-item" data-target="vinRapporter" onclick="vinNavClick(event)">📊 Rapporter</span>
+      <span class="menu-item" data-target="vinLabels" onclick="vinNavClick(event)">🏷️ Labels</span>
+    </nav>
 
-        <!-- Hovedindhold -->
-        <div style="background:rgba(255,255,255,0.95); border-radius:16px; padding:40px; box-shadow:0 10px 40px rgba(0,0,0,0.3); min-height:500px;">
-          <div style="text-align:center; padding:60px 20px;">
-            <div style="font-size:120px; margin-bottom:30px;">🍷</div>
-            <h2 style="color:#8B0000; font-size:32px; margin:0 0 20px 0;">Velkommen til Vinlager</h2>
-            <p style="color:#666; font-size:18px; max-width:600px; margin:0 auto;">Her kan du administrere dit vinlager. Funktioner tilføjes efterhånden.</p>
-          </div>
+    <!-- Vinlager Opsætning Lager -->
+    <div id="vinOpsaetning" class="vinlager-section">
+      <div class="card">
+        <h2>⚙️ Opsætning Lager</h2>
+        <p>Konfigurer vinlager indstillinger her.</p>
+        <div style="margin-top:20px;">
+          <label>Vinlager Lokationer</label>
+          <div id="vinlagerLocations"></div>
+          <button onclick="addVinlagerLocation()">➕ Tilføj Lokation</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vinlager Administration -->
+    <div id="vinAdmin" class="vinlager-section hidden">
+      <div class="card">
+        <h2>🍷 Vin Administration</h2>
+        <p>Administrer dine vine her.</p>
+        <div style="margin-top:20px;">
+          <button onclick="addVin()">➕ Tilføj Vin</button>
+          <div id="vinList" style="margin-top:20px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vinlager Rapporter -->
+    <div id="vinRapporter" class="vinlager-section hidden">
+      <div class="card">
+        <h2>📊 Rapporter</h2>
+        <p>Se og administrer vinlager rapporter her.</p>
+        <div id="vinRapporterList" style="margin-top:20px;"></div>
+      </div>
+    </div>
+
+    <!-- Vinlager Labels -->
+    <div id="vinLabels" class="vinlager-section hidden">
+      <div class="card">
+        <h2>🏷️ Labels</h2>
+        <p>Generer labels til vine her.</p>
+        <div style="margin-top:20px;">
+          <button onclick="generateVinLabels()">🏷️ Generer Labels</button>
+          <div id="vinLabelContainer" style="margin-top:20px;"></div>
         </div>
       </div>
     </div>
@@ -8633,7 +8658,12 @@ function showPage(id){
   } 
   if(id==='rapporter') { refreshReportsFromStorage(); renderReports(); renderArchivedReports(); showReportsSection('active'); } 
   if(id==='vinlager') { 
-    // Vinlager sektion - klar til at tilføje funktioner senere
+    // Vis vinlager opsætning som standard
+    const firstMenuItem = document.querySelector('#vinlagerNav .menu-item[data-target="vinOpsaetning"]');
+    if(firstMenuItem) {
+      vinNavClick({currentTarget: firstMenuItem});
+    }
+    renderVinlagerLocations();
   } 
   if(id==='labels') { updateAllSelects(); renderMasterTable(); updateLabelReolSelect(); } 
   if(id==='leverandor') renderLeverandorTable(); 
@@ -11215,124 +11245,87 @@ function downloadHelperProgramFallback(blob) {
    [JS 19] LICENSE DETAILS MANAGEMENT
    ================================ */
 // Save license details
-function saveLicenseDetails() {
-  try {
-    const licenseDetails = {
-      name: document.getElementById('licenseName').value.trim(),
-      email: document.getElementById('licenseEmail').value.trim(),
-      address: document.getElementById('licenseAddress').value.trim(),
-      postalCode: document.getElementById('licensePostalCode').value.trim(),
-      city: document.getElementById('licenseCity').value.trim(),
-      phone: document.getElementById('licensePhone').value.trim(),
-      idNumber: document.getElementById('licenseIdNumber').value.trim(),
-      licenseCode: document.getElementById('licenseCode').value.trim(),
-      validFrom: document.getElementById('licenseValidFrom').value,
-      validTo: document.getElementById('licenseValidTo').value
-    };
-    
-    // Validate required fields
-    if (!licenseDetails.name || !licenseDetails.email) {
-      alert('⚠️ Navn og Email er påkrævet felter.');
-      return;
-    }
-    
-    // Generate unique ID if empty
-    if (!licenseDetails.idNumber) {
-      licenseDetails.idNumber = 'ID-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
-      document.getElementById('licenseIdNumber').value = licenseDetails.idNumber;
-    }
-    
-    // Generate unique license code if empty
-    if (!licenseDetails.licenseCode) {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let code = '';
-      for (let i = 0; i < 12; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      licenseDetails.licenseCode = code;
-      document.getElementById('licenseCode').value = licenseDetails.licenseCode;
-    }
-    
-    // Validate dates
-    if (!licenseDetails.validFrom || !licenseDetails.validTo) {
-      alert('⚠️ Licens gyldig fra og til datoer er påkrævet.');
-      return;
-    }
-    
-    if (new Date(licenseDetails.validFrom) >= new Date(licenseDetails.validTo)) {
-      alert('⚠️ Licens gyldig til dato skal være efter gyldig fra dato.');
-      return;
-    }
-    
-    // Save to localStorage
-    localStorage.setItem('køkkenlager_license_details', JSON.stringify(licenseDetails));
-    
-    alert('✅ Licens detaljer gemt!');
-    
-  } catch(err) {
-    console.error('Fejl ved gem af licens detaljer:', err);
-    alert('❌ Fejl ved gem af licens detaljer: ' + err.message);
-  }
-}
-
-// Load license details
-function loadLicenseDetails() {
-  try {
-    const saved = localStorage.getItem('køkkenlager_license_details');
-    if (!saved) {
-      alert('⚠️ Ingen gemte licens detaljer fundet.');
-      return;
-    }
-    
-    const licenseDetails = JSON.parse(saved);
-    
-    document.getElementById('licenseName').value = licenseDetails.name || '';
-    document.getElementById('licenseEmail').value = licenseDetails.email || '';
-    document.getElementById('licenseAddress').value = licenseDetails.address || '';
-    document.getElementById('licensePostalCode').value = licenseDetails.postalCode || '';
-    document.getElementById('licenseCity').value = licenseDetails.city || '';
-    document.getElementById('licensePhone').value = licenseDetails.phone || '';
-    document.getElementById('licenseIdNumber').value = licenseDetails.idNumber || '';
-    document.getElementById('licenseCode').value = licenseDetails.licenseCode || '';
-    document.getElementById('licenseValidFrom').value = licenseDetails.validFrom || '';
-    document.getElementById('licenseValidTo').value = licenseDetails.validTo || '';
-    
-    alert('✅ Licens detaljer indlæst!');
-    
-  } catch(err) {
-    console.error('Fejl ved indlæsning af licens detaljer:', err);
-    alert('❌ Fejl ved indlæsning af licens detaljer: ' + err.message);
-  }
-}
-
-// Auto-load license details when license page is shown
-function updateLicenseStatusDisplay() {
-  // ... existing code ...
+/* ================================
+   [JS 20] VINLAGER FUNKTIONER
+   ================================ */
+// Vinlager navigation
+function vinNavClick(event) {
+  const target = event.currentTarget.getAttribute('data-target');
   
-  // Auto-load license details if they exist
-  setTimeout(() => {
-    const saved = localStorage.getItem('køkkenlager_license_details');
-    if (saved) {
-      try {
-        const licenseDetails = JSON.parse(saved);
-        if (document.getElementById('licenseName')) {
-          document.getElementById('licenseName').value = licenseDetails.name || '';
-          document.getElementById('licenseEmail').value = licenseDetails.email || '';
-          document.getElementById('licenseAddress').value = licenseDetails.address || '';
-          document.getElementById('licensePostalCode').value = licenseDetails.postalCode || '';
-          document.getElementById('licenseCity').value = licenseDetails.city || '';
-          document.getElementById('licensePhone').value = licenseDetails.phone || '';
-          document.getElementById('licenseIdNumber').value = licenseDetails.idNumber || '';
-          document.getElementById('licenseCode').value = licenseDetails.licenseCode || '';
-          document.getElementById('licenseValidFrom').value = licenseDetails.validFrom || '';
-          document.getElementById('licenseValidTo').value = licenseDetails.validTo || '';
-        }
-      } catch(err) {
-        console.error('Fejl ved auto-indlæsning af licens detaljer:', err);
-      }
-    }
-  }, 100);
+  // Update active menu item
+  document.querySelectorAll('#vinlagerNav .menu-item').forEach(item => {
+    item.classList.remove('active');
+  });
+  event.currentTarget.classList.add('active');
+  
+  // Show/hide sections
+  document.querySelectorAll('.vinlager-section').forEach(section => {
+    section.classList.add('hidden');
+    section.style.display = 'none';
+  });
+  
+  const targetSection = document.getElementById(target);
+  if (targetSection) {
+    targetSection.classList.remove('hidden');
+    targetSection.style.display = 'block';
+  }
 }
+
+// Vinlager locations
+function addVinlagerLocation() {
+  const name = prompt('Indtast navn på ny lokation:');
+  if (!name || !name.trim()) return;
+  
+  const data = loadAllData() || {};
+  if (!data.vinlagerLokationer) data.vinlagerLokationer = [];
+  
+  if (!data.vinlagerLokationer.includes(name.trim())) {
+    data.vinlagerLokationer.push(name.trim());
+    saveAllData();
+    renderVinlagerLocations();
+  }
+}
+
+function renderVinlagerLocations() {
+  const data = loadAllData() || {};
+  const locations = data.vinlagerLokationer || [];
+  const container = document.getElementById('vinlagerLocations');
+  
+  if (!container) return;
+  
+  if (locations.length === 0) {
+    container.innerHTML = '<p class="small">Ingen lokationer oprettet endnu.</p>';
+    return;
+  }
+  
+  container.innerHTML = locations.map((loc, idx) => `
+    <div style="display:flex; align-items:center; gap:10px; padding:10px; background:#f5f5f5; border-radius:6px; margin-bottom:8px;">
+      <span style="flex:1;">${loc}</span>
+      <button onclick="removeVinlagerLocation(${idx})" style="background:#dc3545; padding:6px 12px; font-size:12px;">🗑️ Slet</button>
+    </div>
+  `).join('');
+}
+
+function removeVinlagerLocation(index) {
+  if (!confirm('Er du sikker på at du vil slette denne lokation?')) return;
+  
+  const data = loadAllData() || {};
+  if (data.vinlagerLokationer) {
+    data.vinlagerLokationer.splice(index, 1);
+    saveAllData();
+    renderVinlagerLocations();
+  }
+}
+
+// Vin administration
+function addVin() {
+  alert('Vin administration funktionalitet kommer snart!');
+}
+
+function generateVinLabels() {
+  alert('Label generering funktionalitet kommer snart!');
+}
+
 
 /* =============
    END SCRIPT
