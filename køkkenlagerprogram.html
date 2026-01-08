@@ -2670,9 +2670,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.65';
+const APP_VERSION = '4.66';
 const BUILD_DATE = '2026-01-08';
-const BUILD_TIME = '16:15';
+const BUILD_TIME = '19:25';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -12530,31 +12530,39 @@ function downloadVinlagerExcelTemplate() {
     
     const wb = XLSX.utils.book_new();
     
-    // Column order: Navn, Producent, Land, Region, Årgang, Druetype, Alkoholprocent, Flasketype, Indkøbspris, Salgspris, Antal flasker, Lagerplacering, Reol, Hylle, Rækkefølge, Noter
-    const columnOrder = ['Navn', 'Producent', 'Land', 'Region', 'Årgang', 'Druetype', 'Alkoholprocent', 'Flasketype', 'Indkøbspris', 'Salgspris', 'Antal flasker', 'Lagerplacering', 'Reol', 'Hylle', 'Rækkefølge', 'Noter'];
+    // Nye kolonner: Varenummer, Vinnavn, Producent, Land, Region, Årgang, Druetype, Alkohol%, Flasketype, Indkøbspris, Salgspris, Antal, Minimum beholdning, Placering, Noter, Billede
+    const columnOrder = ['Varenummer', 'Vinnavn', 'Producent', 'Land', 'Region', 'Årgang', 'Druetype', 'Alkohol%', 'Flasketype', 'Indkøbspris', 'Salgspris', 'Antal', 'Minimum beholdning', 'Placering', 'Noter', 'Billede'];
     
-    // Brug eksisterende vine fra vinlagerVine (hvis de findes)
-    let vineData = [...(vinlagerVine || [])];
+    // Brug eksisterende vine fra vinlagerVine (hvis de findes), ellers generer 300 demo vine
+    let vineData = [];
+    
+    if (vinlagerVine && vinlagerVine.length > 0) {
+      // Brug eksisterende vine
+      vineData = vinlagerVine.map(vin => ({
+        Varenummer: vin.varenummer || vin.Varenummer || '',
+        Vinnavn: vin.navn || vin.Vinnavn || vin.Navn || '',
+        Producent: vin.producent || vin.Producent || '',
+        Land: vin.land || vin.Land || '',
+        Region: vin.region || vin.Region || '',
+        Årgang: vin.årgang || vin.Årgang || '',
+        Druetype: vin.druetype || vin.Druetype || '',
+        'Alkohol%': vin.alkoholprocent || vin['Alkohol%'] || vin.Alkoholprocent || '',
+        Flasketype: vin.flasketype || vin.Flasketype || '75 cl',
+        Indkøbspris: vin.indkøbspris || vin.Indkøbspris || 0,
+        Salgspris: vin.salgspris || vin.Salgspris || '',
+        Antal: vin.antal_flasker || vin.Antal || vin['Antal flasker'] || 24,
+        'Minimum beholdning': vin.minimumBeholdning || vin['Minimum beholdning'] || 6,
+        Placering: vin.lagerplacering || vin.Placering || vin.Lagerplacering || '',
+        Noter: vin.noter || vin.Noter || '',
+        Billede: vin.billede || vin.Billede || ''
+      }));
+    } else {
+      // Generer 300 demo vine fordelt over 10 lande
+      vineData = genererDemoVine(300);
+    }
     
     // Konverter til Excel format
-    const excelData = vineData.map(vin => ({
-      Navn: vin.navn || vin.Navn || '',
-      Producent: vin.producent || vin.Producent || '',
-      Land: vin.land || vin.Land || '',
-      Region: vin.region || vin.Region || '',
-      Årgang: vin.årgang || vin.Årgang || '',
-      Druetype: vin.druetype || vin.Druetype || '',
-      Alkoholprocent: vin.alkoholprocent || vin.Alkoholprocent || '',
-      Flasketype: vin.flasketype || vin.Flasketype || '75 cl',
-      Indkøbspris: vin.indkøbspris || vin.Indkøbspris || 0,
-      Salgspris: vin.salgspris || vin.Salgspris || '',
-      'Antal flasker': vin.antal_flasker || vin['Antal flasker'] || 0,
-      Lagerplacering: vin.lagerplacering || vin.Lagerplacering || '',
-      Reol: vin.reolNr || vin.Reol || '',
-      Hylle: vin.hylleNr || vin.Hylle || '',
-      Rækkefølge: vin.raekkefoelge || vin.Rækkefølge || 0,
-      Noter: vin.noter || vin.Noter || ''
-    }));
+    const excelData = vineData;
     
     // Create sheet with just headers if no data
     let ws;
@@ -12637,7 +12645,7 @@ function downloadVinlagerExcelTemplate() {
     link.click();
     document.body.removeChild(link);
     
-    alert(`✅ Vinlager skabelon downloadet! (v${APP_VERSION})\n\nDer er lavet TO filer:\n• Excel: ${filenameXlsx}\n• CSV (klar til import): ${filenameCsv}\n\nStruktur:\n• Navn; Producent; Land; Region; Årgang; Druetype; Alkoholprocent; Flasketype; Indkøbspris; Salgspris; Antal flasker; Lagerplacering; Reol; Hylle; Rækkefølge; Noter\n\nSkabelonen er tom og klar til at udfyldes.\n\nSådan bruger du skabelonen:\n1) Udfyld skabelonen i Excel med dine vine\n2) Gem Excel-filen eller brug CSV-versionen\n3) Importér filen via Import/Export i programmet`);
+    alert(`✅ Vinlager skabelon downloadet! (v${APP_VERSION})\n\nDer er lavet TO filer:\n• Excel: ${filenameXlsx}\n• CSV (klar til import): ${filenameCsv}\n\nStruktur:\n• Varenummer; Vinnavn; Producent; Land; Region; Årgang; Druetype; Alkohol%; Flasketype; Indkøbspris; Salgspris; Antal; Minimum beholdning; Placering; Noter; Billede\n\nAntal vine i skabelon: ${excelData.length}\n\nSådan bruger du skabelonen:\n1) Rediger skabelonen i Excel med dine vine\n2) Gem Excel-filen eller brug CSV-versionen\n3) Importér filen via Import/Export i programmet`);
     
   } catch(err) {
     console.error('Fejl ved generering af vinlager Excel skabelon:', err);
@@ -12786,31 +12794,99 @@ function processVinlagerImportText(text, importType = 'add') {
     
     const cleanParts = parts.map(p => p.trim().replace(/^["']|["']$/g, ''));
     
-    // Column order: Navn, Producent, Land, Region, Årgang, Druetype, Alkoholprocent, Flasketype, Indkøbspris, Salgspris, Antal flasker, Lagerplacering, Reol, Hylle, Rækkefølge, Noter
-    const navn = cleanParts[0] || '';
+    // Detekter kolonne rækkefølge baseret på header
+    const headerLine = lines[0] || '';
+    const headerParts = headerLine.split(separator).map(p => p.trim().replace(/^["']|["']$/g, '').toLowerCase());
+    
+    // Find kolonne indekser (håndter både nye og gamle formater)
+    const getColIndex = (searchTerms) => {
+      for (let term of searchTerms) {
+        const idx = headerParts.findIndex(h => h.includes(term.toLowerCase()));
+        if (idx >= 0) return idx;
+      }
+      return -1;
+    };
+    
+    const varenummerIdx = getColIndex(['varenummer']);
+    const vinnavnIdx = getColIndex(['vinnavn', 'navn']);
+    const producentIdx = getColIndex(['producent']);
+    const landIdx = getColIndex(['land']);
+    const regionIdx = getColIndex(['region']);
+    const årgangIdx = getColIndex(['årgang']);
+    const druetypeIdx = getColIndex(['druetype']);
+    const alkoholIdx = getColIndex(['alkohol%', 'alkoholprocent', 'alkohol']);
+    const flasketypeIdx = getColIndex(['flasketype']);
+    const indkøbsprisIdx = getColIndex(['indkøbspris']);
+    const salgsprisIdx = getColIndex(['salgspris']);
+    const antalIdx = getColIndex(['antal', 'antal flasker']);
+    const minimumBeholdningIdx = getColIndex(['minimum beholdning', 'minimum']);
+    const placeringIdx = getColIndex(['placering', 'lagerplacering']);
+    const noterIdx = getColIndex(['noter']);
+    const billedeIdx = getColIndex(['billede']);
+    
+    // Hvis header ikke findes, brug gamle format (fallback)
+    const useOldFormat = vinnavnIdx < 0 && cleanParts.length > 0;
+    
+    let varenummer, navn, producent, land, region, årgang, druetype, alkoholprocent, flasketype, indkøbspris, salgspris, antalFlasker, minimumBeholdning, lagerplacering, noter, billede;
+    
+    if (useOldFormat) {
+      // Gamle format (backward compatibility)
+      navn = cleanParts[0] || '';
+      producent = cleanParts[1]?.trim() || '';
+      land = cleanParts[2]?.trim() || '';
+      region = cleanParts[3]?.trim() || null;
+      årgang = cleanParts[4]?.trim() ? parseInt(cleanParts[4]) : null;
+      druetype = cleanParts[5]?.trim() || null;
+      alkoholprocent = cleanParts[6]?.trim() ? parseFloat(cleanParts[6].replace(',', '.')) : null;
+      flasketype = cleanParts[7]?.trim() || '75 cl';
+      indkøbspris = parseFloat((cleanParts[8] || '0').replace(',', '.')) || 0;
+      salgspris = cleanParts[9]?.trim() ? parseFloat(cleanParts[9].replace(',', '.')) : null;
+      antalFlasker = parseInt((cleanParts[10] || '0').replace(',', '.')) || 0;
+      lagerplacering = cleanParts[11]?.trim() || '';
+      noter = cleanParts[15]?.trim() || null;
+      varenummer = null;
+      minimumBeholdning = 6;
+      billede = '';
+    } else {
+      // Nye format
+      varenummer = varenummerIdx >= 0 ? cleanParts[varenummerIdx]?.trim() || null : null;
+      navn = vinnavnIdx >= 0 ? cleanParts[vinnavnIdx]?.trim() : (cleanParts[1]?.trim() || '');
+      producent = producentIdx >= 0 ? cleanParts[producentIdx]?.trim() : '';
+      land = landIdx >= 0 ? cleanParts[landIdx]?.trim() : '';
+      region = regionIdx >= 0 ? (cleanParts[regionIdx]?.trim() || null) : null;
+      årgang = årgangIdx >= 0 && cleanParts[årgangIdx]?.trim() ? parseInt(cleanParts[årgangIdx]) : null;
+      druetype = druetypeIdx >= 0 ? (cleanParts[druetypeIdx]?.trim() || null) : null;
+      alkoholprocent = alkoholIdx >= 0 && cleanParts[alkoholIdx]?.trim() ? parseFloat(cleanParts[alkoholIdx].replace(',', '.')) : null;
+      flasketype = flasketypeIdx >= 0 ? (cleanParts[flasketypeIdx]?.trim() || '75 cl') : '75 cl';
+      indkøbspris = indkøbsprisIdx >= 0 ? parseFloat((cleanParts[indkøbsprisIdx] || '0').replace(',', '.')) || 0 : 0;
+      salgspris = salgsprisIdx >= 0 && cleanParts[salgsprisIdx]?.trim() ? parseFloat(cleanParts[salgsprisIdx].replace(',', '.')) : null;
+      antalFlasker = antalIdx >= 0 ? parseInt((cleanParts[antalIdx] || '0').replace(',', '.')) || 0 : 0;
+      minimumBeholdning = minimumBeholdningIdx >= 0 ? parseInt((cleanParts[minimumBeholdningIdx] || '6').replace(',', '.')) || 6 : 6;
+      lagerplacering = placeringIdx >= 0 ? cleanParts[placeringIdx]?.trim() : '';
+      noter = noterIdx >= 0 ? (cleanParts[noterIdx]?.trim() || null) : null;
+      billede = billedeIdx >= 0 ? (cleanParts[billedeIdx]?.trim() || '') : '';
+    }
+    
     if(!navn) return;
     
-    const producent = cleanParts[1]?.trim() || '';
-    const land = cleanParts[2]?.trim() || '';
-    const region = cleanParts[3]?.trim() || null;
-    const årgang = cleanParts[4]?.trim() ? parseInt(cleanParts[4]) : null;
-    const druetype = cleanParts[5]?.trim() || null;
-    const alkoholprocent = cleanParts[6]?.trim() ? parseFloat(cleanParts[6].replace(',', '.')) : null;
-    const flasketype = cleanParts[7]?.trim() || '75 cl';
-    const indkøbsprisStr = (cleanParts[8] || '0').replace(',', '.');
-    const indkøbspris = parseFloat(indkøbsprisStr) || 0;
-    const salgsprisStr = cleanParts[9]?.trim() || '';
-    const salgspris = salgsprisStr ? parseFloat(salgsprisStr.replace(',', '.')) : null;
-    const antalFlaskerStr = (cleanParts[10] || '0').replace(',', '.');
-    const antalFlasker = parseInt(antalFlaskerStr) || 0;
-    const lagerplacering = cleanParts[11]?.trim() || '';
-    const reol = cleanParts[12]?.trim() || null;
-    const hylle = cleanParts[13]?.trim() || null;
-    const raekkefoelgeStr = cleanParts[14]?.trim() || '0';
-    const raekkefoelge = parseInt(raekkefoelgeStr) || 0;
-    const noter = cleanParts[15]?.trim() || null;
-    
-    fileVine.push({ navn, producent, land, region, årgang, druetype, alkoholprocent, flasketype, indkøbspris, salgspris, antal_flasker: antalFlasker, lagerplacering, reolNr: reol, hylleNr: hylle, raekkefoelge, noter });
+    fileVine.push({ 
+      varenummer, 
+      navn, 
+      producent, 
+      land, 
+      region, 
+      årgang, 
+      druetype, 
+      alkoholprocent, 
+      flasketype, 
+      indkøbspris, 
+      salgspris, 
+      antal_flasker: antalFlasker, 
+      minimumBeholdning,
+      lagerplacering, 
+      noter,
+      billede
+    });
   });
   
   if(fileVine.length === 0){
@@ -12851,6 +12927,7 @@ function processVinlagerImportText(text, importType = 'add') {
     fileVine.forEach(v => {
       const vin = {
         id: genVinId(),
+        varenummer: v.varenummer || null,
         navn: v.navn,
         producent: v.producent,
         land: v.land,
@@ -12862,11 +12939,13 @@ function processVinlagerImportText(text, importType = 'add') {
         indkøbspris: v.indkøbspris,
         salgspris: v.salgspris,
         antal_flasker: v.antal_flasker,
+        minimumBeholdning: v.minimumBeholdning || 6,
         lagerplacering: v.lagerplacering,
         reolNr: v.reolNr || null,
         hylleNr: v.hylleNr || null,
         raekkefoelge: v.raekkefoelge || 0,
         noter: v.noter,
+        billede: v.billede || '',
         oprettet_dato: new Date().toISOString(),
         sidst_opdateret: new Date().toISOString()
       };
@@ -12886,6 +12965,7 @@ function processVinlagerImportText(text, importType = 'add') {
       if(!exists){
         const vin = {
           id: genVinId(),
+          varenummer: v.varenummer || null,
           navn: v.navn,
           producent: v.producent,
           land: v.land,
@@ -12897,11 +12977,13 @@ function processVinlagerImportText(text, importType = 'add') {
           indkøbspris: v.indkøbspris,
           salgspris: v.salgspris,
           antal_flasker: v.antal_flasker,
+          minimumBeholdning: v.minimumBeholdning || 6,
           lagerplacering: v.lagerplacering,
           reolNr: v.reolNr || null,
           hylleNr: v.hylleNr || null,
           raekkefoelge: v.raekkefoelge || 0,
           noter: v.noter,
+          billede: v.billede || '',
           oprettet_dato: new Date().toISOString(),
           sidst_opdateret: new Date().toISOString()
         };
@@ -12931,15 +13013,19 @@ function processVinlagerImportText(text, importType = 'add') {
         existing.indkøbspris = v.indkøbspris || existing.indkøbspris;
         existing.salgspris = v.salgspris !== undefined ? v.salgspris : existing.salgspris;
         existing.lagerplacering = v.lagerplacering || existing.lagerplacering;
+        existing.varenummer = v.varenummer !== undefined ? v.varenummer : existing.varenummer;
+        existing.minimumBeholdning = v.minimumBeholdning !== undefined ? v.minimumBeholdning : existing.minimumBeholdning;
         existing.reolNr = v.reolNr !== undefined ? v.reolNr : existing.reolNr;
         existing.hylleNr = v.hylleNr !== undefined ? v.hylleNr : existing.hylleNr;
         existing.raekkefoelge = v.raekkefoelge !== undefined ? v.raekkefoelge : existing.raekkefoelge;
         existing.noter = v.noter !== undefined ? v.noter : existing.noter;
+        existing.billede = v.billede !== undefined ? v.billede : existing.billede;
         existing.sidst_opdateret = new Date().toISOString();
         updated++;
       } else {
         const vin = {
           id: genVinId(),
+          varenummer: v.varenummer || null,
           navn: v.navn,
           producent: v.producent,
           land: v.land,
@@ -12951,11 +13037,13 @@ function processVinlagerImportText(text, importType = 'add') {
           indkøbspris: v.indkøbspris,
           salgspris: v.salgspris,
           antal_flasker: v.antal_flasker,
+          minimumBeholdning: v.minimumBeholdning || 6,
           lagerplacering: v.lagerplacering,
           reolNr: v.reolNr || null,
           hylleNr: v.hylleNr || null,
           raekkefoelge: v.raekkefoelge || 0,
           noter: v.noter,
+          billede: v.billede || '',
           oprettet_dato: new Date().toISOString(),
           sidst_opdateret: new Date().toISOString()
         };
@@ -13184,32 +13272,44 @@ function renderVinMasterTable() {
     <table style="width:100%; border-collapse:collapse;">
       <thead>
         <tr style="background:#8B0000; color:white;">
-          <th style="padding:12px; text-align:left;">Navn</th>
+          <th style="padding:12px; text-align:center;">Billede</th>
+          <th style="padding:12px; text-align:left;">Vinnavn</th>
           <th style="padding:12px; text-align:left;">Producent</th>
           <th style="padding:12px; text-align:left;">Land</th>
+          <th style="padding:12px; text-align:left;">Region</th>
           <th style="padding:12px; text-align:left;">Årgang</th>
-          <th style="padding:12px; text-align:center;">Antal</th>
+          <th style="padding:12px; text-align:left;">Druetype</th>
+          <th style="padding:12px; text-align:left;">Flasketype</th>
           <th style="padding:12px; text-align:right;">Indkøbspris</th>
+          <th style="padding:12px; text-align:center;">Antal</th>
+          <th style="padding:12px; text-align:center;">Minimum beholdning</th>
           <th style="padding:12px; text-align:left;">Placering</th>
-          <th style="padding:12px; text-align:left;">Reol</th>
-          <th style="padding:12px; text-align:left;">Hylle</th>
           <th style="padding:12px; text-align:center;">Handlinger</th>
         </tr>
       </thead>
       <tbody>
         ${filtered.map(vin => {
-          const lavLager = vin.antal_flasker < 6;
+          const lavLager = vin.antal_flasker < (vin.minimumBeholdning || 6);
+          const billedeUrl = vin.billede || '';
           return `
             <tr style="border-bottom:1px solid #eee; ${lavLager ? 'background:#fff3cd;' : ''}">
+              <td style="padding:12px; text-align:center;">
+                ${billedeUrl ? 
+                  `<img src="${billedeUrl}" alt="${vin.navn}" style="width:60px; height:60px; object-fit:cover; border-radius:4px; cursor:pointer;" onclick="editVinBillede('${vin.id}')" title="Klik for at ændre billede">` : 
+                  `<div style="width:60px; height:60px; background:#f0f0f0; border:1px dashed #ccc; border-radius:4px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#999;" onclick="editVinBillede('${vin.id}')" title="Klik for at tilføje billede">+ Billede</div>`
+                }
+              </td>
               <td style="padding:12px;"><strong>${vin.navn}</strong>${lavLager ? ' <span style="color:#dc3545;">⚠️</span>' : ''}</td>
               <td style="padding:12px;">${vin.producent}</td>
               <td style="padding:12px;">${vin.land}</td>
+              <td style="padding:12px;">${vin.region || '-'}</td>
               <td style="padding:12px;">${vin.årgang || '-'}</td>
-              <td style="padding:12px; text-align:center;"><strong>${vin.antal_flasker}</strong></td>
+              <td style="padding:12px;">${vin.druetype || '-'}</td>
+              <td style="padding:12px;">${vin.flasketype || '75 cl'}</td>
               <td style="padding:12px; text-align:right;">${vin.indkøbspris.toFixed(2).replace('.', ',')} kr</td>
+              <td style="padding:12px; text-align:center;"><strong>${vin.antal_flasker}</strong></td>
+              <td style="padding:12px; text-align:center;">${vin.minimumBeholdning || 6}</td>
               <td style="padding:12px;">${vin.lagerplacering || '-'}</td>
-              <td style="padding:12px;">${vin.reolNr || '-'}</td>
-              <td style="padding:12px;">${vin.hylleNr || '-'}</td>
               <td style="padding:12px; text-align:center;">
                 <button onclick="editVin('${vin.id}')" style="background:#007bff; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-right:5px;">✏️</button>
                 <button onclick="updateVinAntal('${vin.id}')" style="background:#28a745; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-right:5px;">📊</button>
