@@ -2321,30 +2321,6 @@ function updateLicenseStatusDisplay(){
     installPathDisplay.value = getInstallationPath();
   }
   
-  // Auto-load license details if they exist
-  setTimeout(() => {
-    const saved = localStorage.getItem('køkkenlager_license_details');
-    if (saved) {
-      try {
-        const licenseDetails = JSON.parse(saved);
-        if (document.getElementById('licenseName')) {
-          document.getElementById('licenseName').value = licenseDetails.name || '';
-          document.getElementById('licenseEmail').value = licenseDetails.email || '';
-          document.getElementById('licenseAddress').value = licenseDetails.address || '';
-          document.getElementById('licensePostalCode').value = licenseDetails.postalCode || '';
-          document.getElementById('licenseCity').value = licenseDetails.city || '';
-          document.getElementById('licensePhone').value = licenseDetails.phone || '';
-          document.getElementById('licenseIdNumber').value = licenseDetails.idNumber || '';
-          document.getElementById('licenseCode').value = licenseDetails.licenseCode || '';
-          document.getElementById('licenseValidFrom').value = licenseDetails.validFrom || '';
-          document.getElementById('licenseValidTo').value = licenseDetails.validTo || '';
-        }
-      } catch(err) {
-        console.error('Fejl ved auto-indlæsning af licens detaljer:', err);
-      }
-    }
-  }, 100);
-  
   const licenseStatus = checkLicense();
   if(licenseStatus.valid){
     const statusHtml = `
