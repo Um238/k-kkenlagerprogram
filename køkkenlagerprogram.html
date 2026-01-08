@@ -506,7 +506,7 @@ a:hover{color:#45a049;text-decoration:none}
     <button class="secondary" onclick="showPage('licens'); updateLicenseStatusDisplay();" style="background:rgba(255,255,255,0.2); color:#fff; border-color:rgba(255,255,255,0.3);">🔑 Licens</button>
     <button class="secondary" onclick="logout()">🚪 Log ud</button>
     </div>
-    <div id="versionDisplay" style="color:#fff; font-size:16px; font-weight:700; text-align:right; padding:8px 12px; background:rgba(255,255,255,0.25); border-radius:6px; border:1px solid rgba(255,255,255,0.35); box-shadow:0 4px 12px rgba(0,0,0,0.15); font-family:'Segoe UI', sans-serif; line-height:1.5;">v4.55<br><span style="font-size:12px; opacity:0.95; letter-spacing:0.2px;">2026-01-08 07:27</span></div>
+    <div id="versionDisplay" style="color:#fff; font-size:16px; font-weight:700; text-align:right; padding:8px 12px; background:rgba(255,255,255,0.25); border-radius:6px; border:1px solid rgba(255,255,255,0.35); box-shadow:0 4px 12px rgba(0,0,0,0.15); font-family:'Segoe UI', sans-serif; line-height:1.5;">v4.56<br><span style="font-size:12px; opacity:0.95; letter-spacing:0.2px;">2026-01-08 08:45</span></div>
   </div>
 </header>
 
@@ -521,7 +521,7 @@ a:hover{color:#45a049;text-decoration:none}
   <span class="menu-item" data-target="labels" onclick="navClick(event)">🏷️ Labels</span>
   <span class="menu-item" data-target="leverandor" onclick="navClick(event)">🚚 Leverandører</span>
   <span class="menu-item" data-target="systemOpsaetning" onclick="navClick(event)">⚙️ Opsætning</span>
-  <span class="menu-item" data-target="vinlager" onclick="navClick(event)">🍷 Vinlager</span>
+  <span class="menu-item" data-target="vinlager" onclick="window.location.href='vinlager.html'">🍷 Vinlager</span>
 </nav>
 
 <!-- =========================
@@ -1538,11 +1538,122 @@ function hideLoginModal(){
   }
 }
 
-function logout(){
+async function logout(){
+  // Show backup dialog before logout
+  const shouldBackup = confirm('💾 Vil du lave en backup før du logger ud?\n\nDette sikrer at du ikke mister nogen oplysninger.\n\nKlik "OK" for at lave backup, eller "Annuller" for at logge ud uden backup.');
+  
+  if (shouldBackup) {
+    try {
+      await performLogoutBackup();
+    } catch(err) {
+      console.error('Fejl ved logout backup:', err);
+      const continueLogout = confirm('⚠️ Backup fejlede. Vil du alligevel logge ud?');
+      if (!continueLogout) return;
+    }
+  }
+  
+  // Confirm logout
   if(!confirm('Er du sikker på at du vil logge ud?')) return;
+  
   isLoggedIn = false;
   appInitialized = false;
   showLoginModal();
+}
+
+// Perform backup before logout
+async function performLogoutBackup() {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const storageKey = 'køkkenlager_data';
+      const dataStr = localStorage.getItem(storageKey);
+      
+      if (!dataStr) {
+        alert('⚠️ Ingen data fundet at backupe.');
+        resolve();
+        return;
+      }
+      
+      const data = JSON.parse(dataStr);
+      
+    // Create complete backup including login and license
+    const completeBackup = {
+      ...data,
+      // Include login data
+      loginData: {
+        passwordHash: localStorage.getItem('køkkenlager_password'),
+        username: localStorage.getItem('køkkenlager_username'),
+        recoveryEmail: localStorage.getItem('køkkenlager_recovery_email')
+      },
+      // Include license data
+      licenseData: localStorage.getItem('app_license'),
+      // Include installation ID
+      installationId: getInstallationId(),
+      // Include vinlager data (if exists)
+      vinlagerData: data.vinlagerData || null,
+      vinlagerLokationer: data.vinlagerLokationer || [],
+      // Backup metadata
+      backupType: 'complete',
+      backupVersion: APP_VERSION,
+      backupDate: new Date().toISOString(),
+      backupDescription: `Logout backup - ${new Date().toLocaleString('da-DK')}`
+    };
+      
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+      const defaultFilename = `Kokkenlager_Logout_Backup_${timestamp}.json`;
+      const jsonStr = JSON.stringify(completeBackup, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+      
+      // Try to use File System Access API (Chrome/Edge) for folder selection
+      if ('showSaveFilePicker' in window) {
+        try {
+          const fileHandle = await window.showSaveFilePicker({
+            suggestedName: defaultFilename,
+            types: [{
+              description: 'JSON Backup Fil',
+              accept: { 'application/json': ['.json'] }
+            }]
+          });
+          
+          const writable = await fileHandle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          
+          alert(`✅ Backup gemt før logout!\n\n📄 Filnavn: ${fileHandle.name}\n\n💾 Filen er gemt hvor du valgte.`);
+          resolve();
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            console.error('Fejl ved filvælger:', err);
+            // Fallback to normal download
+            downloadLogoutBackupFallback(blob, defaultFilename, resolve, reject);
+          } else {
+            // User cancelled
+            reject(new Error('Backup annulleret'));
+          }
+        }
+      } else {
+        // Fallback for browsers without File System Access API
+        downloadLogoutBackupFallback(blob, defaultFilename, resolve, reject);
+      }
+    } catch(err) {
+      reject(err);
+    }
+  });
+}
+
+// Fallback download method for logout backup
+function downloadLogoutBackupFallback(blob, filename, resolve, reject) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  
+  alert(`✅ Backup downloadet før logout!\n\n📄 Filnavn: ${filename}\n\n💾 Din browser vil spørge hvor filen skal gemmes. Vælg ønsket mappe.`);
+  resolve();
 }
 
 function showLoginModal(){
@@ -2210,6 +2321,30 @@ function updateLicenseStatusDisplay(){
     installPathDisplay.value = getInstallationPath();
   }
   
+  // Auto-load license details if they exist
+  setTimeout(() => {
+    const saved = localStorage.getItem('køkkenlager_license_details');
+    if (saved) {
+      try {
+        const licenseDetails = JSON.parse(saved);
+        if (document.getElementById('licenseName')) {
+          document.getElementById('licenseName').value = licenseDetails.name || '';
+          document.getElementById('licenseEmail').value = licenseDetails.email || '';
+          document.getElementById('licenseAddress').value = licenseDetails.address || '';
+          document.getElementById('licensePostalCode').value = licenseDetails.postalCode || '';
+          document.getElementById('licenseCity').value = licenseDetails.city || '';
+          document.getElementById('licensePhone').value = licenseDetails.phone || '';
+          document.getElementById('licenseIdNumber').value = licenseDetails.idNumber || '';
+          document.getElementById('licenseCode').value = licenseDetails.licenseCode || '';
+          document.getElementById('licenseValidFrom').value = licenseDetails.validFrom || '';
+          document.getElementById('licenseValidTo').value = licenseDetails.validTo || '';
+        }
+      } catch(err) {
+        console.error('Fejl ved auto-indlæsning af licens detaljer:', err);
+      }
+    }
+  }, 100);
+  
   const licenseStatus = checkLicense();
   if(licenseStatus.valid){
     const statusHtml = `
@@ -2317,9 +2452,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.55';
+const APP_VERSION = '4.56';
 const BUILD_DATE = '2026-01-08';
-const BUILD_TIME = '07:27';
+const BUILD_TIME = '08:45';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -4105,7 +4240,7 @@ function confirmFinishSession(){
       const linjetotal = antal * pris; 
       grandTotal += linjetotal; 
       const detailItem = { vareId: vid, navn, maaleenhed, pris, antal, linjetotal, placering: loc }; 
-      if(v && v.reolNr) detailItem.reolNr = v.reolNr;
+      if(v && v.reolNr) detailItem.reolNr = v.reolNr; 
       if(v && v.hylleNr) detailItem.hylleNr = v.hylleNr;
       if(v && v.varenummer) detailItem.varenummer = v.varenummer; 
       if(v && v.hylleNr) detailItem.hylleNr = v.hylleNr; 
@@ -10736,6 +10871,9 @@ async function performFullBackup(method) {
       licenseData: localStorage.getItem('app_license'),
       // Include installation ID
       installationId: getInstallationId(),
+      // Include vinlager data (if exists)
+      vinlagerData: data.vinlagerData || null,
+      vinlagerLokationer: data.vinlagerLokationer || [],
       // Backup metadata
       backupType: 'complete',
       backupVersion: APP_VERSION,
@@ -11078,6 +11216,129 @@ function downloadHelperProgramFallback(blob) {
   closeHelperInstallDialog();
   
   alert(`✅ Hjælpeprogram downloadet!\n\n📄 Filnavn: gendan-data-hjælper.html\n\n💾 Din browser vil spørge hvor filen skal gemmes. Vælg ønsket mappe.\n\n💡 Husk at oprette en genvej på skrivebordet!`);
+}
+
+/* ================================
+   [JS 19] LICENSE DETAILS MANAGEMENT
+   ================================ */
+// Save license details
+function saveLicenseDetails() {
+  try {
+    const licenseDetails = {
+      name: document.getElementById('licenseName').value.trim(),
+      email: document.getElementById('licenseEmail').value.trim(),
+      address: document.getElementById('licenseAddress').value.trim(),
+      postalCode: document.getElementById('licensePostalCode').value.trim(),
+      city: document.getElementById('licenseCity').value.trim(),
+      phone: document.getElementById('licensePhone').value.trim(),
+      idNumber: document.getElementById('licenseIdNumber').value.trim(),
+      licenseCode: document.getElementById('licenseCode').value.trim(),
+      validFrom: document.getElementById('licenseValidFrom').value,
+      validTo: document.getElementById('licenseValidTo').value
+    };
+    
+    // Validate required fields
+    if (!licenseDetails.name || !licenseDetails.email) {
+      alert('⚠️ Navn og Email er påkrævet felter.');
+      return;
+    }
+    
+    // Generate unique ID if empty
+    if (!licenseDetails.idNumber) {
+      licenseDetails.idNumber = 'ID-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+      document.getElementById('licenseIdNumber').value = licenseDetails.idNumber;
+    }
+    
+    // Generate unique license code if empty
+    if (!licenseDetails.licenseCode) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let code = '';
+      for (let i = 0; i < 12; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      licenseDetails.licenseCode = code;
+      document.getElementById('licenseCode').value = licenseDetails.licenseCode;
+    }
+    
+    // Validate dates
+    if (!licenseDetails.validFrom || !licenseDetails.validTo) {
+      alert('⚠️ Licens gyldig fra og til datoer er påkrævet.');
+      return;
+    }
+    
+    if (new Date(licenseDetails.validFrom) >= new Date(licenseDetails.validTo)) {
+      alert('⚠️ Licens gyldig til dato skal være efter gyldig fra dato.');
+      return;
+    }
+    
+    // Save to localStorage
+    localStorage.setItem('køkkenlager_license_details', JSON.stringify(licenseDetails));
+    
+    alert('✅ Licens detaljer gemt!');
+    
+  } catch(err) {
+    console.error('Fejl ved gem af licens detaljer:', err);
+    alert('❌ Fejl ved gem af licens detaljer: ' + err.message);
+  }
+}
+
+// Load license details
+function loadLicenseDetails() {
+  try {
+    const saved = localStorage.getItem('køkkenlager_license_details');
+    if (!saved) {
+      alert('⚠️ Ingen gemte licens detaljer fundet.');
+      return;
+    }
+    
+    const licenseDetails = JSON.parse(saved);
+    
+    document.getElementById('licenseName').value = licenseDetails.name || '';
+    document.getElementById('licenseEmail').value = licenseDetails.email || '';
+    document.getElementById('licenseAddress').value = licenseDetails.address || '';
+    document.getElementById('licensePostalCode').value = licenseDetails.postalCode || '';
+    document.getElementById('licenseCity').value = licenseDetails.city || '';
+    document.getElementById('licensePhone').value = licenseDetails.phone || '';
+    document.getElementById('licenseIdNumber').value = licenseDetails.idNumber || '';
+    document.getElementById('licenseCode').value = licenseDetails.licenseCode || '';
+    document.getElementById('licenseValidFrom').value = licenseDetails.validFrom || '';
+    document.getElementById('licenseValidTo').value = licenseDetails.validTo || '';
+    
+    alert('✅ Licens detaljer indlæst!');
+    
+  } catch(err) {
+    console.error('Fejl ved indlæsning af licens detaljer:', err);
+    alert('❌ Fejl ved indlæsning af licens detaljer: ' + err.message);
+  }
+}
+
+// Auto-load license details when license page is shown
+function updateLicenseStatusDisplay() {
+  // ... existing code ...
+  
+  // Auto-load license details if they exist
+  setTimeout(() => {
+    const saved = localStorage.getItem('køkkenlager_license_details');
+    if (saved) {
+      try {
+        const licenseDetails = JSON.parse(saved);
+        if (document.getElementById('licenseName')) {
+          document.getElementById('licenseName').value = licenseDetails.name || '';
+          document.getElementById('licenseEmail').value = licenseDetails.email || '';
+          document.getElementById('licenseAddress').value = licenseDetails.address || '';
+          document.getElementById('licensePostalCode').value = licenseDetails.postalCode || '';
+          document.getElementById('licenseCity').value = licenseDetails.city || '';
+          document.getElementById('licensePhone').value = licenseDetails.phone || '';
+          document.getElementById('licenseIdNumber').value = licenseDetails.idNumber || '';
+          document.getElementById('licenseCode').value = licenseDetails.licenseCode || '';
+          document.getElementById('licenseValidFrom').value = licenseDetails.validFrom || '';
+          document.getElementById('licenseValidTo').value = licenseDetails.validTo || '';
+        }
+      } catch(err) {
+        console.error('Fejl ved auto-indlæsning af licens detaljer:', err);
+      }
+    }
+  }, 100);
 }
 
 /* =============
