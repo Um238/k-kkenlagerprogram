@@ -506,7 +506,7 @@ a:hover{color:#45a049;text-decoration:none}
     <button class="secondary" onclick="showPage('licens'); updateLicenseStatusDisplay();" style="background:rgba(255,255,255,0.2); color:#fff; border-color:rgba(255,255,255,0.3);">🔑 Licens</button>
     <button class="secondary" onclick="logout()">🚪 Log ud</button>
     </div>
-    <div id="versionDisplay" style="color:#fff; font-size:16px; font-weight:700; text-align:right; padding:8px 12px; background:rgba(255,255,255,0.25); border-radius:6px; border:1px solid rgba(255,255,255,0.35); box-shadow:0 4px 12px rgba(0,0,0,0.15); font-family:'Segoe UI', sans-serif; line-height:1.5;">v4.54<br><span style="font-size:12px; opacity:0.95; letter-spacing:0.2px;">2026-01-08 07:05</span></div>
+    <div id="versionDisplay" style="color:#fff; font-size:16px; font-weight:700; text-align:right; padding:8px 12px; background:rgba(255,255,255,0.25); border-radius:6px; border:1px solid rgba(255,255,255,0.35); box-shadow:0 4px 12px rgba(0,0,0,0.15); font-family:'Segoe UI', sans-serif; line-height:1.5;">v4.55<br><span style="font-size:12px; opacity:0.95; letter-spacing:0.2px;">2026-01-08 07:27</span></div>
   </div>
 </header>
 
@@ -1434,6 +1434,9 @@ function attemptLogin(){
       // Track login count for automatic backup
       trackLoginCount();
       
+      // Check if helper program should be installed (first time)
+      checkAndInstallHelperProgram();
+      
       hideLoginModal();
     } else {
       console.log('Forkert brugernavn eller password');
@@ -2314,9 +2317,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.54';
+const APP_VERSION = '4.55';
 const BUILD_DATE = '2026-01-08';
-const BUILD_TIME = '07:05';
+const BUILD_TIME = '07:27';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -10915,6 +10918,166 @@ async function uploadCompleteBackupToServer(backupData) {
     console.error('Fejl ved upload af komplet backup:', err);
     alert('❌ Fejl ved upload af backup: ' + err.message);
   }
+}
+
+/* ================================
+   [JS 18] HELPER PROGRAM INSTALLATION
+   ================================ */
+// Check if helper program should be installed (first time)
+function checkAndInstallHelperProgram() {
+  try {
+    const HELPER_INSTALLED_KEY = 'køkkenlager_helper_installed';
+    const isInstalled = localStorage.getItem(HELPER_INSTALLED_KEY) === 'true';
+    
+    if (!isInstalled) {
+      // Wait 3 seconds after login to show dialog
+      setTimeout(() => {
+        showHelperInstallDialog();
+      }, 3000);
+    }
+  } catch(err) {
+    console.error('Fejl ved tjek af helper installation:', err);
+  }
+}
+
+// Show helper program installation dialog
+function showHelperInstallDialog() {
+  const modal = document.createElement('div');
+  modal.id = 'helperInstallModal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:10000;display:flex;align-items:center;justify-content:center;';
+  
+  const content = document.createElement('div');
+  content.style.cssText = 'background:white;border-radius:12px;padding:30px;max-width:700px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto;';
+  
+  content.innerHTML = `
+    <h2 style="margin-top:0;margin-bottom:16px;color:#333;font-size:24px;">📥 Installer Gendan Data Hjælper</h2>
+    <p style="margin-bottom:20px;color:#666;font-size:15px;line-height:1.6;">
+      <strong>Gendan Data Hjælper</strong> er et vigtigt værktøj der hjælper dig med at gendanne dine data, hvis du mister adgang til programmet.
+    </p>
+    <div style="background:#e3f2fd;border:2px solid #2196F3;border-radius:8px;padding:16px;margin-bottom:20px;">
+      <h3 style="margin:0 0 10px 0;color:#1976D2;font-size:16px;">Hvad gør hjælpeprogrammet?</h3>
+      <ul style="margin:0;padding-left:20px;color:#555;line-height:1.8;">
+        <li>Gendanner data fra lokale backup filer</li>
+        <li>Hjælper med at gendanne fra server backups</li>
+        <li>Lader dig lave lokale backups af hele systemet</li>
+        <li>Vigtigt værktøj i nødstilfælde</li>
+      </ul>
+    </div>
+    <div style="background:#fff3cd;border:2px solid #ffc107;border-radius:8px;padding:16px;margin-bottom:20px;">
+      <h3 style="margin:0 0 10px 0;color:#856404;font-size:16px;">📋 Installations trin:</h3>
+      <ol style="margin:0;padding-left:20px;color:#555;line-height:1.8;">
+        <li>Klik på "Download Hjælpeprogram" nedenfor</li>
+        <li>Vælg en mappe hvor du vil gemme filen (f.eks. "Køkkenlager Backup")</li>
+        <li>Gem filen som "gendan-data-hjælper.html"</li>
+        <li>Opret en genvej på skrivebordet (se instruktioner nedenfor)</li>
+      </ol>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
+      <button onclick="downloadHelperProgram()" style="background:#2196F3;color:white;padding:14px 24px;border-radius:8px;border:none;font-weight:700;cursor:pointer;font-size:16px;">
+        📥 Download Hjælpeprogram
+      </button>
+      <button onclick="closeHelperInstallDialog()" style="background:#6c757d;color:white;padding:10px 20px;border-radius:8px;border:none;font-weight:700;cursor:pointer;">
+        Spring over (ikke anbefalet)
+      </button>
+    </div>
+    <div style="background:#f9f9f9;border:1px solid #ddd;border-radius:8px;padding:16px;margin-top:20px;">
+      <h3 style="margin:0 0 10px 0;color:#333;font-size:16px;">💡 Sådan opretter du en genvej på skrivebordet:</h3>
+      <ol style="margin:0;padding-left:20px;color:#555;line-height:1.8;font-size:14px;">
+        <li>Find den gemte fil "gendan-data-hjælper.html" i Windows Stifinder</li>
+        <li>Højreklik på filen</li>
+        <li>Vælg "Send til" → "Skrivebord (opret genvej)"</li>
+        <li>Genvejen oprettes automatisk på dit skrivebord</li>
+      </ol>
+    </div>
+  `;
+  
+  modal.appendChild(content);
+  document.body.appendChild(modal);
+  
+  // Close on outside click
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) {
+      closeHelperInstallDialog();
+    }
+  });
+}
+
+// Close helper install dialog
+function closeHelperInstallDialog() {
+  const modal = document.getElementById('helperInstallModal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+// Download helper program
+async function downloadHelperProgram() {
+  try {
+    // Fetch the helper program file
+    const response = await fetch('gendan-data-hjælper.html');
+    if (!response.ok) {
+      throw new Error('Kunne ikke hente hjælpeprogrammet. Filen skal være i samme mappe som hovedprogrammet.');
+    }
+    
+    const htmlContent = await response.text();
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    
+    // Try to use File System Access API (Chrome/Edge) for folder selection
+    if ('showSaveFilePicker' in window) {
+      try {
+        const fileHandle = await window.showSaveFilePicker({
+          suggestedName: 'gendan-data-hjælper.html',
+          types: [{
+            description: 'HTML Fil',
+            accept: { 'text/html': ['.html'] }
+          }]
+        });
+        
+        const writable = await fileHandle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        
+        // Mark as installed
+        localStorage.setItem('køkkenlager_helper_installed', 'true');
+        
+        closeHelperInstallDialog();
+        
+        alert(`✅ Hjælpeprogram downloadet!\n\n📄 Filnavn: ${fileHandle.name}\n\n💾 Filen er gemt hvor du valgte.\n\n💡 Husk at oprette en genvej på skrivebordet!`);
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error('Fejl ved filvælger:', err);
+          // Fallback to normal download
+          downloadHelperProgramFallback(blob);
+        }
+      }
+    } else {
+      // Fallback for browsers without File System Access API
+      downloadHelperProgramFallback(blob);
+    }
+  } catch(err) {
+    console.error('Fejl ved download af hjælpeprogram:', err);
+    alert('❌ Fejl ved download: ' + err.message + '\n\n💡 Sørg for at filen "gendan-data-hjælper.html" er i samme mappe som hovedprogrammet.');
+  }
+}
+
+// Fallback download method
+function downloadHelperProgramFallback(blob) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'gendan-data-hjælper.html';
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  
+  // Mark as installed
+  localStorage.setItem('køkkenlager_helper_installed', 'true');
+  
+  closeHelperInstallDialog();
+  
+  alert(`✅ Hjælpeprogram downloadet!\n\n📄 Filnavn: gendan-data-hjælper.html\n\n💾 Din browser vil spørge hvor filen skal gemmes. Vælg ønsket mappe.\n\n💡 Husk at oprette en genvej på skrivebordet!`);
 }
 
 /* =============
