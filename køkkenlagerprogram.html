@@ -799,10 +799,15 @@ a:hover{color:#45a049;text-decoration:none}
                   <option value="Asien">🌏 Asien</option>
                   <option value="Oceanien">🌏 Oceanien</option>
                 </select>
-                <select id="newVinLand" required>
+                <select id="newVinLand" required onchange="updateVinRegionSelect()">
                   <option value="">Vælg land</option>
                 </select>
-                <input type="text" id="newVinRegion" placeholder="Region" />
+                <label class="small" style="margin-top:8px;">Region</label>
+                <select id="newVinRegion">
+                  <option value="">Vælg region (eller indtast manuelt)</option>
+                </select>
+                <input type="text" id="newVinRegionManual" placeholder="Eller indtast region manuelt" style="margin-top:4px; display:none;" />
+                <button type="button" onclick="toggleVinRegionManual()" style="margin-top:4px; padding:4px 8px; font-size:11px; background:#f0f0f0; border:1px solid #ddd; border-radius:4px; cursor:pointer;">✏️ Indtast manuelt</button>
                 <input type="number" id="newVinÅrgang" placeholder="Årgang" min="1900" max="2100" />
                 <label class="small">Druetype</label>
                 <select id="newVinDruetype">
@@ -2640,9 +2645,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.62';
+const APP_VERSION = '4.63';
 const BUILD_DATE = '2026-01-08';
-const BUILD_TIME = '15:15';
+const BUILD_TIME = '15:35';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -11560,6 +11565,90 @@ const vinlagerDistrikter = {
   ]
 };
 
+// Vinregioner for hvert land
+const vinlagerRegioner = {
+  'Frankrig': [
+    'Bordeaux', 'Bourgogne', 'Champagne', 'Alsace', 'Loire', 'Rhône', 'Provence',
+    'Languedoc-Roussillon', 'Sud-Ouest', 'Jura', 'Savoie', 'Corse (Korsika)'
+  ],
+  'Italien': [
+    'Piemonte', 'Valle d\'Aosta', 'Lombardiet', 'Veneto', 'Friuli-Venezia Giulia',
+    'Trentino-Alto Adige', 'Ligurien', 'Emilia-Romagna', 'Toscana', 'Umbrien',
+    'Marche', 'Lazio', 'Abruzzo', 'Molise', 'Campania', 'Basilicata', 'Puglia',
+    'Calabria', 'Sicilien', 'Sardinien'
+  ],
+  'Spanien': [
+    'Rioja', 'Ribera del Duero', 'Rueda', 'Toro', 'Priorat', 'Montsant', 'Penedès',
+    'Cava', 'Catalunya', 'Rías Baixas', 'Ribeiro', 'Valdeorras', 'Bierzo',
+    'Jumilla', 'Yecla', 'Alicante', 'La Mancha', 'Utiel-Requena', 'Valencia',
+    'Jerez', 'Málaga', 'Extremadura', 'Aragón', 'Navarra'
+  ],
+  'Tyskland': [
+    'Ahr', 'Mosel', 'Mittelrhein', 'Nahe', 'Rheingau', 'Rheinhessen', 'Pfalz',
+    'Baden', 'Württemberg', 'Franken', 'Saale-Unstrut', 'Sachsen', 'Hessische Bergstraße'
+  ],
+  'Østrig': [
+    'Niederösterreich', 'Burgenland', 'Steiermark', 'Wien'
+  ],
+  'Portugal': [
+    'Douro', 'Vinho Verde', 'Dão', 'Bairrada', 'Lisboa', 'Tejo', 'Alentejo',
+    'Setúbal', 'Algarve', 'Madeira', 'Azorerne'
+  ],
+  'Grækenland': [
+    'Makedonien', 'Thessalien', 'Epirus', 'Peloponnes', 'Attika', 'Centralgrækenland',
+    'Kreta', 'Ægæiske Øer', 'Ioniske Øer'
+  ],
+  'Ungarn': [
+    'Tokaj', 'Eger', 'Villány', 'Szekszárd', 'Somló', 'Balaton'
+  ],
+  'Schweiz': [
+    'Valais', 'Vaud', 'Genève', 'Ticino', 'Tysk Schweiz'
+  ],
+  'Georgien': [
+    'Kakheti', 'Kartli', 'Imereti', 'Racha-Lechkhumi', 'Samegrelo'
+  ],
+  'USA': [
+    'Californien', 'Napa Valley', 'Sonoma', 'Central Coast', 'Central Valley',
+    'Oregon', 'Washington', 'New York', 'Virginia', 'Texas'
+  ],
+  'Canada': [
+    'Ontario', 'British Columbia', 'Nova Scotia', 'Québec'
+  ],
+  'Argentina': [
+    'Mendoza', 'San Juan', 'La Rioja', 'Salta', 'Catamarca', 'Neuquén', 'Río Negro'
+  ],
+  'Chile': [
+    'Atacama', 'Coquimbo', 'Aconcagua', 'Casablanca', 'Maipo', 'Rapel', 'Curicó',
+    'Maule', 'Itata', 'Bío-Bío'
+  ],
+  'Brasilien': [
+    'Serra Gaúcha', 'Campanha', 'Vale dos Vinhedos'
+  ],
+  'Uruguay': [
+    'Canelones', 'Maldonado', 'Colonia'
+  ],
+  'Sydafrika': [
+    'Western Cape', 'Stellenbosch', 'Paarl', 'Swartland', 'Franschhoek',
+    'Walker Bay', 'Northern Cape'
+  ],
+  'Marokko': [
+    'Meknès', 'Benslimane', 'Zenata'
+  ],
+  'Australien': [
+    'Barossa Valley', 'McLaren Vale', 'Clare Valley', 'Hunter Valley', 'Yarra Valley',
+    'Margaret River', 'Coonawarra'
+  ],
+  'New Zealand': [
+    'Marlborough', 'Hawke\'s Bay', 'Central Otago', 'Martinborough', 'Gisborne', 'Nelson'
+  ],
+  'Japan': [
+    'Yamanashi', 'Nagano', 'Hokkaido'
+  ],
+  'Kina': [
+    'Ningxia', 'Xinjiang', 'Shandong', 'Hebei'
+  ]
+};
+
 // Render vindistrikter med dropdown
 function renderVinlagerDistrikter() {
   const container = document.getElementById('vinlagerDistrikter');
@@ -11704,7 +11793,11 @@ function showAddVinModal(vinId = null) {
           </div>
           <div>
             <label><strong>Region</strong></label>
-            <input type="text" id="vinRegion" value="${vin ? vin.region || '' : ''}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+            <select id="vinRegion" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+              <option value="">Vælg region (eller indtast manuelt)</option>
+            </select>
+            <input type="text" id="vinRegionManual" value="${vin && vin.region && (!vin.land || !vinlagerRegioner[vin.land] || !vinlagerRegioner[vin.land].includes(vin.region)) ? vin.region : ''}" placeholder="Eller indtast region manuelt" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; margin-top:4px; display:none;" />
+            <button type="button" onclick="toggleVinRegionManualModal()" style="margin-top:4px; padding:4px 8px; font-size:11px; background:#f0f0f0; border:1px solid #ddd; border-radius:4px; cursor:pointer;">✏️ Indtast manuelt</button>
           </div>
           <div>
             <label><strong>Årgang</strong></label>
@@ -11820,6 +11913,24 @@ function showAddVinModal(vinId = null) {
         const landSelect = document.getElementById('vinLand');
         if (landSelect) {
           landSelect.value = vin.land;
+          updateVinRegionSelectModal();
+          const regionSelect = document.getElementById('vinRegion');
+          const regionManual = document.getElementById('vinRegionManual');
+          if (regionSelect && vin.region) {
+            // Check if region is in the list
+            const regioner = vinlagerRegioner[vin.land] || [];
+            if (regioner.includes(vin.region)) {
+              regionSelect.value = vin.region;
+              if (regionManual) regionManual.style.display = 'none';
+            } else {
+              // Use manual input for custom regions
+              if (regionManual) {
+                regionManual.value = vin.region;
+                regionManual.style.display = 'block';
+                regionSelect.style.display = 'none';
+              }
+            }
+          }
         }
       }
     }
@@ -11846,11 +11957,53 @@ function updateVinLandSelectModal() {
   const selectedOmrade = omradeSelect.value;
   if (!selectedOmrade) {
     landSelect.innerHTML = '<option value="">Vælg land</option>';
+    updateVinRegionSelectModal(); // Clear region when omrade is cleared
     return;
   }
   
   const lande = vinlagerDistrikter[selectedOmrade] || [];
   landSelect.innerHTML = '<option value="">Vælg land</option>' + lande.map(land => `<option value="${land}">${land}</option>`).join('');
+  updateVinRegionSelectModal(); // Clear region when omrade changes
+}
+
+// Update vin region select in modal
+function updateVinRegionSelectModal() {
+  const landSelect = document.getElementById('vinLand');
+  const regionSelect = document.getElementById('vinRegion');
+  const regionManual = document.getElementById('vinRegionManual');
+  
+  if (!landSelect || !regionSelect) return;
+  
+  const selectedLand = landSelect.value;
+  if (!selectedLand) {
+    regionSelect.innerHTML = '<option value="">Vælg region (eller indtast manuelt)</option>';
+    if (regionManual) regionManual.style.display = 'none';
+    return;
+  }
+  
+  const regioner = vinlagerRegioner[selectedLand] || [];
+  if (regioner.length > 0) {
+    regionSelect.innerHTML = '<option value="">Vælg region</option>' + regioner.map(region => `<option value="${region}">${region}</option>`).join('');
+    if (regionManual) regionManual.style.display = 'none';
+  } else {
+    regionSelect.innerHTML = '<option value="">Ingen regioner tilgængelige</option>';
+    if (regionManual) regionManual.style.display = 'block';
+  }
+}
+
+// Toggle manual region input in modal
+function toggleVinRegionManualModal() {
+  const regionSelect = document.getElementById('vinRegion');
+  const regionManual = document.getElementById('vinRegionManual');
+  if (!regionSelect || !regionManual) return;
+  
+  if (regionManual.style.display === 'none' || !regionManual.style.display) {
+    regionManual.style.display = 'block';
+    regionSelect.style.display = 'none';
+  } else {
+    regionManual.style.display = 'none';
+    regionSelect.style.display = 'block';
+  }
 }
 
 // Gem vin
@@ -11865,7 +12018,9 @@ function saveVin(event, vinId) {
     navn: document.getElementById('vinNavn').value.trim(),
     producent: document.getElementById('vinProducent').value.trim(),
     land: document.getElementById('vinLand').value.trim(),
-    region: document.getElementById('vinRegion').value.trim() || null,
+    region: (document.getElementById('vinRegionManual')?.style.display !== 'none' && document.getElementById('vinRegionManual')?.value.trim()) 
+      ? document.getElementById('vinRegionManual').value.trim() 
+      : (document.getElementById('vinRegion').value.trim() || null),
     årgang: document.getElementById('vinÅrgang').value ? parseInt(document.getElementById('vinÅrgang').value) : null,
     druetype: document.getElementById('vinDruetype').value || null,
     alkoholprocent: document.getElementById('vinAlkoholprocent').value ? parseFloat(document.getElementById('vinAlkoholprocent').value) : null,
@@ -12212,11 +12367,53 @@ function updateVinLandSelect() {
   const selectedOmrade = omradeSelect.value;
   if (!selectedOmrade) {
     landSelect.innerHTML = '<option value="">Vælg land</option>';
+    updateVinRegionSelect(); // Clear region when omrade is cleared
     return;
   }
   
   const lande = vinlagerDistrikter[selectedOmrade] || [];
   landSelect.innerHTML = '<option value="">Vælg land</option>' + lande.map(land => `<option value="${land}">${land}</option>`).join('');
+  updateVinRegionSelect(); // Clear region when omrade changes
+}
+
+// Update vin region select based on land
+function updateVinRegionSelect() {
+  const landSelect = document.getElementById('newVinLand');
+  const regionSelect = document.getElementById('newVinRegion');
+  const regionManual = document.getElementById('newVinRegionManual');
+  
+  if (!landSelect || !regionSelect) return;
+  
+  const selectedLand = landSelect.value;
+  if (!selectedLand) {
+    regionSelect.innerHTML = '<option value="">Vælg region (eller indtast manuelt)</option>';
+    if (regionManual) regionManual.style.display = 'none';
+    return;
+  }
+  
+  const regioner = vinlagerRegioner[selectedLand] || [];
+  if (regioner.length > 0) {
+    regionSelect.innerHTML = '<option value="">Vælg region</option>' + regioner.map(region => `<option value="${region}">${region}</option>`).join('');
+    if (regionManual) regionManual.style.display = 'none';
+  } else {
+    regionSelect.innerHTML = '<option value="">Ingen regioner tilgængelige</option>';
+    if (regionManual) regionManual.style.display = 'block';
+  }
+}
+
+// Toggle manual region input
+function toggleVinRegionManual() {
+  const regionSelect = document.getElementById('newVinRegion');
+  const regionManual = document.getElementById('newVinRegionManual');
+  if (!regionSelect || !regionManual) return;
+  
+  if (regionManual.style.display === 'none' || !regionManual.style.display) {
+    regionManual.style.display = 'block';
+    regionSelect.style.display = 'none';
+  } else {
+    regionManual.style.display = 'none';
+    regionSelect.style.display = 'block';
+  }
 }
 
 // Tilføj vin fra form
@@ -12239,7 +12436,9 @@ function addNewVinFromForm() {
     navn: navn,
     producent: producent,
     land: land,
-    region: document.getElementById('newVinRegion')?.value.trim() || null,
+    region: (document.getElementById('newVinRegionManual')?.style.display !== 'none' && document.getElementById('newVinRegionManual')?.value.trim()) 
+      ? document.getElementById('newVinRegionManual').value.trim() 
+      : (document.getElementById('newVinRegion')?.value.trim() || null),
     årgang: document.getElementById('newVinÅrgang')?.value ? parseInt(document.getElementById('newVinÅrgang').value) : null,
     druetype: document.getElementById('newVinDruetype')?.value || null,
     alkoholprocent: document.getElementById('newVinAlkoholprocent')?.value ? parseFloat(document.getElementById('newVinAlkoholprocent').value) : null,
@@ -12265,7 +12464,13 @@ function addNewVinFromForm() {
   document.getElementById('newVinProducent').value = '';
   document.getElementById('newVinLandOmraade').value = '';
   document.getElementById('newVinLand').innerHTML = '<option value="">Vælg land</option>';
+  document.getElementById('newVinRegion').innerHTML = '<option value="">Vælg region (eller indtast manuelt)</option>';
   document.getElementById('newVinRegion').value = '';
+  const regionManual = document.getElementById('newVinRegionManual');
+  if (regionManual) {
+    regionManual.value = '';
+    regionManual.style.display = 'none';
+  }
   document.getElementById('newVinÅrgang').value = '';
   document.getElementById('newVinDruetype').value = '';
   document.getElementById('newVinAlkoholprocent').value = '';
