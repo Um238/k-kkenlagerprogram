@@ -2670,9 +2670,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.64';
+const APP_VERSION = '4.65';
 const BUILD_DATE = '2026-01-08';
-const BUILD_TIME = '16:05';
+const BUILD_TIME = '16:15';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -12525,15 +12525,18 @@ function downloadVinlagerExcelTemplate() {
       return;
     }
     
+    // Indlæs data først for at sikre at vi har de seneste vine
+    loadAllData();
+    
     const wb = XLSX.utils.book_new();
     
     // Column order: Navn, Producent, Land, Region, Årgang, Druetype, Alkoholprocent, Flasketype, Indkøbspris, Salgspris, Antal flasker, Lagerplacering, Reol, Hylle, Rækkefølge, Noter
     const columnOrder = ['Navn', 'Producent', 'Land', 'Region', 'Årgang', 'Druetype', 'Alkoholprocent', 'Flasketype', 'Indkøbspris', 'Salgspris', 'Antal flasker', 'Lagerplacering', 'Reol', 'Hylle', 'Rækkefølge', 'Noter'];
     
-    // Lav tom skabelon (kun header række)
-    let vineData = [];
+    // Brug eksisterende vine fra vinlagerVine (hvis de findes)
+    let vineData = [...(vinlagerVine || [])];
     
-    // Konverter til Excel format (tom array = kun header)
+    // Konverter til Excel format
     const excelData = vineData.map(vin => ({
       Navn: vin.navn || vin.Navn || '',
       Producent: vin.producent || vin.Producent || '',
@@ -12979,6 +12982,10 @@ function processVinlagerImportText(text, importType = 'add') {
 
 // Når vinlager sektion vises
 function initializeVinlager() {
+  // Indlæs data først
+  loadAllData();
+  
+  // Sikr at arrays er initialiseret
   if (!vinlagerVine) vinlagerVine = [];
   if (!vinlagerHistorik) vinlagerHistorik = [];
   
@@ -13133,10 +13140,21 @@ function renderVinMasterTable() {
   const container = document.getElementById('vinMasterTableContainer');
   if (!container) return;
   
+  // Sikr at vinlagerVine er initialiseret og indlæst
+  if (!vinlagerVine) {
+    const data = loadAllData() || {};
+    vinlagerVine = data.vinlagerVine || [];
+  }
+  
   const search = (document.getElementById('vinSearchInput')?.value || '').toLowerCase();
   const filterPlacering = document.getElementById('vinMasterPlaceringFilter')?.value || '';
   const filterReol = document.getElementById('vinMasterReolFilter')?.value || '';
   const filterHylle = document.getElementById('vinMasterHylleFilter')?.value || '';
+  
+  if (!vinlagerVine || vinlagerVine.length === 0) {
+    container.innerHTML = '<p style="text-align:center; color:#666; padding:40px;">Ingen vine i systemet endnu. Importer vine via Import/Export sektionen.</p>';
+    return;
+  }
   
   let filtered = vinlagerVine.filter(vin => {
     const matchSearch = !search || 
