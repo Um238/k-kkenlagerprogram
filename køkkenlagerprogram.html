@@ -1526,8 +1526,8 @@ a:hover{color:#45a049;text-decoration:none}
 </div>
 
 <!-- Vinlager import type selection modal -->
-<div id="vinImportModal" class="modal-backdrop hidden" aria-hidden="true">
-  <div class="modal" role="dialog" aria-modal="true" style="max-width:500px;">
+<div id="vinImportModal" class="modal-backdrop hidden" aria-hidden="true" onclick="if(event.target === this) closeVinImportModal();">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:500px;" onclick="event.stopPropagation();">
     <h3>Vælg import type</h3>
     <p style="margin-bottom:16px;">Hvordan vil du importere vinlager filen?</p>
     <div style="display:flex; flex-direction:column; gap:12px;">
@@ -2679,9 +2679,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.68';
+const APP_VERSION = '4.69';
 const BUILD_DATE = '2026-01-08';
-const BUILD_TIME = '20:50';
+const BUILD_TIME = '21:00';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -8937,6 +8937,8 @@ function toggleSidebar(sidebarId){
       toggleBtn = document.getElementById('masterToggleBtn');
     } else if(sidebarId === 'settingsSidebar') {
       toggleBtn = document.getElementById('settingsToggleBtn');
+    } else if(sidebarId === 'vinAdminSidebar') {
+      toggleBtn = document.getElementById('vinAdminToggleBtn');
     }
     
     if(isCollapsed){
@@ -12844,8 +12846,49 @@ function exportVinlagerCSV() {
 // Import vinlager CSV/Excel
 async function importVinlagerCSV() {
   const f = document.getElementById('vinCsvImport')?.files[0];
-  if(!f) return alert('Vælg CSV eller Excel fil');
+  if(!f) {
+    alert('Vælg CSV eller Excel fil');
+    return;
+  }
   
+  // Vis dialog for import type valg
+  showVinImportModal(f);
+}
+
+// Show vin import modal
+let pendingVinImportFile = null;
+function showVinImportModal(file) {
+  pendingVinImportFile = file;
+  const modal = document.getElementById('vinImportModal');
+  if(modal) {
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+  }
+}
+
+// Close vin import modal
+function closeVinImportModal() {
+  const modal = document.getElementById('vinImportModal');
+  if(modal) {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+  }
+  pendingVinImportFile = null;
+}
+
+// Select vin import type
+function selectVinImportType(importType) {
+  if(!pendingVinImportFile) {
+    alert('Ingen fil valgt');
+    closeVinImportModal();
+    return;
+  }
+  
+  closeVinImportModal();
+  
+  const f = pendingVinImportFile;
   const fileName = f.name.toLowerCase();
   const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
   
@@ -12888,7 +12931,7 @@ async function importVinlagerCSV() {
         });
         
         const csvText = csvLines.join('\n');
-        processVinlagerImportText(csvText, 'add');
+        processVinlagerImportText(csvText, importType);
         
       } catch(err) {
         console.error('Fejl ved læsning af Excel fil:', err);
@@ -12906,7 +12949,7 @@ async function importVinlagerCSV() {
     const reader = new FileReader();
     reader.onload = function(e) {
       const text = e.target.result;
-      processVinlagerImportText(text, 'add');
+      processVinlagerImportText(text, importType);
     };
     reader.readAsText(f, 'UTF-8');
   }
@@ -13444,23 +13487,23 @@ function renderVinMasterTable() {
   }
   
   container.innerHTML = `
-    <div style="overflow-x:auto;">
-      <table style="width:100%; border-collapse:collapse; min-width:1400px;">
-        <thead>
+    <div style="overflow-x:auto; border:1px solid #ddd; border-radius:4px;">
+      <table style="width:100%; border-collapse:collapse; table-layout:auto;">
+        <thead style="position:sticky; top:0; z-index:10;">
           <tr style="background:#8B0000; color:white;">
-            <th style="padding:10px 8px; text-align:center; white-space:nowrap; font-size:13px;">Billede</th>
-            <th style="padding:10px 8px; text-align:left; white-space:nowrap; font-size:13px;">Vinnavn</th>
-            <th style="padding:10px 8px; text-align:left; white-space:nowrap; font-size:13px;">Producent</th>
-            <th style="padding:10px 8px; text-align:left; white-space:nowrap; font-size:13px;">Land</th>
-            <th style="padding:10px 8px; text-align:left; white-space:nowrap; font-size:13px;">Region</th>
-            <th style="padding:10px 8px; text-align:center; white-space:nowrap; font-size:13px;">Årgang</th>
-            <th style="padding:10px 8px; text-align:left; white-space:nowrap; font-size:13px;">Druetype</th>
-            <th style="padding:10px 8px; text-align:left; white-space:nowrap; font-size:13px;">Flasketype</th>
-            <th style="padding:10px 8px; text-align:right; white-space:nowrap; font-size:13px;">Indkøbspris</th>
-            <th style="padding:10px 8px; text-align:center; white-space:nowrap; font-size:13px;">Antal</th>
-            <th style="padding:10px 8px; text-align:center; white-space:nowrap; font-size:13px;">Minimum beholdning</th>
-            <th style="padding:10px 8px; text-align:left; white-space:nowrap; font-size:13px;">Placering</th>
-            <th style="padding:10px 8px; text-align:center; white-space:nowrap; font-size:13px;">Handlinger</th>
+            <th style="padding:10px 8px; text-align:center; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Billede</th>
+            <th style="padding:10px 8px; text-align:left; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Vinnavn</th>
+            <th style="padding:10px 8px; text-align:left; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Producent</th>
+            <th style="padding:10px 8px; text-align:left; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Land</th>
+            <th style="padding:10px 8px; text-align:left; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Region</th>
+            <th style="padding:10px 8px; text-align:center; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Årgang</th>
+            <th style="padding:10px 8px; text-align:left; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Druetype</th>
+            <th style="padding:10px 8px; text-align:left; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Flasketype</th>
+            <th style="padding:10px 8px; text-align:right; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Indkøbspris</th>
+            <th style="padding:10px 8px; text-align:center; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Antal</th>
+            <th style="padding:10px 8px; text-align:center; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Minimum beholdning</th>
+            <th style="padding:10px 8px; text-align:left; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Placering</th>
+            <th style="padding:10px 8px; text-align:center; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Handlinger</th>
           </tr>
         </thead>
         <tbody>
