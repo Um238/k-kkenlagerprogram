@@ -2670,9 +2670,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.66';
+const APP_VERSION = '4.67';
 const BUILD_DATE = '2026-01-08';
-const BUILD_TIME = '19:25';
+const BUILD_TIME = '20:35';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -12517,6 +12517,190 @@ function addNewVinFromForm() {
   updateVinAdminSelects();
 }
 
+// Generer demo vine (300 vine fordelt over 10 lande med europæiske vindistrikter som placering)
+function genererDemoVine(antal) {
+  const vine = [];
+  let varenummerCounter = 2000; // Start varenummer for vine (skelner fra varelager)
+  
+  // 10 lande med realistiske vine data (fokus på europæiske vindistrikter)
+  const landeData = {
+    'Frankrig': {
+      regioner: ['Bordeaux', 'Bourgogne', 'Champagne', 'Alsace', 'Loire', 'Rhône', 'Provence', 'Languedoc-Roussillon', 'Sud-Ouest', 'Jura', 'Savoie', 'Corse (Korsika)'],
+      producenter: ['Château Margaux', 'Domaine de la Romanée-Conti', 'Moët & Chandon', 'Domaine Zind-Humbrecht', 'Domaine Huet', 'Château de Beaucastel', 'Domaine Tempier', 'Château Lafite Rothschild', 'Domaine Comte Georges de Vogüé', 'Château Pétrus', 'Château Cheval Blanc', 'Domaine Armand Rousseau'],
+      druetyper: {
+        rød: ['Cabernet Sauvignon', 'Merlot', 'Pinot Noir', 'Syrah', 'Grenache', 'Cabernet Franc', 'Malbec', 'Gamay', 'Cinsault', 'Mourvèdre'],
+        hvid: ['Chardonnay', 'Sauvignon Blanc', 'Riesling', 'Chenin Blanc', 'Sémillon', 'Viognier', 'Gewürztraminer', 'Pinot Gris']
+      },
+      årgange: [2018, 2019, 2020, 2021, 2022],
+      priser: { min: 150, max: 2000 }
+    },
+    'Italien': {
+      regioner: ['Piemonte', 'Toscana', 'Veneto', 'Sicilien', 'Sardinien', 'Abruzzo', 'Campania', 'Puglia', 'Umbrien', 'Emilia-Romagna', 'Lazio', 'Marche'],
+      producenter: ['Barolo', 'Chianti Classico', 'Amarone della Valpolicella', 'Planeta', 'Argiolas', 'Montepulciano d\'Abruzzo', 'Taurasi', 'Brunello di Montalcino', 'Sassicaia', 'Ornellaia', 'Gaja', 'Antinori'],
+      druetyper: {
+        rød: ['Nebbiolo', 'Sangiovese', 'Corvina', 'Nero d\'Avola', 'Montepulciano', 'Aglianico', 'Barbera', 'Dolcetto', 'Amarone', 'Primitivo'],
+        hvid: ['Pinot Grigio', 'Vermentino', 'Greco', 'Fiano', 'Trebbiano', 'Glera']
+      },
+      årgange: [2019, 2020, 2021, 2022],
+      priser: { min: 80, max: 800 }
+    },
+    'Spanien': {
+      regioner: ['Rioja', 'Ribera del Duero', 'Priorat', 'Rías Baixas', 'Cava', 'Jerez', 'Rueda', 'Toro', 'Montsant', 'Penedès', 'Catalunya', 'Navarra'],
+      producenter: ['Marqués de Riscal', 'Vega Sicilia', 'Clos Mogador', 'Albariño de Fefiñanes', 'Freixenet', 'González Byass', 'Marqués de Cáceres', 'Bodegas Torres', 'Cune', 'La Rioja Alta'],
+      druetyper: {
+        rød: ['Tempranillo', 'Garnacha', 'Monastrell', 'Graciano', 'Mazuelo', 'Bobal', 'Carignan'],
+        hvid: ['Albariño', 'Verdejo', 'Macabeo', 'Xarel-lo', 'Parellada', 'Palomino']
+      },
+      årgange: [2018, 2019, 2020, 2021, 2022],
+      priser: { min: 60, max: 600 }
+    },
+    'Tyskland': {
+      regioner: ['Mosel', 'Rheingau', 'Rheinhessen', 'Pfalz', 'Baden', 'Franken', 'Ahr', 'Nahe', 'Mittelrhein', 'Saale-Unstrut', 'Sachsen'],
+      producenter: ['Dr. Loosen', 'Schloss Johannisberg', 'Weingut Gunderloch', 'Dr. Bürklin-Wolf', 'Weingut Dr. Heger', 'Weingut Horst Sauer', 'Joh. Jos. Prüm', 'Egon Müller'],
+      druetyper: {
+        rød: ['Spätburgunder', 'Dornfelder', 'Blauer Portugieser'],
+        hvid: ['Riesling', 'Müller-Thurgau', 'Gewürztraminer', 'Grauburgunder', 'Silvaner', 'Weißburgunder']
+      },
+      årgange: [2019, 2020, 2021, 2022],
+      priser: { min: 50, max: 400 }
+    },
+    'Portugal': {
+      regioner: ['Douro', 'Vinho Verde', 'Dão', 'Bairrada', 'Alentejo', 'Setúbal', 'Lisboa', 'Tejo', 'Algarve'],
+      producenter: ['Quinta do Noval', 'Aveleda', 'Quinta dos Carvalhais', 'Quinta das Bágeiras', 'Herdade do Esporão', 'José Maria da Fonseca', 'Dow\'s', 'Graham\'s'],
+      druetyper: {
+        rød: ['Touriga Nacional', 'Tinta Roriz', 'Baga', 'Touriga Franca', 'Alicante Bouschet'],
+        hvid: ['Alvarinho', 'Arinto', 'Encruzado', 'Fernão Pires', 'Verdelho']
+      },
+      årgange: [2018, 2019, 2020, 2021],
+      priser: { min: 40, max: 500 }
+    },
+    'USA': {
+      regioner: ['Napa Valley', 'Sonoma', 'Oregon', 'Washington', 'Central Coast'],
+      producenter: ['Opus One', 'Kendall-Jackson', 'Domaine Drouhin', 'Chateau Ste. Michelle', 'Ridge Vineyards', 'Stag\'s Leap', 'Caymus'],
+      druetyper: {
+        rød: ['Cabernet Sauvignon', 'Pinot Noir', 'Zinfandel', 'Merlot', 'Syrah'],
+        hvid: ['Chardonnay', 'Sauvignon Blanc', 'Riesling', 'Pinot Grigio']
+      },
+      årgange: [2019, 2020, 2021, 2022],
+      priser: { min: 100, max: 1500 }
+    },
+    'Chile': {
+      regioner: ['Maipo', 'Casablanca', 'Colchagua', 'Maule', 'Rapel'],
+      producenter: ['Concha y Toro', 'Santa Rita', 'Montes', 'Errazuriz', 'Casa Lapostolle', 'Cousiño Macul'],
+      druetyper: {
+        rød: ['Cabernet Sauvignon', 'Carmenère', 'Merlot', 'Pinot Noir', 'Syrah'],
+        hvid: ['Chardonnay', 'Sauvignon Blanc', 'Sémillon']
+      },
+      årgange: [2020, 2021, 2022],
+      priser: { min: 50, max: 300 }
+    },
+    'Argentina': {
+      regioner: ['Mendoza', 'Salta', 'La Rioja', 'San Juan'],
+      producenter: ['Catena Zapata', 'Bodega Norton', 'Terrazas de los Andes', 'Bodega Colomé', 'Luigi Bosca'],
+      druetyper: {
+        rød: ['Malbec', 'Cabernet Sauvignon', 'Bonarda', 'Cabernet Franc'],
+        hvid: ['Torrontés', 'Chardonnay', 'Sauvignon Blanc']
+      },
+      årgange: [2019, 2020, 2021, 2022],
+      priser: { min: 60, max: 400 }
+    },
+    'Australien': {
+      regioner: ['Barossa Valley', 'McLaren Vale', 'Hunter Valley', 'Yarra Valley', 'Margaret River'],
+      producenter: ['Penfolds', 'Jacob\'s Creek', 'Yellow Tail', 'Leeuwin Estate', 'Yering Station', 'Henschke'],
+      druetyper: {
+        rød: ['Shiraz', 'Cabernet Sauvignon', 'Pinot Noir', 'Grenache'],
+        hvid: ['Chardonnay', 'Riesling', 'Sémillon', 'Sauvignon Blanc']
+      },
+      årgange: [2020, 2021, 2022],
+      priser: { min: 70, max: 600 }
+    },
+    'New Zealand': {
+      regioner: ['Marlborough', 'Hawke\'s Bay', 'Central Otago', 'Martinborough'],
+      producenter: ['Cloudy Bay', 'Villa Maria', 'Felton Road', 'Ata Rangi', 'Kumeu River'],
+      druetyper: {
+        rød: ['Pinot Noir', 'Merlot', 'Cabernet Sauvignon'],
+        hvid: ['Sauvignon Blanc', 'Chardonnay', 'Riesling', 'Pinot Gris']
+      },
+      årgange: [2021, 2022],
+      priser: { min: 80, max: 500 }
+    }
+  };
+  
+  const lande = Object.keys(landeData);
+  const vinePerLand = Math.floor(antal / lande.length);
+  const restVine = antal % lande.length;
+  
+  lande.forEach((land, landIndex) => {
+    const landData = landeData[land];
+    const antalForLand = vinePerLand + (landIndex < restVine ? 1 : 0);
+    
+    // Generer unikke vine-navne baseret på producent, druetype og årgang kombinationer
+    const kombinationer = [];
+    const rødeDruer = landData.druetyper.rød || [];
+    const hvideDruer = landData.druetyper.hvid || [];
+    const alleDruer = [...rødeDruer, ...hvideDruer];
+    
+    // Generer alle mulige kombinationer
+    landData.producenter.forEach(producent => {
+      alleDruer.forEach(druetype => {
+        landData.årgange.forEach(årgang => {
+          landData.regioner.forEach(region => {
+            kombinationer.push({ producent, druetype, årgang, region });
+          });
+        });
+      });
+    });
+    
+    // Bland kombinationerne og tag de første antalForLand
+    const shuffled = kombinationer.sort(() => Math.random() - 0.5);
+    const valgteKombinationer = shuffled.slice(0, antalForLand);
+    
+    valgteKombinationer.forEach((komb, idx) => {
+      const erRod = rødeDruer.includes(komb.druetype);
+      const indkøbspris = Math.round((Math.random() * (landData.priser.max - landData.priser.min) + landData.priser.min) * 100) / 100;
+      const salgspris = Math.round(indkøbspris * (1.3 + Math.random() * 0.5) * 100) / 100;
+      const antalFlasker = 24 + Math.floor(Math.random() * 100); // Minimum 24, op til 124
+      const minimumBeholdning = 6 + Math.floor(Math.random() * 10); // 6-15
+      const alkoholprocent = (12 + Math.random() * 4).toFixed(1); // 12-16%
+      const flasketype = Math.random() > 0.9 ? 'Magnum (1,5 L)' : '75 cl'; // 90% normal, 10% magnum
+      
+      // Generer vin navn baseret på producent, druetype og årgang
+      const vinNavn = `${komb.producent} ${komb.druetype} ${komb.årgang}`;
+      
+      // Brug region som placering (europæiske vindistrikter)
+      const placering = komb.region;
+      
+      vine.push({
+        Varenummer: String(varenummerCounter++),
+        Vinnavn: vinNavn,
+        Producent: komb.producent,
+        Land: land,
+        Region: komb.region,
+        Årgang: komb.årgang,
+        Druetype: komb.druetype,
+        'Alkohol%': alkoholprocent,
+        Flasketype: flasketype,
+        Indkøbspris: indkøbspris,
+        Salgspris: salgspris,
+        Antal: antalFlasker,
+        'Minimum beholdning': minimumBeholdning,
+        Placering: placering, // Europæiske vindistrikter
+        Noter: '',
+        Billede: ''
+      });
+    });
+  });
+  
+  // Sorter efter land, region, producent
+  vine.sort((a, b) => {
+    if (a.Land !== b.Land) return a.Land.localeCompare(b.Land);
+    if (a.Region !== b.Region) return a.Region.localeCompare(b.Region);
+    return a.Producent.localeCompare(b.Producent);
+  });
+  
+  return vine;
+}
+
 // Download Excel skabelon for vinlager
 function downloadVinlagerExcelTemplate() {
   try {
@@ -12533,33 +12717,9 @@ function downloadVinlagerExcelTemplate() {
     // Nye kolonner: Varenummer, Vinnavn, Producent, Land, Region, Årgang, Druetype, Alkohol%, Flasketype, Indkøbspris, Salgspris, Antal, Minimum beholdning, Placering, Noter, Billede
     const columnOrder = ['Varenummer', 'Vinnavn', 'Producent', 'Land', 'Region', 'Årgang', 'Druetype', 'Alkohol%', 'Flasketype', 'Indkøbspris', 'Salgspris', 'Antal', 'Minimum beholdning', 'Placering', 'Noter', 'Billede'];
     
-    // Brug eksisterende vine fra vinlagerVine (hvis de findes), ellers generer 300 demo vine
-    let vineData = [];
-    
-    if (vinlagerVine && vinlagerVine.length > 0) {
-      // Brug eksisterende vine
-      vineData = vinlagerVine.map(vin => ({
-        Varenummer: vin.varenummer || vin.Varenummer || '',
-        Vinnavn: vin.navn || vin.Vinnavn || vin.Navn || '',
-        Producent: vin.producent || vin.Producent || '',
-        Land: vin.land || vin.Land || '',
-        Region: vin.region || vin.Region || '',
-        Årgang: vin.årgang || vin.Årgang || '',
-        Druetype: vin.druetype || vin.Druetype || '',
-        'Alkohol%': vin.alkoholprocent || vin['Alkohol%'] || vin.Alkoholprocent || '',
-        Flasketype: vin.flasketype || vin.Flasketype || '75 cl',
-        Indkøbspris: vin.indkøbspris || vin.Indkøbspris || 0,
-        Salgspris: vin.salgspris || vin.Salgspris || '',
-        Antal: vin.antal_flasker || vin.Antal || vin['Antal flasker'] || 24,
-        'Minimum beholdning': vin.minimumBeholdning || vin['Minimum beholdning'] || 6,
-        Placering: vin.lagerplacering || vin.Placering || vin.Lagerplacering || '',
-        Noter: vin.noter || vin.Noter || '',
-        Billede: vin.billede || vin.Billede || ''
-      }));
-    } else {
-      // Generer 300 demo vine fordelt over 10 lande
-      vineData = genererDemoVine(300);
-    }
+    // Generer altid 300 demo vine med europæiske vindistrikter som placering (selv hvis der allerede er vine)
+    // Dette sikrer at skabelonen altid har de korrekte data struktureret korrekt
+    let vineData = genererDemoVine(300);
     
     // Konverter til Excel format
     const excelData = vineData;
@@ -12619,33 +12779,11 @@ function downloadVinlagerExcelTemplate() {
     
     XLSX.utils.book_append_sheet(wb, ws, 'Alle vine');
     
-    // Download Excel
+    // Download Excel (kun én fil)
     const filenameXlsx = `vinlager_skabelon_v${APP_VERSION}.xlsx`;
     XLSX.writeFile(wb, filenameXlsx);
     
-    // Også download CSV (kun header hvis ingen data)
-    const csvRows = [];
-    csvRows.push(columnOrder.join(';'));
-    if (excelData.length > 0) {
-      excelData.forEach(row => {
-        const cells = columnOrder.map(col => {
-          const val = row[col] !== undefined && row[col] !== null ? String(row[col]) : '';
-          return `"${val.replace(/"/g, '""')}"`;
-        });
-        csvRows.push(cells.join(';'));
-      });
-    }
-    const csvContent = '\uFEFF' + csvRows.join('\n');
-    const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
-    const filenameCsv = `vinlager_skabelon_v${APP_VERSION}.csv`;
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = filenameCsv;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    alert(`✅ Vinlager skabelon downloadet! (v${APP_VERSION})\n\nDer er lavet TO filer:\n• Excel: ${filenameXlsx}\n• CSV (klar til import): ${filenameCsv}\n\nStruktur:\n• Varenummer; Vinnavn; Producent; Land; Region; Årgang; Druetype; Alkohol%; Flasketype; Indkøbspris; Salgspris; Antal; Minimum beholdning; Placering; Noter; Billede\n\nAntal vine i skabelon: ${excelData.length}\n\nSådan bruger du skabelonen:\n1) Rediger skabelonen i Excel med dine vine\n2) Gem Excel-filen eller brug CSV-versionen\n3) Importér filen via Import/Export i programmet`);
+    alert(`✅ Vinlager skabelon downloadet! (v${APP_VERSION})\n\nFilen: ${filenameXlsx}\n\nStruktur:\n• Varenummer; Vinnavn; Producent; Land; Region; Årgang; Druetype; Alkohol%; Flasketype; Indkøbspris; Salgspris; Antal; Minimum beholdning; Placering; Noter; Billede\n\nAntal vine i skabelon: ${excelData.length}\n\nSådan bruger du skabelonen:\n1) Rediger skabelonen i Excel med dine vine (hvis nødvendigt)\n2) Importér Excel-filen direkte via Import/Export i programmet`);
     
   } catch(err) {
     console.error('Fejl ved generering af vinlager Excel skabelon:', err);
