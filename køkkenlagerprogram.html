@@ -790,10 +790,59 @@ a:hover{color:#45a049;text-decoration:none}
               <div style="width:400px; max-width:100%;">
                 <input type="text" id="newVinNavn" placeholder="Navn" />
                 <input type="text" id="newVinProducent" placeholder="Producent" />
-                <input type="text" id="newVinLand" placeholder="Land" />
+                <label class="small">Land *</label>
+                <select id="newVinLandOmraade" onchange="updateVinLandSelect()" style="margin-bottom:8px;">
+                  <option value="">Vælg område</option>
+                  <option value="Europa">🌍 Europa</option>
+                  <option value="Amerika">🌎 Amerika</option>
+                  <option value="Afrika">🌏 Afrika</option>
+                  <option value="Asien">🌏 Asien</option>
+                  <option value="Oceanien">🌏 Oceanien</option>
+                </select>
+                <select id="newVinLand" required>
+                  <option value="">Vælg land</option>
+                </select>
                 <input type="text" id="newVinRegion" placeholder="Region" />
                 <input type="number" id="newVinÅrgang" placeholder="Årgang" min="1900" max="2100" />
-                <input type="text" id="newVinDruetype" placeholder="Druetype" />
+                <label class="small">Druetype</label>
+                <select id="newVinDruetype">
+                  <option value="">Vælg druetype</option>
+                  <optgroup label="🍷 Røde druer">
+                    <option value="Cabernet Sauvignon">Cabernet Sauvignon</option>
+                    <option value="Merlot">Merlot</option>
+                    <option value="Pinot Noir">Pinot Noir</option>
+                    <option value="Syrah / Shiraz">Syrah / Shiraz</option>
+                    <option value="Grenache">Grenache</option>
+                    <option value="Tempranillo">Tempranillo</option>
+                    <option value="Sangiovese">Sangiovese</option>
+                    <option value="Nebbiolo">Nebbiolo</option>
+                    <option value="Zinfandel / Primitivo">Zinfandel / Primitivo</option>
+                    <option value="Malbec">Malbec</option>
+                    <option value="Carmenère">Carmenère</option>
+                    <option value="Barbera">Barbera</option>
+                    <option value="Gamay">Gamay</option>
+                  </optgroup>
+                  <optgroup label="🥂 Hvide druer">
+                    <option value="Chardonnay">Chardonnay</option>
+                    <option value="Sauvignon Blanc">Sauvignon Blanc</option>
+                    <option value="Riesling">Riesling</option>
+                    <option value="Pinot Grigio / Pinot Gris">Pinot Grigio / Pinot Gris</option>
+                    <option value="Chenin Blanc">Chenin Blanc</option>
+                    <option value="Viognier">Viognier</option>
+                    <option value="Gewürztraminer">Gewürztraminer</option>
+                    <option value="Semillon">Semillon</option>
+                    <option value="Albariño">Albariño</option>
+                    <option value="Grüner Veltliner">Grüner Veltliner</option>
+                    <option value="Vermentino">Vermentino</option>
+                  </optgroup>
+                  <optgroup label="🌸 Rosé & special">
+                    <option value="Grenache">Grenache</option>
+                    <option value="Mourvèdre">Mourvèdre</option>
+                    <option value="Cinsault">Cinsault</option>
+                    <option value="Blaufränkisch">Blaufränkisch</option>
+                    <option value="Touriga Nacional">Touriga Nacional</option>
+                  </optgroup>
+                </select>
                 <input type="number" id="newVinAlkoholprocent" step="0.1" min="0" max="100" placeholder="Alkoholprocent (%)" />
                 <label class="small">Flasketype</label>
                 <select id="newVinFlasketype">
@@ -828,9 +877,6 @@ a:hover{color:#45a049;text-decoration:none}
                 </div>
                 <div class="small" style="margin-top:8px; color:#666;">
                   <strong>Tip:</strong> Download skabelonen, udfyld den i Excel, og importer den igen.
-                </div>
-                <div style="margin-top:15px;">
-                  <button onclick="uploadVinlagerToServer()" style="width:100%; background:#17a2b8; color:white; padding:10px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">☁️ Upload Vinlager til Server</button>
                 </div>
               </div>
             </div>
@@ -874,6 +920,7 @@ a:hover{color:#45a049;text-decoration:none}
               <select id="vinMasterHylleFilter" onchange="renderVinMasterTable()" style="padding:6px; border:1px solid #ddd; border-radius:4px;">
                 <option value="">Alle hylder</option>
               </select>
+              <button onclick="uploadVinlagerToServer()" style="background:#17a2b8; color:white; font-weight:800; padding:8px 14px; font-size:14px; box-shadow:0 2px 6px rgba(23,162,184,0.3); margin-left:auto;">☁️ Upload Vinlager til Server</button>
             </div>
             <div id="vinMasterTableContainer"></div>
           </div>
@@ -2593,9 +2640,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.61';
+const APP_VERSION = '4.62';
 const BUILD_DATE = '2026-01-08';
-const BUILD_TIME = '14:44';
+const BUILD_TIME = '15:15';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -11643,7 +11690,17 @@ function showAddVinModal(vinId = null) {
           </div>
           <div>
             <label><strong>Land *</strong></label>
-            <input type="text" id="vinLand" value="${vin ? vin.land : ''}" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+            <select id="vinLandOmraade" onchange="updateVinLandSelectModal()" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; margin-bottom:8px;">
+              <option value="">Vælg område</option>
+              <option value="Europa" ${vin && getOmradeForLand(vin.land) === 'Europa' ? 'selected' : ''}>🌍 Europa</option>
+              <option value="Amerika" ${vin && getOmradeForLand(vin.land) === 'Amerika' ? 'selected' : ''}>🌎 Amerika</option>
+              <option value="Afrika" ${vin && getOmradeForLand(vin.land) === 'Afrika' ? 'selected' : ''}>🌏 Afrika</option>
+              <option value="Asien" ${vin && getOmradeForLand(vin.land) === 'Asien' ? 'selected' : ''}>🌏 Asien</option>
+              <option value="Oceanien" ${vin && getOmradeForLand(vin.land) === 'Oceanien' ? 'selected' : ''}>🌏 Oceanien</option>
+            </select>
+            <select id="vinLand" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+              <option value="">Vælg land</option>
+            </select>
           </div>
           <div>
             <label><strong>Region</strong></label>
@@ -11655,7 +11712,44 @@ function showAddVinModal(vinId = null) {
           </div>
           <div>
             <label><strong>Druetype</strong></label>
-            <input type="text" id="vinDruetype" value="${vin ? vin.druetype || '' : ''}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+            <select id="vinDruetype" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+              <option value="">Vælg druetype</option>
+              <optgroup label="🍷 Røde druer">
+                <option value="Cabernet Sauvignon" ${vin && vin.druetype === 'Cabernet Sauvignon' ? 'selected' : ''}>Cabernet Sauvignon</option>
+                <option value="Merlot" ${vin && vin.druetype === 'Merlot' ? 'selected' : ''}>Merlot</option>
+                <option value="Pinot Noir" ${vin && vin.druetype === 'Pinot Noir' ? 'selected' : ''}>Pinot Noir</option>
+                <option value="Syrah / Shiraz" ${vin && vin.druetype === 'Syrah / Shiraz' ? 'selected' : ''}>Syrah / Shiraz</option>
+                <option value="Grenache" ${vin && vin.druetype === 'Grenache' ? 'selected' : ''}>Grenache</option>
+                <option value="Tempranillo" ${vin && vin.druetype === 'Tempranillo' ? 'selected' : ''}>Tempranillo</option>
+                <option value="Sangiovese" ${vin && vin.druetype === 'Sangiovese' ? 'selected' : ''}>Sangiovese</option>
+                <option value="Nebbiolo" ${vin && vin.druetype === 'Nebbiolo' ? 'selected' : ''}>Nebbiolo</option>
+                <option value="Zinfandel / Primitivo" ${vin && vin.druetype === 'Zinfandel / Primitivo' ? 'selected' : ''}>Zinfandel / Primitivo</option>
+                <option value="Malbec" ${vin && vin.druetype === 'Malbec' ? 'selected' : ''}>Malbec</option>
+                <option value="Carmenère" ${vin && vin.druetype === 'Carmenère' ? 'selected' : ''}>Carmenère</option>
+                <option value="Barbera" ${vin && vin.druetype === 'Barbera' ? 'selected' : ''}>Barbera</option>
+                <option value="Gamay" ${vin && vin.druetype === 'Gamay' ? 'selected' : ''}>Gamay</option>
+              </optgroup>
+              <optgroup label="🥂 Hvide druer">
+                <option value="Chardonnay" ${vin && vin.druetype === 'Chardonnay' ? 'selected' : ''}>Chardonnay</option>
+                <option value="Sauvignon Blanc" ${vin && vin.druetype === 'Sauvignon Blanc' ? 'selected' : ''}>Sauvignon Blanc</option>
+                <option value="Riesling" ${vin && vin.druetype === 'Riesling' ? 'selected' : ''}>Riesling</option>
+                <option value="Pinot Grigio / Pinot Gris" ${vin && vin.druetype === 'Pinot Grigio / Pinot Gris' ? 'selected' : ''}>Pinot Grigio / Pinot Gris</option>
+                <option value="Chenin Blanc" ${vin && vin.druetype === 'Chenin Blanc' ? 'selected' : ''}>Chenin Blanc</option>
+                <option value="Viognier" ${vin && vin.druetype === 'Viognier' ? 'selected' : ''}>Viognier</option>
+                <option value="Gewürztraminer" ${vin && vin.druetype === 'Gewürztraminer' ? 'selected' : ''}>Gewürztraminer</option>
+                <option value="Semillon" ${vin && vin.druetype === 'Semillon' ? 'selected' : ''}>Semillon</option>
+                <option value="Albariño" ${vin && vin.druetype === 'Albariño' ? 'selected' : ''}>Albariño</option>
+                <option value="Grüner Veltliner" ${vin && vin.druetype === 'Grüner Veltliner' ? 'selected' : ''}>Grüner Veltliner</option>
+                <option value="Vermentino" ${vin && vin.druetype === 'Vermentino' ? 'selected' : ''}>Vermentino</option>
+              </optgroup>
+              <optgroup label="🌸 Rosé & special">
+                <option value="Grenache" ${vin && vin.druetype === 'Grenache' ? 'selected' : ''}>Grenache</option>
+                <option value="Mourvèdre" ${vin && vin.druetype === 'Mourvèdre' ? 'selected' : ''}>Mourvèdre</option>
+                <option value="Cinsault" ${vin && vin.druetype === 'Cinsault' ? 'selected' : ''}>Cinsault</option>
+                <option value="Blaufränkisch" ${vin && vin.druetype === 'Blaufränkisch' ? 'selected' : ''}>Blaufränkisch</option>
+                <option value="Touriga Nacional" ${vin && vin.druetype === 'Touriga Nacional' ? 'selected' : ''}>Touriga Nacional</option>
+              </optgroup>
+            </select>
           </div>
           <div>
             <label><strong>Alkoholprocent (%)</strong></label>
@@ -11714,6 +11808,49 @@ function showAddVinModal(vinId = null) {
     </div>
   `;
   document.body.appendChild(modal);
+  
+  // Initialize land select if editing
+  if (vin && vin.land) {
+    const omrade = getOmradeForLand(vin.land);
+    if (omrade) {
+      const omradeSelect = document.getElementById('vinLandOmraade');
+      if (omradeSelect) {
+        omradeSelect.value = omrade;
+        updateVinLandSelectModal();
+        const landSelect = document.getElementById('vinLand');
+        if (landSelect) {
+          landSelect.value = vin.land;
+        }
+      }
+    }
+  }
+}
+
+// Get omrade for land
+function getOmradeForLand(land) {
+  if (!land) return null;
+  for (const [omrade, lande] of Object.entries(vinlagerDistrikter)) {
+    if (lande.includes(land)) {
+      return omrade;
+    }
+  }
+  return null;
+}
+
+// Update vin land select in modal
+function updateVinLandSelectModal() {
+  const omradeSelect = document.getElementById('vinLandOmraade');
+  const landSelect = document.getElementById('vinLand');
+  if (!omradeSelect || !landSelect) return;
+  
+  const selectedOmrade = omradeSelect.value;
+  if (!selectedOmrade) {
+    landSelect.innerHTML = '<option value="">Vælg land</option>';
+    return;
+  }
+  
+  const lande = vinlagerDistrikter[selectedOmrade] || [];
+  landSelect.innerHTML = '<option value="">Vælg land</option>' + lande.map(land => `<option value="${land}">${land}</option>`).join('');
 }
 
 // Gem vin
@@ -11730,7 +11867,7 @@ function saveVin(event, vinId) {
     land: document.getElementById('vinLand').value.trim(),
     region: document.getElementById('vinRegion').value.trim() || null,
     årgang: document.getElementById('vinÅrgang').value ? parseInt(document.getElementById('vinÅrgang').value) : null,
-    druetype: document.getElementById('vinDruetype').value.trim() || null,
+    druetype: document.getElementById('vinDruetype').value || null,
     alkoholprocent: document.getElementById('vinAlkoholprocent').value ? parseFloat(document.getElementById('vinAlkoholprocent').value) : null,
     flasketype: document.getElementById('vinFlasketype').value,
     indkøbspris: parseFloat(document.getElementById('vinIndkøbspris').value),
@@ -12066,6 +12203,22 @@ function renderVinHistorik() {
   `;
 }
 
+// Update vin land select based on omrade
+function updateVinLandSelect() {
+  const omradeSelect = document.getElementById('newVinLandOmraade');
+  const landSelect = document.getElementById('newVinLand');
+  if (!omradeSelect || !landSelect) return;
+  
+  const selectedOmrade = omradeSelect.value;
+  if (!selectedOmrade) {
+    landSelect.innerHTML = '<option value="">Vælg land</option>';
+    return;
+  }
+  
+  const lande = vinlagerDistrikter[selectedOmrade] || [];
+  landSelect.innerHTML = '<option value="">Vælg land</option>' + lande.map(land => `<option value="${land}">${land}</option>`).join('');
+}
+
 // Tilføj vin fra form
 function addNewVinFromForm() {
   const data = loadAllData() || {};
@@ -12088,7 +12241,7 @@ function addNewVinFromForm() {
     land: land,
     region: document.getElementById('newVinRegion')?.value.trim() || null,
     årgang: document.getElementById('newVinÅrgang')?.value ? parseInt(document.getElementById('newVinÅrgang').value) : null,
-    druetype: document.getElementById('newVinDruetype')?.value.trim() || null,
+    druetype: document.getElementById('newVinDruetype')?.value || null,
     alkoholprocent: document.getElementById('newVinAlkoholprocent')?.value ? parseFloat(document.getElementById('newVinAlkoholprocent').value) : null,
     flasketype: document.getElementById('newVinFlasketype')?.value || '75 cl',
     indkøbspris: parseFloat(document.getElementById('newVinIndkøbspris')?.value || 0),
@@ -12110,7 +12263,8 @@ function addNewVinFromForm() {
   // Ryd form
   document.getElementById('newVinNavn').value = '';
   document.getElementById('newVinProducent').value = '';
-  document.getElementById('newVinLand').value = '';
+  document.getElementById('newVinLandOmraade').value = '';
+  document.getElementById('newVinLand').innerHTML = '<option value="">Vælg land</option>';
   document.getElementById('newVinRegion').value = '';
   document.getElementById('newVinÅrgang').value = '';
   document.getElementById('newVinDruetype').value = '';
@@ -12259,8 +12413,8 @@ function exportVinlagerCSV() {
   URL.revokeObjectURL(url);
 }
 
-// Import vinlager CSV
-function importVinlagerCSV() {
+// Import vinlager CSV/Excel
+async function importVinlagerCSV() {
   const f = document.getElementById('vinCsvImport')?.files[0];
   if(!f) return alert('Vælg CSV eller Excel fil');
   
@@ -12268,16 +12422,66 @@ function importVinlagerCSV() {
   const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
   
   if(isExcel){
-    alert('Excel-filer (.xlsx/.xls) skal først gemmes som CSV format i Excel.\n\nI Excel: Vælg "Gem som" → "CSV (semikolon adskilt)" eller "CSV UTF-8 (semikolon adskilt)" for at bevare danske tegn.');
-    return;
+    // Håndter Excel fil direkte
+    if(typeof XLSX === 'undefined'){
+      alert('❌ Excel bibliotek ikke indlæst.\n\nPrøv at genindlæse siden (Ctrl+F5).');
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+        
+        // Find første ark eller "Alle vine" ark
+        let sheetName = workbook.SheetNames.find(name => name.toLowerCase().includes('alle') || name.toLowerCase().includes('vine')) || workbook.SheetNames[0];
+        let sheet = workbook.Sheets[sheetName];
+        
+        // Konverter sheet til JSON
+        const jsonData = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: '', raw: false});
+        
+        if(jsonData.length < 2) {
+          alert('❌ Filen indeholder ikke nok data.\n\nTjek at filen har en header-række og mindst én vin.');
+          return;
+        }
+        
+        // Konverter til CSV format for at bruge eksisterende import-logik
+        const csvLines = jsonData.map((row, rowIndex) => {
+          const paddedRow = [...row];
+          while(paddedRow.length < 16) paddedRow.push(''); // 16 kolonner
+          return paddedRow.map(cell => {
+            const cellStr = String(cell || '').trim();
+            if(cellStr.includes(';') || cellStr.includes('"') || cellStr.includes('\n')) {
+              return `"${cellStr.replace(/"/g, '""')}"`;
+            }
+            return cellStr;
+          }).join(';');
+        });
+        
+        const csvText = csvLines.join('\n');
+        processVinlagerImportText(csvText, 'add');
+        
+      } catch(err) {
+        console.error('Fejl ved læsning af Excel fil:', err);
+        alert('❌ Fejl ved læsning af Excel fil: ' + err.message + '\n\nPrøv at gemme filen som CSV i stedet.');
+      }
+    };
+    
+    reader.onerror = function() {
+      alert('❌ Kunne ikke læse filen. Tjek at filen er en gyldig Excel fil.');
+    };
+    
+    reader.readAsArrayBuffer(f);
+  } else {
+    // Håndter CSV fil
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const text = e.target.result;
+      processVinlagerImportText(text, 'add');
+    };
+    reader.readAsText(f, 'UTF-8');
   }
-  
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const text = e.target.result;
-    processVinlagerImportText(text, 'add');
-  };
-  reader.readAsText(f, 'UTF-8');
 }
 
 // Process vinlager import text
