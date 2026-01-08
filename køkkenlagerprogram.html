@@ -755,134 +755,127 @@ a:hover{color:#45a049;text-decoration:none}
         
         <div style="margin-top:40px;">
           <h3 style="margin-bottom:20px;">🌍 Vindistrikter</h3>
-          <div id="vinlagerDistrikter" style="display:flex; flex-direction:column; gap:15px; max-width:800px;"></div>
+          <div id="vinlagerDistrikter" style="display:flex; flex-direction:column; gap:15px; max-width:600px;"></div>
         </div>
       </div>
     </div>
 
     <!-- Vinlager Administration -->
     <div id="vinAdmin" class="vinlager-section hidden">
-      <!-- Tilføj ny vin -->
-      <div class="card" style="margin-bottom:20px;">
-        <h3>Tilføj ny vin</h3>
-        <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:flex-start;">
-          <div style="flex:1; min-width:400px; max-width:100%;">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
-              <div>
-                <label>Navn *</label>
-                <input type="text" id="newVinNavn" placeholder="F.eks. Château Margaux" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
-              </div>
-              <div>
-                <label>Producent *</label>
-                <input type="text" id="newVinProducent" placeholder="F.eks. Château Margaux" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
-              </div>
-              <div>
-                <label>Land *</label>
-                <input type="text" id="newVinLand" placeholder="F.eks. Frankrig" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
-              </div>
-              <div>
-                <label>Region</label>
-                <input type="text" id="newVinRegion" placeholder="F.eks. Bordeaux" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
-              </div>
-              <div>
-                <label>Årgang</label>
-                <input type="number" id="newVinÅrgang" placeholder="2020" min="1900" max="2100" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
-              </div>
-              <div>
-                <label>Druetype</label>
-                <input type="text" id="newVinDruetype" placeholder="F.eks. Cabernet Sauvignon" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
-              </div>
-              <div>
-                <label>Alkoholprocent (%)</label>
-                <input type="number" id="newVinAlkoholprocent" step="0.1" min="0" max="100" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
-              </div>
-              <div>
-                <label>Flasketype *</label>
-                <select id="newVinFlasketype" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+      <div class="settings-page">
+        <div class="settings-sidebar" id="vinAdminSidebar">
+          <div class="settings-category">Vinlager</div>
+          <div class="settings-item active" onclick="showVinAdminSection('add')">
+            <span class="settings-item-icon">➕</span>
+            <span>Tilføj ny vin</span>
+          </div>
+          <div class="settings-item" onclick="showVinAdminSection('shelf')">
+            <span class="settings-item-icon">📋</span>
+            <span>Opsætning af Hylder - reoler & Rækkefølge (Drag & Drop)</span>
+          </div>
+          <div class="settings-item" onclick="showVinAdminSection('view')">
+            <span class="settings-item-icon">🔍</span>
+            <span>Søg & Se hele Varelager</span>
+          </div>
+        </div>
+        <div class="settings-content">
+          <button class="settings-sidebar-toggle" id="vinAdminToggleBtn" onclick="toggleSidebar('vinAdminSidebar')" title="Skjul/Vis sidebar"></button>
+          <h2>Vin Administration</h2>
+          <div class="settings-description">Administrer vinlager, tilføj nye vine, og opsæt hylle rækkefølge.</div>
+          
+          <!-- Add New Vin Section -->
+          <div id="vinAdmin-section-add" class="settings-section active">
+            <h3 style="margin-top:0; margin-bottom:16px;">Tilføj ny vin</h3>
+            <div style="display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+              <div style="width:400px; max-width:100%;">
+                <input type="text" id="newVinNavn" placeholder="Navn" />
+                <input type="text" id="newVinProducent" placeholder="Producent" />
+                <input type="text" id="newVinLand" placeholder="Land" />
+                <input type="text" id="newVinRegion" placeholder="Region" />
+                <input type="number" id="newVinÅrgang" placeholder="Årgang" min="1900" max="2100" />
+                <input type="text" id="newVinDruetype" placeholder="Druetype" />
+                <input type="number" id="newVinAlkoholprocent" step="0.1" min="0" max="100" placeholder="Alkoholprocent (%)" />
+                <label class="small">Flasketype</label>
+                <select id="newVinFlasketype">
                   <option value="75 cl">75 cl</option>
                   <option value="Magnum (1,5 L)">Magnum (1,5 L)</option>
                   <option value="Jeroboam (3 L)">Jeroboam (3 L)</option>
                   <option value="Andet">Andet</option>
                 </select>
+                <input type="number" id="newVinIndkøbspris" step="0.01" min="0" placeholder="Indkøbspris (kr)" />
+                <input type="number" id="newVinSalgspris" step="0.01" min="0" placeholder="Salgspris (kr)" />
+                <input type="number" id="newVinAntalFlasker" min="0" value="0" placeholder="Antal flasker" />
+                <label class="small">Lagerplacering</label>
+                <select id="newVinLagerplacering"></select>
+                <label class="small" style="margin-top:8px;">Reol nummer (valgfrit)</label>
+                <input type="text" id="newVinReolNr" placeholder="fx 1, 2, 3 eller A, B, C" />
+                <label class="small" style="margin-top:8px;">Hylle nummer (valgfrit)</label>
+                <input type="text" id="newVinHylleNr" placeholder="fx 1, 2, 3 eller A, B, C" />
+                <label class="small" style="margin-top:8px;">Rækkefølge (0 = automatisk)</label>
+                <input type="number" id="newVinRaekkefoelge" step="1" placeholder="0 = automatisk" value="0" />
+                <textarea id="newVinNoter" rows="2" placeholder="Noter"></textarea>
+                <div style="margin-top:8px;"><button onclick="addNewVinFromForm()">➕ Tilføj vin</button></div>
               </div>
-              <div>
-                <label>Indkøbspris (kr) *</label>
-                <input type="number" id="newVinIndkøbspris" step="0.01" min="0" placeholder="0.00" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
-              </div>
-              <div>
-                <label>Salgspris (kr)</label>
-                <input type="number" id="newVinSalgspris" step="0.01" min="0" placeholder="0.00" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
-              </div>
-              <div>
-                <label>Antal flasker *</label>
-                <input type="number" id="newVinAntalFlasker" min="0" value="0" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
-              </div>
-              <div>
-                <label>Lagerplacering *</label>
-                <select id="newVinLagerplacering" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"></select>
+              <div style="width:320px; margin-left:auto;">
+                <h3 style="margin:0">Import/Export Excel/CSV</h3>
+                <div style="margin-bottom:8px;">
+                  <button onclick="downloadVinlagerExcelTemplate()" style="width:100%; margin-bottom:8px; background:#2196F3; color:white; border-color:#1976D2;">Hent Excel skabelon</button>
+                </div>
+                <input type="file" id="vinCsvImport" accept=".csv,.xlsx,.xls" />
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                  <button onclick="importVinlagerCSV()">📥 Importer Excel/CSV</button>
+                  <button onclick="exportVinlagerCSV()">📤 Eksport CSV</button>
+                </div>
+                <div class="small" style="margin-top:8px; color:#666;">
+                  <strong>Tip:</strong> Download skabelonen, udfyld den i Excel, og importer den igen.
+                </div>
+                <div style="margin-top:15px;">
+                  <button onclick="uploadVinlagerToServer()" style="width:100%; background:#17a2b8; color:white; padding:10px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">☁️ Upload Vinlager til Server</button>
+                </div>
               </div>
             </div>
-            <div style="margin-top:10px;">
-              <label>Noter</label>
-              <textarea id="newVinNoter" rows="2" placeholder="Valgfrie noter..." style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"></textarea>
+          </div>
+          
+          <!-- Shelf Order Section -->
+          <div id="vinAdmin-section-shelf" class="settings-section">
+            <h3 style="margin-top:0; margin-bottom:16px;">Opsætning af Hylder - reoler & Rækkefølge (Drag & Drop)</h3>
+            <div style="padding:16px; background:#f5f5f5; border-radius:8px;">
+              <label style="display:block; margin-bottom:8px; font-weight:700; color:#222; font-size:14px;">Vælg lagerplacering for at se og redigere hylle rækkefølge:</label>
+              <select id="vinHylleLagerSelect" onchange="updateVinHylleReolSelect(); renderVinHylleRaekkefoelge()" style="margin-top:8px; margin-bottom:8px; width:100%;"></select>
+              <label style="display:block; margin-top:12px; margin-bottom:8px; font-weight:700; color:#222; font-size:14px;">Vælg reol:</label>
+              <select id="vinHylleReolSelect" onchange="updateVinHylleHylleSelect(); renderVinHylleRaekkefoelge()" style="margin-top:4px; margin-bottom:8px; width:100%;">
+                <option value="">Alle reoler</option>
+              </select>
+              <label style="display:block; margin-top:12px; margin-bottom:8px; font-weight:700; color:#222; font-size:14px;">Vælg hylle:</label>
+              <select id="vinHylleHylleSelect" onchange="renderVinHylleRaekkefoelge()" style="margin-top:4px; margin-bottom:8px; width:100%;">
+                <option value="">Alle hylder</option>
+              </select>
+              <div style="margin-top:20px;">
+                <h4 style="margin-bottom:12px;">Rækkefølge (Drag & Drop for at ændre rækkefølge):</h4>
+                <ul id="vinHylleRaekkefoelgeList" style="list-style:none; padding:0; margin:0;"></ul>
+              </div>
             </div>
-            <button onclick="addNewVinFromForm()" style="margin-top:15px; background:#28a745; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">➕ Tilføj Vin</button>
           </div>
-          <div style="width:320px; margin-left:auto;">
-            <h3 style="margin:0">Import/Export Excel/CSV</h3>
-            <div style="margin-bottom:8px;">
-              <button onclick="downloadVinlagerExcelTemplate()" style="width:100%; margin-bottom:8px; background:#2196F3; color:white; border-color:#1976D2;">Hent Excel skabelon</button>
+          
+          <!-- View All Vins Section -->
+          <div id="vinAdmin-section-view" class="settings-section">
+            <h3 style="margin-top:0; margin-bottom:16px;">Søg & Se hele Varelager</h3>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px; align-items:center;">
+              <input type="text" id="vinSearchInput" placeholder="Søg efter varenavn..." style="width:200px; padding:6px; border:1px solid #ddd; border-radius:4px;" oninput="renderVinMasterTable()" />
+              <label class="small">Filtrer placering:</label>
+              <select id="vinMasterPlaceringFilter" onchange="renderVinMasterTable()" style="padding:6px; border:1px solid #ddd; border-radius:4px;">
+                <option value="">Alle placeringer</option>
+              </select>
+              <label class="small">Filtrer reol:</label>
+              <select id="vinMasterReolFilter" onchange="renderVinMasterTable()" style="padding:6px; border:1px solid #ddd; border-radius:4px;">
+                <option value="">Alle reoler</option>
+              </select>
+              <label class="small">Filtrer hylle:</label>
+              <select id="vinMasterHylleFilter" onchange="renderVinMasterTable()" style="padding:6px; border:1px solid #ddd; border-radius:4px;">
+                <option value="">Alle hylder</option>
+              </select>
             </div>
-            <input type="file" id="vinCsvImport" accept=".csv,.xlsx,.xls" />
-            <div style="display:flex; gap:8px; margin-top:8px;">
-              <button onclick="importVinlagerCSV()">📥 Importer Excel/CSV</button>
-              <button onclick="exportVinlagerCSV()">📤 Eksport CSV</button>
-            </div>
-            <div class="small" style="margin-top:8px; color:#666;">
-              <strong>Tip:</strong> Download skabelonen, udfyld den i Excel, og importer den igen.
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Søg & Se hele vinlager -->
-      <div class="card" style="margin-bottom:20px;">
-        <h3>Søg & Se hele vinlager</h3>
-        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px; align-items:center;">
-          <input type="text" id="vinSearchInput" placeholder="🔍 Søg (navn, producent, årgang)..." style="padding:8px 12px; border:1px solid #ddd; border-radius:6px; min-width:250px; flex:1;" onkeyup="filterVine()">
-          <select id="vinFilterLand" onchange="filterVine()" style="padding:8px 12px; border:1px solid #ddd; border-radius:6px;">
-            <option value="">Alle lande</option>
-          </select>
-          <select id="vinFilterLagerplacering" onchange="filterVine()" style="padding:8px 12px; border:1px solid #ddd; border-radius:6px;">
-            <option value="">Alle placeringer</option>
-          </select>
-          <label style="display:flex; align-items:center; gap:5px; cursor:pointer;">
-            <input type="checkbox" id="vinFilterLavLager" onchange="filterVine()">
-            <span>Lav lager (&lt;6 flasker)</span>
-          </label>
-        </div>
-        <div id="vinList"></div>
-      </div>
-      
-      <!-- Lageroversigt -->
-      <div class="card" style="background:linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
-        <h3 style="margin-top:0;">📊 Lageroversigt</h3>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-top:15px;">
-          <div style="background:white; padding:15px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
-            <div style="font-size:24px; font-weight:800; color:#8B0000;" id="vinTotalFlasker">0</div>
-            <div style="color:#666; font-size:14px;">Samlet antal flasker</div>
-          </div>
-          <div style="background:white; padding:15px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
-            <div style="font-size:24px; font-weight:800; color:#8B0000;" id="vinTotalVaerdi">0 kr</div>
-            <div style="color:#666; font-size:14px;">Samlet lagerværdi</div>
-          </div>
-          <div style="background:white; padding:15px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
-            <div style="font-size:24px; font-weight:800; color:#dc3545;" id="vinLavLagerCount">0</div>
-            <div style="color:#666; font-size:14px;">Vine med lav lager</div>
-          </div>
-          <div style="background:white; padding:15px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
-            <div style="font-size:24px; font-weight:800; color:#8B0000;" id="vinTotalAntal">0</div>
-            <div style="color:#666; font-size:14px;">Antal forskellige vine</div>
+            <div id="vinMasterTableContainer"></div>
           </div>
         </div>
       </div>
@@ -2600,9 +2593,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.60';
+const APP_VERSION = '4.61';
 const BUILD_DATE = '2026-01-08';
-const BUILD_TIME = '14:25';
+const BUILD_TIME = '14:44';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -11433,7 +11426,10 @@ function vinNavClick(event) {
         collapseAllVinlagerDistrikter(); // Luk alle når man går ind på siden
       }, 100);
     } else if (target === 'vinAdmin') {
-      setTimeout(() => initializeVinlager(), 100);
+      setTimeout(() => {
+        initializeVinlager();
+        showVinAdminSection('add'); // Show add section by default
+      }, 100);
     } else if (target === 'vinRapporter') {
       setTimeout(() => renderVinHistorik(), 100);
     } else if (target === 'vinLabels') {
@@ -11542,7 +11538,7 @@ function renderVinlagerDistrikter() {
           <span class="vinlager-arrow" id="arrow-${kontinentId}" style="transition:transform 0.3s; font-size:12px;">▼</span>
         </div>
         <div class="vinlager-kontinent-content" id="${kontinentId}" style="display:none; padding:12px; background:#f9f9f9;">
-          <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:6px;">
+          <div style="display:grid; grid-template-columns:repeat(${kontinent === 'Europa' ? '3' : '2'}, 1fr); gap:6px;">
             ${lande.map(land => `
               <div style="padding:6px 10px; background:white; border-radius:4px; border:1px solid #e0e0e0; cursor:pointer; transition:all 0.2s; font-size:13px; text-align:center;" 
                    onmouseover="this.style.background='#f0f0f0'; this.style.borderColor='#8B0000';" 
@@ -11693,6 +11689,18 @@ function showAddVinModal(vinId = null) {
               ${lokationer.map(loc => `<option value="${loc}" ${vin && vin.lagerplacering === loc ? 'selected' : ''}>${loc}</option>`).join('')}
             </select>
           </div>
+          <div>
+            <label><strong>Reol nummer (valgfrit)</strong></label>
+            <input type="text" id="vinReolNr" value="${vin ? vin.reolNr || '' : ''}" placeholder="fx 1, 2, 3 eller A, B, C" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          </div>
+          <div>
+            <label><strong>Hylle nummer (valgfrit)</strong></label>
+            <input type="text" id="vinHylleNr" value="${vin ? vin.hylleNr || '' : ''}" placeholder="fx 1, 2, 3 eller A, B, C" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          </div>
+          <div>
+            <label><strong>Rækkefølge (0 = automatisk)</strong></label>
+            <input type="number" id="vinRaekkefoelge" value="${vin ? vin.raekkefoelge || 0 : 0}" step="1" placeholder="0 = automatisk" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          </div>
         </div>
         <div style="margin-top:15px;">
           <label><strong>Noter</strong></label>
@@ -11729,6 +11737,9 @@ function saveVin(event, vinId) {
     salgspris: document.getElementById('vinSalgspris').value ? parseFloat(document.getElementById('vinSalgspris').value) : null,
     antal_flasker: parseInt(document.getElementById('vinAntalFlasker').value),
     lagerplacering: document.getElementById('vinLagerplacering').value,
+    reolNr: document.getElementById('vinReolNr')?.value.trim() || null,
+    hylleNr: document.getElementById('vinHylleNr')?.value.trim() || null,
+    raekkefoelge: parseInt(document.getElementById('vinRaekkefoelge')?.value || 0) || 0,
     noter: document.getElementById('vinNoter').value.trim() || null,
     oprettet_dato: vinId && vinlagerVine.find(v => v.id === vinId) ? vinlagerVine.find(v => v.id === vinId).oprettet_dato : new Date().toISOString(),
     sidst_opdateret: new Date().toISOString()
@@ -11751,8 +11762,10 @@ function saveVin(event, vinId) {
   saveAllData();
   document.querySelector('.modal').remove();
   renderVineList();
+  renderVinMasterTable();
   updateVinStats();
   updateVinFilters();
+  updateVinAdminSelects();
 }
 
 // Log historik
@@ -12082,6 +12095,9 @@ function addNewVinFromForm() {
     salgspris: document.getElementById('newVinSalgspris')?.value ? parseFloat(document.getElementById('newVinSalgspris').value) : null,
     antal_flasker: parseInt(document.getElementById('newVinAntalFlasker')?.value || 0),
     lagerplacering: lagerplacering,
+    reolNr: document.getElementById('newVinReolNr')?.value.trim() || null,
+    hylleNr: document.getElementById('newVinHylleNr')?.value.trim() || null,
+    raekkefoelge: parseInt(document.getElementById('newVinRaekkefoelge')?.value || 0) || 0,
     noter: document.getElementById('newVinNoter')?.value.trim() || null,
     oprettet_dato: new Date().toISOString(),
     sidst_opdateret: new Date().toISOString()
@@ -12104,12 +12120,17 @@ function addNewVinFromForm() {
   document.getElementById('newVinSalgspris').value = '';
   document.getElementById('newVinAntalFlasker').value = '0';
   document.getElementById('newVinLagerplacering').value = '';
+  document.getElementById('newVinReolNr').value = '';
+  document.getElementById('newVinHylleNr').value = '';
+  document.getElementById('newVinRaekkefoelge').value = '0';
   document.getElementById('newVinNoter').value = '';
   
   renderVineList();
+  renderVinMasterTable();
   updateVinStats();
   updateVinFilters();
   updateVinLabelSelect();
+  updateVinAdminSelects();
 }
 
 // Download Excel skabelon for vinlager
@@ -12122,18 +12143,11 @@ function downloadVinlagerExcelTemplate() {
     
     const wb = XLSX.utils.book_new();
     
-    // Column order: Navn, Producent, Land, Region, Årgang, Druetype, Alkoholprocent, Flasketype, Indkøbspris, Salgspris, Antal flasker, Lagerplacering, Noter
-    const columnOrder = ['Navn', 'Producent', 'Land', 'Region', 'Årgang', 'Druetype', 'Alkoholprocent', 'Flasketype', 'Indkøbspris', 'Salgspris', 'Antal flasker', 'Lagerplacering', 'Noter'];
+    // Column order: Navn, Producent, Land, Region, Årgang, Druetype, Alkoholprocent, Flasketype, Indkøbspris, Salgspris, Antal flasker, Lagerplacering, Reol, Hylle, Rækkefølge, Noter
+    const columnOrder = ['Navn', 'Producent', 'Land', 'Region', 'Årgang', 'Druetype', 'Alkoholprocent', 'Flasketype', 'Indkøbspris', 'Salgspris', 'Antal flasker', 'Lagerplacering', 'Reol', 'Hylle', 'Rækkefølge', 'Noter'];
     
-    // Brug eksisterende vine eller demo data
+    // Brug eksisterende vine
     let vineData = [...vinlagerVine];
-    if(vineData.length === 0) {
-      // Demo data
-      vineData = [
-        { Navn: 'Château Margaux', Producent: 'Château Margaux', Land: 'Frankrig', Region: 'Bordeaux', Årgang: 2018, Druetype: 'Cabernet Sauvignon', Alkoholprocent: 13.5, Flasketype: '75 cl', Indkøbspris: 2500, Salgspris: 3500, 'Antal flasker': 12, Lagerplacering: 'Vinlager 1', Noter: 'Grand Cru' },
-        { Navn: 'Dom Pérignon', Producent: 'Moët & Chandon', Land: 'Frankrig', Region: 'Champagne', Årgang: 2012, Druetype: 'Chardonnay/Pinot Noir', Alkoholprocent: 12.5, Flasketype: '75 cl', Indkøbspris: 1200, Salgspris: 1800, 'Antal flasker': 24, Lagerplacering: 'Vinlager 1', Noter: 'Vintage' }
-      ];
-    }
     
     // Konverter til Excel format
     const excelData = vineData.map(vin => ({
@@ -12149,6 +12163,9 @@ function downloadVinlagerExcelTemplate() {
       Salgspris: vin.salgspris || vin.Salgspris || '',
       'Antal flasker': vin.antal_flasker || vin['Antal flasker'] || 0,
       Lagerplacering: vin.lagerplacering || vin.Lagerplacering || '',
+      Reol: vin.reolNr || vin.Reol || '',
+      Hylle: vin.hylleNr || vin.Hylle || '',
+      Rækkefølge: vin.raekkefoelge || vin.Rækkefølge || 0,
       Noter: vin.noter || vin.Noter || ''
     }));
     
@@ -12203,7 +12220,7 @@ function downloadVinlagerExcelTemplate() {
     link.click();
     document.body.removeChild(link);
     
-    alert(`✅ Vinlager skabelon downloadet! (v${APP_VERSION})\n\nDer er lavet TO filer:\n• Excel: ${filenameXlsx}\n• CSV (klar til import): ${filenameCsv}\n\nStruktur:\n• Navn; Producent; Land; Region; Årgang; Druetype; Alkoholprocent; Flasketype; Indkøbspris; Salgspris; Antal flasker; Lagerplacering; Noter\n\nSådan bruger du skabelonen:\n1) Rediger i Excel-filen, gem som CSV eller brug den medfølgende CSV direkte\n2) Importér CSV-filen via Import/Export i programmet`);
+    alert(`✅ Vinlager skabelon downloadet! (v${APP_VERSION})\n\nDer er lavet TO filer:\n• Excel: ${filenameXlsx}\n• CSV (klar til import): ${filenameCsv}\n\nStruktur:\n• Navn; Producent; Land; Region; Årgang; Druetype; Alkoholprocent; Flasketype; Indkøbspris; Salgspris; Antal flasker; Lagerplacering; Reol; Hylle; Rækkefølge; Noter\n\nAntal vine i skabelon: ${excelData.length}\n\nSådan bruger du skabelonen:\n1) Rediger i Excel-filen, gem som CSV eller brug den medfølgende CSV direkte\n2) Importér CSV-filen via Import/Export i programmet`);
     
   } catch(err) {
     console.error('Fejl ved generering af vinlager Excel skabelon:', err);
@@ -12302,7 +12319,7 @@ function processVinlagerImportText(text, importType = 'add') {
     
     const cleanParts = parts.map(p => p.trim().replace(/^["']|["']$/g, ''));
     
-    // Column order: Navn, Producent, Land, Region, Årgang, Druetype, Alkoholprocent, Flasketype, Indkøbspris, Salgspris, Antal flasker, Lagerplacering, Noter
+    // Column order: Navn, Producent, Land, Region, Årgang, Druetype, Alkoholprocent, Flasketype, Indkøbspris, Salgspris, Antal flasker, Lagerplacering, Reol, Hylle, Rækkefølge, Noter
     const navn = cleanParts[0] || '';
     if(!navn) return;
     
@@ -12320,9 +12337,13 @@ function processVinlagerImportText(text, importType = 'add') {
     const antalFlaskerStr = (cleanParts[10] || '0').replace(',', '.');
     const antalFlasker = parseInt(antalFlaskerStr) || 0;
     const lagerplacering = cleanParts[11]?.trim() || '';
-    const noter = cleanParts[12]?.trim() || null;
+    const reol = cleanParts[12]?.trim() || null;
+    const hylle = cleanParts[13]?.trim() || null;
+    const raekkefoelgeStr = cleanParts[14]?.trim() || '0';
+    const raekkefoelge = parseInt(raekkefoelgeStr) || 0;
+    const noter = cleanParts[15]?.trim() || null;
     
-    fileVine.push({ navn, producent, land, region, årgang, druetype, alkoholprocent, flasketype, indkøbspris, salgspris, antal_flasker: antalFlasker, lagerplacering, noter });
+    fileVine.push({ navn, producent, land, region, årgang, druetype, alkoholprocent, flasketype, indkøbspris, salgspris, antal_flasker: antalFlasker, lagerplacering, reolNr: reol, hylleNr: hylle, raekkefoelge, noter });
   });
   
   if(fileVine.length === 0){
@@ -12407,6 +12428,9 @@ function processVinlagerImportText(text, importType = 'add') {
           salgspris: v.salgspris,
           antal_flasker: v.antal_flasker,
           lagerplacering: v.lagerplacering,
+          reolNr: v.reolNr || null,
+          hylleNr: v.hylleNr || null,
+          raekkefoelge: v.raekkefoelge || 0,
           noter: v.noter,
           oprettet_dato: new Date().toISOString(),
           sidst_opdateret: new Date().toISOString()
@@ -12437,6 +12461,9 @@ function processVinlagerImportText(text, importType = 'add') {
         existing.indkøbspris = v.indkøbspris || existing.indkøbspris;
         existing.salgspris = v.salgspris !== undefined ? v.salgspris : existing.salgspris;
         existing.lagerplacering = v.lagerplacering || existing.lagerplacering;
+        existing.reolNr = v.reolNr !== undefined ? v.reolNr : existing.reolNr;
+        existing.hylleNr = v.hylleNr !== undefined ? v.hylleNr : existing.hylleNr;
+        existing.raekkefoelge = v.raekkefoelge !== undefined ? v.raekkefoelge : existing.raekkefoelge;
         existing.noter = v.noter !== undefined ? v.noter : existing.noter;
         existing.sidst_opdateret = new Date().toISOString();
         updated++;
@@ -12455,6 +12482,9 @@ function processVinlagerImportText(text, importType = 'add') {
           salgspris: v.salgspris,
           antal_flasker: v.antal_flasker,
           lagerplacering: v.lagerplacering,
+          reolNr: v.reolNr || null,
+          hylleNr: v.hylleNr || null,
+          raekkefoelge: v.raekkefoelge || 0,
           noter: v.noter,
           oprettet_dato: new Date().toISOString(),
           sidst_opdateret: new Date().toISOString()
@@ -12495,6 +12525,423 @@ function initializeVinlager() {
   const placeringSelect = document.getElementById('newVinLagerplacering');
   if(placeringSelect) {
     placeringSelect.innerHTML = '<option value="">Vælg placering</option>' + lokationer.map(l => `<option value="${l}">${l}</option>`).join('');
+  }
+  
+  // Opdater vin admin sektioner
+  updateVinAdminSelects();
+  renderVinMasterTable();
+}
+
+// Show vin admin section (ligesom showMasterSection)
+function showVinAdminSection(sectionId) {
+  // Hide all sections
+  document.querySelectorAll('#vinAdmin .settings-section').forEach(s => {
+    s.classList.remove('active');
+    s.style.display = 'none';
+  });
+  
+  // Remove active from all sidebar items
+  document.querySelectorAll('#vinAdminSidebar .settings-item').forEach(item => {
+    item.classList.remove('active');
+  });
+  
+  // Show selected section
+  const section = document.getElementById(`vinAdmin-section-${sectionId}`);
+  if (section) {
+    section.classList.add('active');
+    section.style.display = 'block';
+  }
+  
+  // Add active to clicked sidebar item
+  const clickedItem = event?.currentTarget;
+  if (clickedItem) {
+    clickedItem.classList.add('active');
+  }
+  
+  // Initialize section specific data
+  if (sectionId === 'shelf') {
+    updateVinHylleReolSelect();
+    renderVinHylleRaekkefoelge();
+  } else if (sectionId === 'view') {
+    renderVinMasterTable();
+  }
+}
+
+// Update vin admin selects
+function updateVinAdminSelects() {
+  const data = loadAllData() || {};
+  const lokationer = data.vinlagerLokationer || [];
+  
+  // Update form select
+  const placeringSelect = document.getElementById('newVinLagerplacering');
+  if(placeringSelect) {
+    placeringSelect.innerHTML = '<option value="">Vælg placering</option>' + lokationer.map(l => `<option value="${l}">${l}</option>`).join('');
+  }
+  
+  // Update master table filters
+  const masterPlaceringFilter = document.getElementById('vinMasterPlaceringFilter');
+  if(masterPlaceringFilter) {
+    masterPlaceringFilter.innerHTML = '<option value="">Alle placeringer</option>' + lokationer.map(l => `<option value="${l}">${l}</option>`).join('');
+    masterPlaceringFilter.onchange = function() {
+      updateVinMasterReolFilter();
+      renderVinMasterTable();
+    };
+  }
+  
+  // Update shelf selects
+  const hylleLagerSelect = document.getElementById('vinHylleLagerSelect');
+  if(hylleLagerSelect) {
+    hylleLagerSelect.innerHTML = '<option value="">Vælg lagerplacering</option>' + lokationer.map(l => `<option value="${l}">${l}</option>`).join('');
+  }
+  
+  updateVinMasterReolFilter();
+}
+
+// Update vin master reol filter
+function updateVinMasterReolFilter() {
+  const placeringFilter = document.getElementById('vinMasterPlaceringFilter');
+  const reolFilter = document.getElementById('vinMasterReolFilter');
+  const hylleFilter = document.getElementById('vinMasterHylleFilter');
+  
+  const selectedPlacering = placeringFilter?.value || '';
+  
+  if (!selectedPlacering) {
+    if (reolFilter) reolFilter.innerHTML = '<option value="">Alle reoler</option>';
+    if (hylleFilter) hylleFilter.innerHTML = '<option value="">Alle hylder</option>';
+    return;
+  }
+  
+  const reoler = [...new Set(vinlagerVine
+    .filter(v => v.lagerplacering === selectedPlacering && v.reolNr)
+    .map(v => v.reolNr)
+    .sort())];
+  
+  if (reolFilter) {
+    reolFilter.innerHTML = '<option value="">Alle reoler</option>' + reoler.map(r => `<option value="${r}">${r}</option>`).join('');
+    reolFilter.onchange = function() {
+      updateVinMasterHylleFilter();
+      renderVinMasterTable();
+    };
+  }
+  
+  updateVinMasterHylleFilter();
+}
+
+// Update vin master hylle filter
+function updateVinMasterHylleFilter() {
+  const placeringFilter = document.getElementById('vinMasterPlaceringFilter');
+  const reolFilter = document.getElementById('vinMasterReolFilter');
+  const hylleFilter = document.getElementById('vinMasterHylleFilter');
+  
+  const selectedPlacering = placeringFilter?.value || '';
+  const selectedReol = reolFilter?.value || '';
+  
+  if (!selectedPlacering) {
+    if (hylleFilter) hylleFilter.innerHTML = '<option value="">Alle hylder</option>';
+    return;
+  }
+  
+  let hylder = vinlagerVine.filter(v => v.lagerplacering === selectedPlacering);
+  if (selectedReol) {
+    hylder = hylder.filter(v => v.reolNr === selectedReol);
+  }
+  
+  hylder = [...new Set(hylder
+    .filter(v => v.hylleNr)
+    .map(v => v.hylleNr)
+    .sort())];
+  
+  if (hylleFilter) {
+    hylleFilter.innerHTML = '<option value="">Alle hylder</option>' + hylder.map(h => `<option value="${h}">${h}</option>`).join('');
+    hylleFilter.onchange = function() {
+      renderVinMasterTable();
+    };
+  }
+}
+
+// Render vin master table (ligesom renderMasterTable)
+function renderVinMasterTable() {
+  const container = document.getElementById('vinMasterTableContainer');
+  if (!container) return;
+  
+  const search = (document.getElementById('vinSearchInput')?.value || '').toLowerCase();
+  const filterPlacering = document.getElementById('vinMasterPlaceringFilter')?.value || '';
+  const filterReol = document.getElementById('vinMasterReolFilter')?.value || '';
+  const filterHylle = document.getElementById('vinMasterHylleFilter')?.value || '';
+  
+  let filtered = vinlagerVine.filter(vin => {
+    const matchSearch = !search || 
+      vin.navn.toLowerCase().includes(search) ||
+      vin.producent.toLowerCase().includes(search) ||
+      (vin.årgang && vin.årgang.toString().includes(search));
+    const matchPlacering = !filterPlacering || vin.lagerplacering === filterPlacering;
+    const matchReol = !filterReol || vin.reolNr === filterReol;
+    const matchHylle = !filterHylle || vin.hylleNr === filterHylle;
+    return matchSearch && matchPlacering && matchReol && matchHylle;
+  });
+  
+  // Sort by placering, reol, hylle, rækkefølge
+  filtered.sort((a, b) => {
+    if (a.lagerplacering !== b.lagerplacering) return (a.lagerplacering || '').localeCompare(b.lagerplacering || '');
+    if ((a.reolNr || '') !== (b.reolNr || '')) return (a.reolNr || '').localeCompare(b.reolNr || '');
+    if ((a.hylleNr || '') !== (b.hylleNr || '')) return (a.hylleNr || '').localeCompare(b.hylleNr || '');
+    return (a.raekkefoelge || 0) - (b.raekkefoelge || 0);
+  });
+  
+  if (filtered.length === 0) {
+    container.innerHTML = '<p style="text-align:center; color:#666; padding:40px;">Ingen vine fundet.</p>';
+    return;
+  }
+  
+  container.innerHTML = `
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="background:#8B0000; color:white;">
+          <th style="padding:12px; text-align:left;">Navn</th>
+          <th style="padding:12px; text-align:left;">Producent</th>
+          <th style="padding:12px; text-align:left;">Land</th>
+          <th style="padding:12px; text-align:left;">Årgang</th>
+          <th style="padding:12px; text-align:center;">Antal</th>
+          <th style="padding:12px; text-align:right;">Indkøbspris</th>
+          <th style="padding:12px; text-align:left;">Placering</th>
+          <th style="padding:12px; text-align:left;">Reol</th>
+          <th style="padding:12px; text-align:left;">Hylle</th>
+          <th style="padding:12px; text-align:center;">Handlinger</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filtered.map(vin => {
+          const lavLager = vin.antal_flasker < 6;
+          return `
+            <tr style="border-bottom:1px solid #eee; ${lavLager ? 'background:#fff3cd;' : ''}">
+              <td style="padding:12px;"><strong>${vin.navn}</strong>${lavLager ? ' <span style="color:#dc3545;">⚠️</span>' : ''}</td>
+              <td style="padding:12px;">${vin.producent}</td>
+              <td style="padding:12px;">${vin.land}</td>
+              <td style="padding:12px;">${vin.årgang || '-'}</td>
+              <td style="padding:12px; text-align:center;"><strong>${vin.antal_flasker}</strong></td>
+              <td style="padding:12px; text-align:right;">${vin.indkøbspris.toFixed(2).replace('.', ',')} kr</td>
+              <td style="padding:12px;">${vin.lagerplacering || '-'}</td>
+              <td style="padding:12px;">${vin.reolNr || '-'}</td>
+              <td style="padding:12px;">${vin.hylleNr || '-'}</td>
+              <td style="padding:12px; text-align:center;">
+                <button onclick="editVin('${vin.id}')" style="background:#007bff; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-right:5px;">✏️</button>
+                <button onclick="updateVinAntal('${vin.id}')" style="background:#28a745; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-right:5px;">📊</button>
+                <button onclick="deleteVin('${vin.id}')" style="background:#dc3545; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">🗑️</button>
+              </td>
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+// Update vin hylle reol select
+function updateVinHylleReolSelect() {
+  const lagerSelect = document.getElementById('vinHylleLagerSelect');
+  const reolSelect = document.getElementById('vinHylleReolSelect');
+  if (!lagerSelect || !reolSelect) return;
+  
+  const selectedLager = lagerSelect.value;
+  if (!selectedLager) {
+    reolSelect.innerHTML = '<option value="">Alle reoler</option>';
+    return;
+  }
+  
+  const reoler = [...new Set(vinlagerVine
+    .filter(v => v.lagerplacering === selectedLager && v.reolNr)
+    .map(v => v.reolNr)
+    .sort())];
+  
+  reolSelect.innerHTML = '<option value="">Alle reoler</option>' + reoler.map(r => `<option value="${r}">${r}</option>`).join('');
+  updateVinHylleHylleSelect();
+}
+
+// Update vin hylle hylle select
+function updateVinHylleHylleSelect() {
+  const lagerSelect = document.getElementById('vinHylleLagerSelect');
+  const reolSelect = document.getElementById('vinHylleReolSelect');
+  const hylleSelect = document.getElementById('vinHylleHylleSelect');
+  if (!lagerSelect || !reolSelect || !hylleSelect) return;
+  
+  const selectedLager = lagerSelect.value;
+  const selectedReol = reolSelect.value;
+  
+  if (!selectedLager) {
+    hylleSelect.innerHTML = '<option value="">Alle hylder</option>';
+    return;
+  }
+  
+  let hylder = vinlagerVine.filter(v => v.lagerplacering === selectedLager);
+  if (selectedReol) {
+    hylder = hylder.filter(v => v.reolNr === selectedReol);
+  }
+  
+  hylder = [...new Set(hylder
+    .filter(v => v.hylleNr)
+    .map(v => v.hylleNr)
+    .sort())];
+  
+  hylleSelect.innerHTML = '<option value="">Alle hylder</option>' + hylder.map(h => `<option value="${h}">${h}</option>`).join('');
+}
+
+// Render vin hylle rækkefølge (drag & drop)
+function renderVinHylleRaekkefoelge() {
+  const list = document.getElementById('vinHylleRaekkefoelgeList');
+  if (!list) return;
+  
+  const lagerSelect = document.getElementById('vinHylleLagerSelect');
+  const reolSelect = document.getElementById('vinHylleReolSelect');
+  const hylleSelect = document.getElementById('vinHylleHylleSelect');
+  
+  const selectedLager = lagerSelect?.value || '';
+  const selectedReol = reolSelect?.value || '';
+  const selectedHylle = hylleSelect?.value || '';
+  
+  if (!selectedLager) {
+    list.innerHTML = '<li style="padding:12px; color:#666; font-style:italic;">Vælg en lagerplacering for at se vine</li>';
+    return;
+  }
+  
+  let varer = vinlagerVine.filter(v => v.lagerplacering === selectedLager);
+  if (selectedReol) varer = varer.filter(v => v.reolNr === selectedReol);
+  if (selectedHylle) varer = varer.filter(v => v.hylleNr === selectedHylle);
+  
+  // Sort by rækkefølge
+  varer.sort((a, b) => (a.raekkefoelge || 0) - (b.raekkefoelge || 0));
+  
+  list.innerHTML = '';
+  if (varer.length === 0) {
+    list.innerHTML = '<li style="padding:12px; color:#666; font-style:italic;">Ingen vine fundet</li>';
+    return;
+  }
+  
+  varer.forEach((v, index) => {
+    const li = document.createElement('li');
+    li.draggable = true;
+    li.dataset.vinid = v.id;
+    li.style.display = 'flex';
+    li.style.alignItems = 'center';
+    li.style.justifyContent = 'space-between';
+    li.style.padding = '10px 12px';
+    li.style.border = '1px solid #ccc';
+    li.style.borderRadius = '6px';
+    li.style.background = '#fff';
+    li.style.marginBottom = '8px';
+    li.style.cursor = 'move';
+    const raekkefoelgeNummer = index + 1;
+    li.innerHTML = `
+      <div style="flex:1; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <span class="raekkefoelge-nummer" style="color:#999; font-weight:bold; min-width:30px; text-align:right;">${raekkefoelgeNummer}.</span>
+        <strong style="flex:1; min-width:150px;">${v.navn}</strong>
+        ${v.reolNr ? `<span style="color:#9C27B0; font-weight:500;">Reol ${v.reolNr}</span>` : ''}
+        <span style="color:#666;">Hylle ${v.hylleNr || '-'}</span>
+        <span class="raekkefoelge-text" style="color:#999; font-size:12px;">Rækkefølge: ${v.raekkefoelge || raekkefoelgeNummer}</span>
+      </div>
+    `;
+    li.addEventListener('dragstart', (e) => {
+      li.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    li.addEventListener('dragend', () => {
+      li.classList.remove('dragging');
+    });
+    list.appendChild(li);
+  });
+  
+  // Drag and drop funktionalitet
+  const listClone = list.cloneNode(false);
+  Array.from(list.children).forEach(child => listClone.appendChild(child));
+  list.parentNode.replaceChild(listClone, list);
+  const finalList = document.getElementById('vinHylleRaekkefoelgeList');
+  if (!finalList) return;
+  
+  finalList.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const dragging = finalList.querySelector('.dragging');
+    if (!dragging) return;
+    const after = getDragAfterElement(finalList, e.clientY);
+    if (after == null) finalList.appendChild(dragging);
+    else finalList.insertBefore(dragging, after);
+  }, false);
+  
+  finalList.addEventListener('drop', function(e) {
+    e.preventDefault();
+    const dragging = finalList.querySelector('.dragging');
+    if (!dragging) return;
+    
+    const newOrder = [];
+    finalList.querySelectorAll('li').forEach(li => {
+      const vinid = li.dataset.vinid;
+      if (vinid) newOrder.push(vinid);
+    });
+    
+    newOrder.forEach((vinid, index) => {
+      const v = vinlagerVine.find(x => x.id === vinid);
+      if (v) {
+        v.raekkefoelge = index + 1;
+      }
+    });
+    
+    finalList.querySelectorAll('li').forEach((li, index) => {
+      const nummerSpan = li.querySelector('.raekkefoelge-nummer');
+      const raekkefoelgeSpan = li.querySelector('.raekkefoelge-text');
+      if (nummerSpan) nummerSpan.textContent = `${index + 1}.`;
+      if (raekkefoelgeSpan) raekkefoelgeSpan.textContent = `Rækkefølge: ${index + 1}`;
+    });
+    
+    dragging.classList.remove('dragging');
+    renderVinMasterTable();
+    saveAllData();
+  }, false);
+}
+
+// Upload vinlager to server
+async function uploadVinlagerToServer() {
+  const token = localStorage.getItem('github_token');
+  if (!token) {
+    const inputToken = prompt('Indtast din GitHub Personal Access Token:');
+    if (!inputToken) return;
+    localStorage.setItem('github_token', inputToken);
+  }
+  
+  const finalToken = token || localStorage.getItem('github_token');
+  if (!finalToken) return;
+  
+  try {
+    const dataToUpload = {
+      vinlagerVine: vinlagerVine,
+      vinlagerLokationer: (loadAllData() || {}).vinlagerLokationer || [],
+      version: APP_VERSION,
+      exportedAt: new Date().toISOString()
+    };
+    
+    const response = await fetch('https://api.github.com/gists', {
+      method: 'POST',
+      headers: {
+        'Authorization': `token ${finalToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        description: 'Vinlager skabelon',
+        public: false,
+        files: {
+          'vinlager.json': {
+            content: JSON.stringify(dataToUpload, null, 2)
+          }
+        }
+      })
+    });
+    
+    if (!response.ok) throw new Error('Upload fejlede');
+    
+    const result = await response.json();
+    localStorage.setItem('vinlager_gist_id', result.id);
+    alert('✅ Vinlager uploadet til server!');
+  } catch (err) {
+    console.error('Upload fejl:', err);
+    alert('❌ Fejl ved upload: ' + err.message);
   }
 }
 
