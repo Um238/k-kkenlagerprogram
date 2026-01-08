@@ -506,7 +506,7 @@ a:hover{color:#45a049;text-decoration:none}
     <button class="secondary" onclick="showPage('licens'); updateLicenseStatusDisplay();" style="background:rgba(255,255,255,0.2); color:#fff; border-color:rgba(255,255,255,0.3);">🔑 Licens</button>
     <button class="secondary" onclick="logout()">🚪 Log ud</button>
     </div>
-    <div id="versionDisplay" style="color:#fff; font-size:16px; font-weight:700; text-align:right; padding:8px 12px; background:rgba(255,255,255,0.25); border-radius:6px; border:1px solid rgba(255,255,255,0.35); box-shadow:0 4px 12px rgba(0,0,0,0.15); font-family:'Segoe UI', sans-serif; line-height:1.5;">v4.53<br><span style="font-size:12px; opacity:0.95; letter-spacing:0.2px;">2026-01-08 06:50</span></div>
+    <div id="versionDisplay" style="color:#fff; font-size:16px; font-weight:700; text-align:right; padding:8px 12px; background:rgba(255,255,255,0.25); border-radius:6px; border:1px solid rgba(255,255,255,0.35); box-shadow:0 4px 12px rgba(0,0,0,0.15); font-family:'Segoe UI', sans-serif; line-height:1.5;">v4.54<br><span style="font-size:12px; opacity:0.95; letter-spacing:0.2px;">2026-01-08 07:05</span></div>
   </div>
 </header>
 
@@ -2314,9 +2314,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.53';
+const APP_VERSION = '4.54';
 const BUILD_DATE = '2026-01-08';
-const BUILD_TIME = '06:50';
+const BUILD_TIME = '07:05';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -9680,18 +9680,33 @@ function trackLoginCount() {
     
     console.log(`Login count: ${loginCount}`);
     
-    // Show backup prompt after 2nd login (first time) and every 5th login thereafter
-    if (loginCount === 2 || (loginCount > 2 && loginCount % 5 === 0)) {
+    // Check if this is a new system (no backup prompt shown before)
+    const FIRST_BACKUP_PROMPT_SHOWN_KEY = 'køkkenlager_first_backup_prompt_shown';
+    const hasShownFirstPrompt = localStorage.getItem(FIRST_BACKUP_PROMPT_SHOWN_KEY) === 'true';
+    
+    // Show backup prompt:
+    // - After 2nd login if system is new (first time)
+    // - After every 5th login if system is not new
+    const shouldShowPrompt = hasShownFirstPrompt 
+      ? (loginCount % 5 === 0)  // Every 5th login for existing systems
+      : (loginCount === 2);      // After 2nd login for new systems
+    
+    if (shouldShowPrompt) {
       const lastPrompt = localStorage.getItem(LAST_BACKUP_PROMPT_KEY);
       const now = Date.now();
       
       // Only show prompt if last prompt was more than 1 hour ago
       if (!lastPrompt || (now - parseInt(lastPrompt, 10)) > 3600000) {
-        console.log(`Backup prompt efter ${loginCount}. login...`);
+        console.log(`Backup prompt efter ${loginCount}. login (${hasShownFirstPrompt ? 'eksisterende system' : 'nyt system'})...`);
         setTimeout(() => {
           showBackupPrompt();
         }, 2000); // Wait 2 seconds after login
         localStorage.setItem(LAST_BACKUP_PROMPT_KEY, now.toString());
+        
+        // Mark that first prompt has been shown
+        if (!hasShownFirstPrompt) {
+          localStorage.setItem(FIRST_BACKUP_PROMPT_SHOWN_KEY, 'true');
+        }
       }
     }
     
