@@ -762,8 +762,8 @@ a:hover{color:#45a049;text-decoration:none}
           <div style="display:flex; gap:20px; flex-wrap:wrap;">
             <div id="vinlagerDistrikter" style="flex:1; min-width:300px; display:flex; flex-direction:column; gap:15px;"></div>
             <div style="flex:2; min-width:400px;">
-              <h4 style="margin-bottom:15px; color:#8B0000;">Øvrige Lager</h4>
-              <div id="vinlagerDropdownsContainer" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:15px;"></div>
+              <h4 style="margin-bottom:15px; color:#8B0000;">💎 Øvrige Lager</h4>
+              <div id="vinlagerDropdownsContainer" style="display:flex; flex-direction:column; gap:15px;"></div>
             </div>
           </div>
         </div>
@@ -2830,9 +2830,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.89';
+const APP_VERSION = '4.90';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '15:23';
+const BUILD_TIME = '15:41';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -11143,6 +11143,7 @@ async function uploadVarelagerToServer(){
     // Prepare export data
     const installationId = getInstallationId();
     const exportData = {
+      type: 'køkkenlager', // Marker som køkkenlager så stregkode-scanneren kan se forskel
       masterVarelager: masterVarelager || [],
       lagerLokationer: lagerLokationer || [],
       mainInstallationId: installationId,
@@ -11937,47 +11938,58 @@ function renderVinlagerDropdowns() {
   const container = document.getElementById('vinlagerDropdownsContainer');
   if (!container) return;
   
-  // Render 5 dropdowns ved siden af hinanden
-  container.innerHTML = data.vinlagerDropdowns.map((dropdown, dropdownIdx) => `
-    <div style="border:2px solid #8B0000; border-radius:8px; padding:15px; background:#fff; display:flex; flex-direction:column; height:100%;">
-      <div style="margin-bottom:12px;">
-        <input type="text" 
-               id="dropdownName_${dropdownIdx}" 
-               value="${dropdown.name}" 
-               style="width:100%; padding:8px; border:2px solid #8B0000; border-radius:4px; font-size:16px; font-weight:700; color:#8B0000; text-align:center;" 
-               onblur="renameVinlagerDropdown(${dropdownIdx})"
-               onkeypress="if(event.key==='Enter') { event.target.blur(); }" />
+  // Render 5 dropdowns med samme udseende som vindistrikterne (med diamant-ikon)
+  container.innerHTML = data.vinlagerDropdowns.map((dropdown, dropdownIdx) => {
+    const dropdownId = `dropdown-${dropdownIdx}`;
+    return `
+      <div class="vinlager-dropdown" style="border:1px solid #ddd; border-radius:8px; overflow:hidden; background:#fff; max-width:100%;">
+        <div class="vinlager-dropdown-header" onclick="toggleVinlagerDropdown('${dropdownId}')" style="padding:12px 15px; background:#8B0000; color:white; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-weight:700; user-select:none; font-size:15px;">
+          <span>💎 ${dropdown.name}</span>
+          <span class="vinlager-arrow" id="arrow-${dropdownId}" style="transition:transform 0.3s; font-size:12px;">▼</span>
+        </div>
+        <div class="vinlager-dropdown-content" id="${dropdownId}" style="display:none; padding:12px; background:#f9f9f9;">
+          <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
+            <input type="text" 
+                   id="newLocation_${dropdownIdx}" 
+                   placeholder="Tilføj lokation" 
+                   style="flex:1; padding:6px; border:1px solid #ddd; border-radius:4px; font-size:13px;" 
+                   onkeypress="if(event.key==='Enter') addLocationToDropdown(${dropdownIdx})" />
+            <button onclick="addLocationToDropdown(${dropdownIdx})" 
+                    style="background:#8B0000; color:white; padding:6px 12px; border:none; border-radius:4px; cursor:pointer; font-weight:700; font-size:13px;">➕</button>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:6px;">
+            ${dropdown.locations.map((loc, locIdx) => `
+              <div draggable="true" 
+                   data-dropdown="${dropdownIdx}" 
+                   data-location="${locIdx}" 
+                   style="display:flex; align-items:center; gap:8px; padding:6px 10px; background:white; border-radius:4px; border:1px solid #e0e0e0; cursor:move; transition:all 0.2s; font-size:13px; text-align:center;" 
+                   ondragstart="handleVinlagerLocationDragStart(event)" 
+                   ondragover="event.preventDefault(); handleVinlagerLocationDragOver(event)" 
+                   ondrop="handleVinlagerLocationDrop(event)"
+                   ondragend="handleVinlagerLocationDragEnd(event)"
+                   onmouseover="this.style.background='#f0f0f0'; this.style.borderColor='#8B0000';" 
+                   onmouseout="this.style.background='white'; this.style.borderColor='#e0e0e0';">
+                <span style="cursor:move; color:#8B0000;">☰</span>
+                <span style="flex:1;">${loc}</span>
+                <button onclick="removeLocationFromDropdown(${dropdownIdx}, ${locIdx})" 
+                        style="background:#dc3545; color:white; padding:4px 8px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">🗑️</button>
+              </div>
+            `).join('')}
+            ${dropdown.locations.length === 0 ? '<div style="grid-column:1/-1; padding:20px; text-align:center; color:#999; font-size:13px;">Ingen lokationer endnu</div>' : ''}
+          </div>
+          <div style="margin-top:10px; padding-top:10px; border-top:1px solid #ddd;">
+            <input type="text" 
+                   id="dropdownName_${dropdownIdx}" 
+                   value="${dropdown.name}" 
+                   style="width:100%; padding:8px; border:2px solid #8B0000; border-radius:4px; font-size:14px; font-weight:700; color:#8B0000; text-align:center;" 
+                   onblur="renameVinlagerDropdown(${dropdownIdx})"
+                   onkeypress="if(event.key==='Enter') { event.target.blur(); }" 
+                   placeholder="Rediger navn" />
+          </div>
+        </div>
       </div>
-      <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
-        <input type="text" 
-               id="newLocation_${dropdownIdx}" 
-               placeholder="Tilføj lokation" 
-               style="flex:1; padding:6px; border:1px solid #ddd; border-radius:4px; font-size:13px;" 
-               onkeypress="if(event.key==='Enter') addLocationToDropdown(${dropdownIdx})" />
-        <button onclick="addLocationToDropdown(${dropdownIdx})" 
-                style="background:#8B0000; color:white; padding:6px 12px; border:none; border-radius:4px; cursor:pointer; font-weight:700; font-size:13px;">➕</button>
-      </div>
-      <ul id="dropdownLocations_${dropdownIdx}" 
-          style="list-style:none; padding:0; margin:0; min-height:100px; max-height:300px; overflow-y:auto; flex:1;">
-        ${dropdown.locations.map((loc, locIdx) => `
-          <li draggable="true" 
-              data-dropdown="${dropdownIdx}" 
-              data-location="${locIdx}" 
-              style="display:flex; align-items:center; gap:8px; padding:8px; background:#f5f5f5; border-radius:4px; margin-bottom:6px; cursor:move; border:1px solid #ddd; font-size:13px;" 
-              ondragstart="handleVinlagerLocationDragStart(event)" 
-              ondragover="event.preventDefault(); handleVinlagerLocationDragOver(event)" 
-              ondrop="handleVinlagerLocationDrop(event)"
-              ondragend="handleVinlagerLocationDragEnd(event)">
-            <span style="cursor:move; color:#8B0000;">☰</span>
-            <span style="flex:1;">${loc}</span>
-            <button onclick="removeLocationFromDropdown(${dropdownIdx}, ${locIdx})" 
-                    style="background:#dc3545; color:white; padding:4px 8px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">🗑️</button>
-          </li>
-        `).join('')}
-        ${dropdown.locations.length === 0 ? '<li style="padding:20px; text-align:center; color:#999; font-size:13px;">Ingen lokationer endnu</li>' : ''}
-      </ul>
-    </div>
-  `).join('');
+    `;
+  }).join('');
   
   // Update vinlagerLokationer array from all dropdowns
   updateVinlagerLokationerFromDropdowns();
@@ -12462,6 +12474,23 @@ function toggleVinlagerKontinent(kontinentId) {
   });
   
   // Toggle denne kontinent
+  if (content.style.display === 'none') {
+    content.style.display = 'block';
+    arrow.style.transform = 'rotate(180deg)';
+  } else {
+    content.style.display = 'none';
+    arrow.style.transform = 'rotate(0deg)';
+  }
+}
+
+// Toggle dropdown (for Øvrige Lager)
+function toggleVinlagerDropdown(dropdownId) {
+  const content = document.getElementById(dropdownId);
+  const arrow = document.getElementById(`arrow-${dropdownId}`);
+  
+  if (!content || !arrow) return;
+  
+  // Toggle denne dropdown
   if (content.style.display === 'none') {
     content.style.display = 'block';
     arrow.style.transform = 'rotate(180deg)';
@@ -14061,7 +14090,10 @@ function processVinlagerImportText(text, importType = 'add') {
   });
   
   // Opdater UI - ligesom i master varelager import
-  renderVinMasterTable(); // Opdater tabellen i "Søg og se hele varelageret" - DETTE ER VIGTIGT!
+  // VIGTIGT: Opdater tabellen med en lille forsinkelse for at sikre at containeren er synlig
+  setTimeout(() => {
+    renderVinMasterTable(); // Opdater tabellen i "Søg og se hele varelageret" - DETTE ER VIGTIGT!
+  }, 100);
   updateVinLabelSelect();
   updateVinAdminSelects(); // Opdater alle selects
   renderVinlagerDropdowns();
@@ -14581,6 +14613,7 @@ async function uploadVinlagerToServer() {
   
   try {
     const dataToUpload = {
+      type: 'vinlager', // Marker som vinlager så stregkode-scanneren kan se forskel
       vinlagerVine: vinlagerVine,
       vinlagerLokationer: (loadAllData() || {}).vinlagerLokationer || [],
       version: APP_VERSION,
