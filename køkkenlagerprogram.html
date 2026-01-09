@@ -2830,9 +2830,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.92';
+const APP_VERSION = '4.93';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '16:10';
+const BUILD_TIME = '16:25';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -14105,19 +14105,26 @@ function processVinlagerImportText(text, importType = 'add') {
   // Først opdater selects så de har de nye lokationer
   updateVinAdminSelects();
   
-  // Opdater tabellen direkte
-  renderVinMasterTable();
-  
-  // Opdater tabellen igen efter en lille forsinkelse for at sikre at containeren er synlig
-  setTimeout(() => {
-    renderVinMasterTable();
-  }, 300);
-  
-  // Hvis sektionen ikke er synlig, vis den automatisk
-  const viewSection = document.getElementById('vinAdmin-section-view');
-  if (viewSection && viewSection.style.display === 'none') {
-    showVinAdminSection('view');
+  // Naviger til vinAdmin sektionen hvis den ikke er synlig
+  const vinAdminSection = document.getElementById('vinAdmin');
+  if (vinAdminSection && vinAdminSection.classList.contains('hidden')) {
+    // Find vinAdmin menu item og klik på det
+    const vinAdminMenuItem = document.querySelector('[data-target="vinAdmin"]');
+    if (vinAdminMenuItem) {
+      vinNavClick({ currentTarget: vinAdminMenuItem });
+    }
   }
+  
+  // Vis view sektionen og opdater tabellen
+  setTimeout(() => {
+    showVinAdminSection('view');
+    renderVinMasterTable();
+    
+    // Opdater tabellen igen efter en lille forsinkelse for at sikre at containeren er synlig
+    setTimeout(() => {
+      renderVinMasterTable();
+    }, 200);
+  }, 100);
   
   // Opdater overblik hvis det er synligt
   const vinOverblikSection = document.getElementById('vinOverblik');
@@ -14353,13 +14360,6 @@ function renderVinMasterTable() {
   const container = document.getElementById('vinMasterTableContainer');
   if (!container) {
     console.warn('vinMasterTableContainer ikke fundet');
-    return;
-  }
-  
-  // Tjek om sektionen er synlig
-  const section = document.getElementById('vinAdmin-section-view');
-  if (section && section.style.display === 'none') {
-    console.log('Sektionen er ikke synlig, venter på at den bliver vist');
     return;
   }
   
