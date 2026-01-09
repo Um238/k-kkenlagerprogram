@@ -2832,9 +2832,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.99';
+const APP_VERSION = '5.01';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '17:20';
+const BUILD_TIME = '17:30';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -13045,6 +13045,7 @@ function confirmUpdateVinAntal(event, vinId) {
   saveAllData();
   document.querySelector('.modal').remove();
   renderVineList();
+  renderVinMasterTable(); // Opdater også master tabellen
   updateVinStats();
   renderVinHistorik();
 }
@@ -13055,6 +13056,7 @@ function deleteVin(vinId) {
   vinlagerVine = vinlagerVine.filter(v => v.id !== vinId);
   saveAllData();
   renderVineList();
+  renderVinMasterTable(); // Opdater også master tabellen
   updateVinStats();
 }
 
@@ -14342,13 +14344,16 @@ function showVinAdminSection(sectionId) {
     clickedItem.classList.add('active');
   }
   
-  // Automatisk luk sidebar efter valg
-  const sidebar = document.getElementById('vinAdminSidebar');
-  const toggleBtn = document.getElementById('vinAdminToggleBtn');
-  if (sidebar && !sidebar.classList.contains('collapsed')) {
-    sidebar.classList.add('collapsed');
-    if (toggleBtn) toggleBtn.setAttribute('data-state', 'closed');
-  }
+  // Automatisk luk sidebar efter valg - men kun hvis den er åben
+  // Dette gør det muligt at toggle-knappen stadig virker
+  setTimeout(() => {
+    const sidebar = document.getElementById('vinAdminSidebar');
+    const toggleBtn = document.getElementById('vinAdminToggleBtn');
+    if (sidebar && !sidebar.classList.contains('collapsed')) {
+      sidebar.classList.add('collapsed');
+      if (toggleBtn) toggleBtn.setAttribute('data-state', 'closed');
+    }
+  }, 100);
   
   // Initialize section specific data
   if (sectionId === 'shelf') {
@@ -14587,10 +14592,10 @@ function renderVinMasterTable() {
                 <td style="padding:6px; text-align:center; white-space:nowrap;"><strong>${vin.antal_flasker}</strong></td>
                 <td style="padding:6px; text-align:center; white-space:nowrap;">${vin.minimumBeholdning || 24}</td>
                 <td style="padding:6px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${vin.lagerplacering || '-'}">${vin.lagerplacering || '-'}</td>
-                <td style="padding:8px; text-align:center; white-space:nowrap;">
-                  <button onclick="editVin('${vin.id}')" style="background:#007bff; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-right:4px; font-size:13px; min-width:38px;">✏️</button>
-                  <button onclick="updateVinAntal('${vin.id}')" style="background:#28a745; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-right:4px; font-size:13px; min-width:38px;">📊</button>
-                  <button onclick="deleteVin('${vin.id}')" style="background:#dc3545; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:13px; min-width:38px;">🗑️</button>
+                <td style="padding:8px; text-align:center; white-space:nowrap; position:relative; z-index:1;">
+                  <button onclick="editVin('${vin.id}')" style="background:#007bff; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-right:4px; font-size:13px; min-width:38px; pointer-events:auto; position:relative; z-index:10;">✏️</button>
+                  <button onclick="updateVinAntal('${vin.id}')" style="background:#28a745; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-right:4px; font-size:13px; min-width:38px; pointer-events:auto; position:relative; z-index:10;">📊</button>
+                  <button onclick="deleteVin('${vin.id}')" style="background:#dc3545; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:13px; min-width:38px; pointer-events:auto; position:relative; z-index:10;">🗑️</button>
                 </td>
               </tr>
             `;
