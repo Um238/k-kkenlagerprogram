@@ -2830,9 +2830,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.80';
+const APP_VERSION = '4.81';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '12:07';
+const BUILD_TIME = '14:08';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -9093,6 +9093,7 @@ function showPage(id){
       vinNavClick({currentTarget: firstMenuItem});
     }
     renderVinlagerDropdowns();
+    renderVinlagerDropdowns();
     renderVinlagerDistrikter();
     collapseAllVinlagerDistrikter();
   } 
@@ -11722,7 +11723,9 @@ function vinNavClick(event) {
       updateVinLogPreview();
     }
   } else if(target === 'vinOverblik'){
-    renderVinOverblik();
+    setTimeout(() => {
+      renderVinOverblik();
+    }, 100);
   } else if(target === 'vinRapporter'){
     renderVinRapporter();
   }
@@ -11733,7 +11736,7 @@ function vinNavClick(event) {
     // Initialize section data when shown
     if (target === 'vinOpsaetning') {
       setTimeout(() => {
-        renderVinlagerLocations();
+        renderVinlagerDropdowns();
         renderVinlagerDistrikter();
         collapseAllVinlagerDistrikter(); // Luk alle når man går ind på siden
       }, 100);
@@ -11755,32 +11758,43 @@ function vinNavClick(event) {
 
 // Vinlager locations - Dropdown system
 function addVinlagerDropdown() {
-  const input = document.getElementById('newVinlagerDropdownName');
-  if (!input) return;
-  
-  const name = input.value.trim();
-  if (!name) {
-    alert('Indtast navn på dropdown');
-    return;
+  try {
+    const input = document.getElementById('newVinlagerDropdownName');
+    if (!input) {
+      console.error('Input field not found');
+      alert('Fejl: Input felt ikke fundet');
+      return;
+    }
+    
+    const name = input.value.trim();
+    if (!name) {
+      alert('Indtast navn på dropdown');
+      return;
+    }
+    
+    const data = loadAllData() || {};
+    if (!data.vinlagerDropdowns) data.vinlagerDropdowns = [];
+    
+    // Check if dropdown already exists
+    if (data.vinlagerDropdowns.some(d => d.name === name)) {
+      alert('Dropdown findes allerede');
+      return;
+    }
+    
+    data.vinlagerDropdowns.push({
+      name: name,
+      locations: []
+    });
+    
+    saveAllData();
+    input.value = '';
+    renderVinlagerDropdowns();
+    
+    console.log('Dropdown tilføjet:', name);
+  } catch(err) {
+    console.error('Fejl ved tilføjelse af dropdown:', err);
+    alert('Fejl ved tilføjelse af dropdown: ' + err.message);
   }
-  
-  const data = loadAllData() || {};
-  if (!data.vinlagerDropdowns) data.vinlagerDropdowns = [];
-  
-  // Check if dropdown already exists
-  if (data.vinlagerDropdowns.some(d => d.name === name)) {
-    alert('Dropdown findes allerede');
-    return;
-  }
-  
-  data.vinlagerDropdowns.push({
-    name: name,
-    locations: []
-  });
-  
-  saveAllData();
-  input.value = '';
-  renderVinlagerDropdowns();
 }
 
 function renderVinlagerDropdowns() {
@@ -12725,6 +12739,43 @@ function filterVine() {
   });
   
   renderVineList();
+}
+
+// Render vin overblik
+function renderVinOverblik() {
+  const container = document.getElementById('vinOverblikContainer');
+  if (!container) return;
+  
+  loadAllData(); // Ensure data is loaded
+  const totalFlasker = vinlagerVine.reduce((sum, v) => sum + (v.antal_flasker || 0), 0);
+  const totalVaerdi = vinlagerVine.reduce((sum, v) => sum + ((v.antal_flasker || 0) * (v.indkøbspris || 0)), 0);
+  const unikkeLande = [...new Set(vinlagerVine.map(v => v.land).filter(l => l))];
+  const unikkeProducenter = [...new Set(vinlagerVine.map(v => v.producent).filter(p => p))];
+  
+  container.innerHTML = `
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:20px; margin-bottom:30px;">
+      <div class="card" style="background:linear-gradient(135deg, #8B0000 0%, #A52A2A 100%); color:white; padding:20px;">
+        <h3 style="margin:0 0 10px 0; font-size:18px;">Total Flasker</h3>
+        <div style="font-size:36px; font-weight:700;">${totalFlasker}</div>
+      </div>
+      <div class="card" style="background:linear-gradient(135deg, #6B4423 0%, #8B6F47 100%); color:white; padding:20px;">
+        <h3 style="margin:0 0 10px 0; font-size:18px;">Total Værdi</h3>
+        <div style="font-size:36px; font-weight:700;">${totalVaerdi.toFixed(2).replace('.', ',')} kr</div>
+      </div>
+      <div class="card" style="background:linear-gradient(135deg, #2C3E50 0%, #34495E 100%); color:white; padding:20px;">
+        <h3 style="margin:0 0 10px 0; font-size:18px;">Unikke Lande</h3>
+        <div style="font-size:36px; font-weight:700;">${unikkeLande.length}</div>
+      </div>
+      <div class="card" style="background:linear-gradient(135deg, #27AE60 0%, #2ECC71 100%); color:white; padding:20px;">
+        <h3 style="margin:0 0 10px 0; font-size:18px;">Unikke Producenter</h3>
+        <div style="font-size:36px; font-weight:700;">${unikkeProducenter.length}</div>
+      </div>
+    </div>
+    <div class="card" style="background:#f8f9fa; padding:20px;">
+      <h3 style="margin:0 0 15px 0;">📊 Oversigt</h3>
+      <p style="color:#666; margin:0;">Brug grupperingerne nedenfor til at se detaljerede oplysninger om vinlageret.</p>
+    </div>
+  `;
 }
 
 // Vis gruppering
@@ -13814,13 +13865,8 @@ function showVinAdminSection(sectionId) {
     clickedItem.classList.add('active');
   }
   
-  // Sikr at sidebar er åben når man skifter sektion
-  const sidebar = document.getElementById('vinAdminSidebar');
-  const toggleBtn = document.getElementById('vinAdminToggleBtn');
-  if(sidebar && sidebar.classList.contains('collapsed')){
-    sidebar.classList.remove('collapsed');
-    if(toggleBtn) toggleBtn.setAttribute('data-state', 'open');
-  }
+  // IKKE automatisk åbn sidebar - lad brugeren selv styre det
+  // Sidebar skal kunne lukkes helt når man klikker på toggle knappen
   
   // Initialize section specific data
   if (sectionId === 'shelf') {
