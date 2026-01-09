@@ -755,14 +755,17 @@ a:hover{color:#45a049;text-decoration:none}
       <div class="card">
         <h2>⚙️ Opsætning Lager</h2>
         <div style="margin-top:20px;">
-          <label><strong>Øvrige Lager</strong></label>
-          <p style="color:#666; font-size:14px; margin-bottom:15px;">Her kan du oprette og administrere 5 lagerområder. Klik på navnet for at omdøbe, og tilføj lokationer under hvert område.</p>
-          <div id="vinlagerDropdownsContainer" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:15px; margin-top:20px;"></div>
         </div>
         
         <div style="margin-top:40px;">
           <h3 style="margin-bottom:20px;">🌍 Vindistrikter</h3>
-          <div id="vinlagerDistrikter" style="display:flex; flex-direction:column; gap:15px; max-width:600px;"></div>
+          <div style="display:flex; gap:20px; flex-wrap:wrap;">
+            <div id="vinlagerDistrikter" style="flex:1; min-width:300px; display:flex; flex-direction:column; gap:15px;"></div>
+            <div style="flex:2; min-width:400px;">
+              <h4 style="margin-bottom:15px; color:#8B0000;">Øvrige Lager</h4>
+              <div id="vinlagerDropdownsContainer" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:15px;"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -2827,9 +2830,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.87';
+const APP_VERSION = '4.88';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '15:01';
+const BUILD_TIME = '15:14';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -7915,6 +7918,8 @@ function selectImportType(type){
     try {
       let text = r.result;
       
+      console.log('Fil læst, længde:', text.length);
+      
       if(!text || text.length === 0){
         alert('Filen er tom eller kunne ikke læses.');
         return;
@@ -7922,12 +7927,15 @@ function selectImportType(type){
       
       // Hvis tekst ser forkert ud (manglede tegn), prøv Windows-1252 encoding
       if(text.includes('') || (text.length > 0 && !/[a-zA-ZæøåÆØÅ]/.test(text.substring(0, Math.min(100, text.length))))){
+        console.log('Prøver Windows-1252 encoding...');
         // Prøv at læse igen med Windows-1252
         const r2 = new FileReader();
         r2.onload = () => {
+          console.log('Windows-1252 encoding virkede, starter import...');
           processImportText(r2.result, type);
         };
         r2.onerror = () => {
+          console.log('Windows-1252 encoding fejlede, bruger original tekst...');
           processImportText(text, type); // Brug original tekst hvis det fejler
         };
         // Læs med Windows-1252 encoding (ISO-8859-1)
@@ -7936,10 +7944,11 @@ function selectImportType(type){
         return;
       }
       
+      console.log('UTF-8 encoding virkede, starter import...');
       processImportText(text, type);
     } catch(err) {
-      alert('Fejl ved import: ' + err.message);
       console.error('Import fejl:', err);
+      alert('Fejl ved import: ' + err.message + '\n\nTjek konsollen for flere detaljer.');
     }
   };
   
@@ -8073,12 +8082,34 @@ function processImportText(text, importType = 'add'){
   
   // Håndter forskellige import-typer
   if(importType === 'overwrite'){
-    // Overskriv hele varelageret
+    // Overskriv hele varelageret - VIGTIGT: Tøm først
+    console.log('Overskriver varelager - tømmer eksisterende varer');
     masterVarelager = [];
+    lagerData = {}; // Tøm også lager data
+    
     fileVarer.forEach(v => {
-      masterVarelager.push({ id: genId(), navn: v.navn, maaleenhed: v.maaleenhed, pris: v.pris, placering: v.placering, reolNr: v.reolNr || null, hylleNr: v.hylleNr || null, raekkefoelge: v.raekkefoelge || 0, varenummer: v.varenummer || null });
+      const newVare = { 
+        id: genId(), 
+        navn: v.navn, 
+        maaleenhed: v.maaleenhed, 
+        pris: v.pris, 
+        placering: v.placering, 
+        reolNr: v.reolNr || null, 
+        hylleNr: v.hylleNr || null, 
+        raekkefoelge: v.raekkefoelge || 0, 
+        varenummer: v.varenummer || null 
+      };
+      masterVarelager.push(newVare);
+      
+      // Opret lager data for placering hvis den ikke findes
+      if (v.placering && !lagerData[v.placering]) {
+        lagerData[v.placering] = {};
+      }
+      
       imported++;
     });
+    
+    console.log(`Overskrevet: ${imported} varer importeret, total varer nu: ${masterVarelager.length}`);
   } else if(importType === 'add'){
     // Tilføj kun nye varer
     fileVarer.forEach(v => {
@@ -12015,7 +12046,19 @@ function addLocationToDropdown(dropdownIdx) {
 function removeLocationFromDropdown(dropdownIdx, locationIdx) {
   if (!confirm('Er du sikker på at du vil slette denne lokation?')) return;
   
-  const data = loadAllData() || {};
+  // Hent data direkte fra localStorage
+  const STORAGE_KEY = 'køkkenlager_data';
+  const saved = localStorage.getItem(STORAGE_KEY);
+  let data = {};
+  if (saved) {
+    try {
+      data = JSON.parse(saved);
+    } catch(err) {
+      console.error('Fejl ved parsing af data:', err);
+      alert('Fejl ved indlæsning af data');
+      return;
+    }
+  }
   
   // Sikr at vinlagerDropdowns altid er et array
   if (!data.vinlagerDropdowns || !Array.isArray(data.vinlagerDropdowns)) {
@@ -12031,8 +12074,18 @@ function removeLocationFromDropdown(dropdownIdx, locationIdx) {
   }
   
   dropdown.locations.splice(locationIdx, 1);
-  saveAllData();
-  renderVinlagerDropdowns();
+  
+  // Gem data
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    saveAllData(); // Opdater også globale variabler
+  } catch(err) {
+    console.error('Fejl ved gemning:', err);
+    alert('Fejl ved gemning: ' + err.message);
+    return;
+  }
+  
+  renderVinlagerDropdowns(); // Dette kalder også updateVinlagerLokationerFromDropdowns()
 }
 
 function renameVinlagerDropdown(dropdownIdx) {
