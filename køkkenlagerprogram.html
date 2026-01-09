@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta name="theme-color" content="#0078D4" />
 <meta name="description" content="Lager optælling system til køkken og lager - Scan stregkoder, administrer varelager og generer rapporter" />
-<title>Lager optælling — Færdig version v4.14 (2026-01-06 10:43)</title>
+<title>Lager optælling — Færdig version</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%230078D4' rx='4'/%3E%3Cg transform='translate(200, 80)'%3E%3Cpath d='M -60 40 L -50 80 L 50 80 L 60 40 L 55 35 L -55 35 Z' fill='%23D4A574' stroke='%238B6F47' stroke-width='2'/%3E%3Cpath d='M -55 35 L -50 30 L 50 30 L 55 35 L 60 40 L -60 40 Z' fill='%23E8C9A0' stroke='%238B6F47' stroke-width='2'/%3E%3Ccircle cx='-30' cy='50' r='3' fill='%23F5E6D3' opacity='0.6'/%3E%3Ccircle cx='0' cy='55' r='2.5' fill='%23F5E6D3' opacity='0.6'/%3E%3Ccircle cx='25' cy='50' r='2' fill='%23F5E6D3' opacity='0.6'/%3E%3C/g%3E%3Ctext x='200' y='50' font-family='serif' font-size='32' font-weight='bold' fill='%23fff' text-anchor='middle'%3EKØKKEN%3C/text%3E%3C/svg%3E" />
 <!-- PWA: Tilføj manifest link for at gøre det til en installable app -->
@@ -354,7 +354,7 @@ a:hover{color:#45a049;text-decoration:none}
 <!-- =========================
      [HTML 0] LOGIN MODAL
      ========================= -->
-<div id="loginModal" class="login-backdrop">
+<div id="loginModal" class="login-backdrop hidden">
   <div class="login-modal">
     <h2 id="loginTitle">Login</h2>
     <div id="loginError" class="error"></div>
@@ -516,7 +516,7 @@ a:hover{color:#45a049;text-decoration:none}
     <button class="secondary" onclick="showPage('licens'); updateLicenseStatusDisplay();" style="background:rgba(255,255,255,0.2); color:#fff; border-color:rgba(255,255,255,0.3);">🔑 Licens</button>
     <button class="secondary" onclick="logout()">🚪 Log ud</button>
     </div>
-    <div id="versionDisplay" style="color:#fff; font-size:16px; font-weight:700; text-align:right; padding:8px 12px; background:rgba(255,255,255,0.25); border-radius:6px; border:1px solid rgba(255,255,255,0.35); box-shadow:0 4px 12px rgba(0,0,0,0.15); font-family:'Segoe UI', sans-serif; line-height:1.5;">v4.56<br><span style="font-size:12px; opacity:0.95; letter-spacing:0.2px;">2026-01-08 08:45</span></div>
+    <div id="versionDisplay" style="color:#fff; font-size:16px; font-weight:700; text-align:right; padding:8px 12px; background:rgba(255,255,255,0.25); border-radius:6px; border:1px solid rgba(255,255,255,0.35); box-shadow:0 4px 12px rgba(0,0,0,0.15); font-family:'Segoe UI', sans-serif; line-height:1.5;"></div>
   </div>
 </header>
 
@@ -2798,9 +2798,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.75';
+const APP_VERSION = '4.76';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '10:17';
+const BUILD_TIME = '10:29';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -15037,5 +15037,28 @@ async function generateVinReportPDF(r, forView = false){
     </div>
   </div>
 
+<script>
+// Sikr at login modal vises ved sideindlæsning hvis brugeren ikke er logget ind
+(function(){
+  function initLogin(){
+    const isLoggedIn = sessionStorage.getItem('køkkenlager_logged_in_session') === 'true';
+    if(!isLoggedIn){
+      showLoginModal();
+    } else {
+      hideLoginModal();
+      if(!appInitialized){
+        initializeApp();
+        appInitialized = true;
+      }
+    }
+  }
+  
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initLogin);
+  } else {
+    initLogin();
+  }
+})();
+</script>
 </body>
 </html>
