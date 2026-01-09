@@ -738,9 +738,9 @@ a:hover{color:#45a049;text-decoration:none}
   <section id="vinlager" class="page hidden" style="background:#fff !important; min-height:auto !important;">
     <!-- Vinlager Navigation -->
     <nav id="vinlagerNav" style="background:linear-gradient(135deg, #8B0000 0%, #A52A2A 100%);padding:10px 18px;display:flex;gap:12px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,0.2);margin-bottom:18px;align-items:center;">
+      <span class="menu-item" data-target="vinOverblik" onclick="vinNavClick(event)">📋 Vinlager overblik</span>
       <span class="menu-item active" data-target="vinOpsaetning" onclick="vinNavClick(event)">⚙️ Opsætning Lager</span>
       <span class="menu-item" data-target="vinOptaelling" onclick="vinNavClick(event)">📊 Vinlager optælling</span>
-      <span class="menu-item" data-target="vinOverblik" onclick="vinNavClick(event)">📋 Vinlager overblik</span>
       <span class="menu-item" data-target="vinAdmin" onclick="vinNavClick(event)">🍷 Vin Administration</span>
       <span class="menu-item" data-target="vinRapporter" onclick="vinNavClick(event)">📊 Rapporter</span>
       <span class="menu-item" data-target="vinLabels" onclick="vinNavClick(event)">🏷️ Labels</span>
@@ -1005,18 +1005,19 @@ a:hover{color:#45a049;text-decoration:none}
           <!-- View All Vins Section -->
           <div id="vinAdmin-section-view" class="settings-section">
             <h3 style="margin-top:0; margin-bottom:16px;">Søg & Se hele Varelager</h3>
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px; align-items:center;">
+            <div style="display:flex; gap:12px; align-items:center; justify-content:flex-end; flex-wrap:wrap; margin-bottom:12px;">
+              <label class="small">Søg vin:</label>
               <input type="text" id="vinSearchInput" placeholder="Søg efter varenavn..." style="width:200px; padding:6px; border:1px solid #ddd; border-radius:4px;" oninput="renderVinMasterTable()" />
               <label class="small">Filtrer placering:</label>
-              <select id="vinMasterPlaceringFilter" onchange="renderVinMasterTable()" style="padding:6px; border:1px solid #ddd; border-radius:4px;">
+              <select id="vinMasterPlaceringFilter" onchange="renderVinMasterTable()" style="width:auto; min-width:120px; max-width:250px; padding:6px; border:1px solid #ddd; border-radius:4px;">
                 <option value="">Alle placeringer</option>
               </select>
               <label class="small">Filtrer reol:</label>
-              <select id="vinMasterReolFilter" onchange="renderVinMasterTable()" style="padding:6px; border:1px solid #ddd; border-radius:4px;">
+              <select id="vinMasterReolFilter" onchange="renderVinMasterTable()" style="width:auto; min-width:120px; max-width:250px; padding:6px; border:1px solid #ddd; border-radius:4px;">
                 <option value="">Alle reoler</option>
               </select>
               <label class="small">Filtrer hylle:</label>
-              <select id="vinMasterHylleFilter" onchange="renderVinMasterTable()" style="padding:6px; border:1px solid #ddd; border-radius:4px;">
+              <select id="vinMasterHylleFilter" onchange="renderVinMasterTable()" style="width:auto; min-width:120px; max-width:250px; padding:6px; border:1px solid #ddd; border-radius:4px;">
                 <option value="">Alle hylder</option>
               </select>
               <button onclick="uploadVinlagerToServer()" style="background:#17a2b8; color:white; font-weight:800; padding:8px 14px; font-size:14px; box-shadow:0 2px 6px rgba(23,162,184,0.3); margin-left:auto;">☁️ Upload Vinlager til Server</button>
@@ -1030,17 +1031,35 @@ a:hover{color:#45a049;text-decoration:none}
     <!-- Vinlager Rapporter -->
     <div id="vinRapporter" class="vinlager-section hidden">
       <div class="card">
-        <h2>📊 Rapporter & Grupperinger</h2>
+        <h2>📊 Rapporter</h2>
         <div style="margin-top:20px;">
-          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px;">
-            <button onclick="showVinGruppering('land')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">🌍 Grupper efter Land</button>
-            <button onclick="showVinGruppering('producent')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">🏭 Grupper efter Producent</button>
-            <button onclick="showVinGruppering('årgang')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">📅 Grupper efter Årgang</button>
-            <button onclick="showVinGruppering('lagerplacering')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">📍 Grupper efter Placering</button>
+          <h3 style="margin-bottom:12px;">Vin optællings rapporter</h3>
+          <table style="width:100%; border-collapse:collapse;">
+            <thead>
+              <tr style="background:#f5f5f5;">
+                <th style="padding:10px; text-align:left; border-bottom:2px solid #ddd;">Dato</th>
+                <th style="padding:10px; text-align:left; border-bottom:2px solid #ddd;">Rapport</th>
+                <th style="padding:10px; text-align:left; border-bottom:2px solid #ddd;">Lokationer</th>
+                <th style="padding:10px; text-align:right; border-bottom:2px solid #ddd;">Total</th>
+                <th style="padding:10px; text-align:center; border-bottom:2px solid #ddd;">Handling</th>
+              </tr>
+            </thead>
+            <tbody id="vinReportsTableBody"></tbody>
+          </table>
+          <div style="margin-top:30px;">
+            <h3 style="margin-bottom:12px;">📊 Grupperinger</h3>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px;">
+              <button onclick="showVinGruppering('land')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">🌍 Grupper efter Land</button>
+              <button onclick="showVinGruppering('producent')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">🏭 Grupper efter Producent</button>
+              <button onclick="showVinGruppering('årgang')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">📅 Grupper efter Årgang</button>
+              <button onclick="showVinGruppering('lagerplacering')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">📍 Grupper efter Placering</button>
+            </div>
+            <div id="vinGrupperingContainer" style="margin-bottom:30px;"></div>
           </div>
-          <div id="vinGrupperingContainer" style="margin-bottom:30px;"></div>
-          <h3>📜 Lagerhistorik</h3>
-          <div id="vinHistorikList" style="margin-top:15px;"></div>
+          <div style="margin-top:30px;">
+            <h3>📜 Lagerhistorik</h3>
+            <div id="vinHistorikList" style="margin-top:15px;"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -2779,9 +2798,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.74';
+const APP_VERSION = '4.75';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '08:25';
+const BUILD_TIME = '10:17';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -13506,6 +13525,15 @@ function showVinAdminSection(sectionId) {
     clickedItem.classList.add('active');
   }
   
+  // Sikr at sidebar er åben når man skifter sektion
+  const sidebar = document.getElementById('vinAdminSidebar');
+  const toggleBtn = document.getElementById('vinAdminToggleBtn');
+  if(sidebar && sidebar.classList.contains('collapsed')){
+    sidebar.classList.remove('collapsed');
+    if(toggleBtn) toggleBtn.setAttribute('data-state', 'open');
+  }
+}
+  
   // Initialize section specific data
   if (sectionId === 'shelf') {
     updateVinHylleReolSelect();
@@ -14306,7 +14334,7 @@ function closeVinFinishModal(){
   if(modal) modal.remove();
 }
 
-function confirmVinFinishSession(){
+async function confirmVinFinishSession(){
   if(!activeVinSession) return alert('Ingen aktiv optælling');
   const details = [];
   let grandTotal=0;
@@ -14346,12 +14374,24 @@ function confirmVinFinishSession(){
   const cancelBtn = document.getElementById('vinCancelSessionBtn');
   if(cancelBtn) cancelBtn.disabled = true;
   closeVinFinishModal();
+  
+  // Generer PDF automatisk
+  try {
+    const pdfDoc = await generateVinReportPDF(report, false);
+    if(pdfDoc){
+      const filename = `vin_rapport_${(report.handling||'optaelling').replace(/[^\w\-]+/g,'_')}_${report.ts}.pdf`;
+      pdfDoc.save(filename);
+    }
+  } catch(err){
+    console.warn('Fejl ved generering af PDF:', err);
+  }
+  
   renderVinRapporter();
   renderVinLagerTable();
   updateVinLogPreview();
   saveAllData();
   
-  alert(`✅ Vin optælling afsluttet!\n\n📊 Rapport: ${report.handling}\n💰 Total: ${grandTotal.toFixed(2)} kr.\n\nRapporten er gemt under "Rapporter".`);
+  alert(`✅ Vin optælling afsluttet!\n\n📊 Rapport: ${report.handling}\n💰 Total: ${grandTotal.toFixed(2)} kr.\n\nRapporten er gemt under "Rapporter" og PDF er downloadet.`);
 }
 
 function renderVinLagerTable(){
@@ -14724,6 +14764,262 @@ loadVinReports();
     }
   });
 })();
+
+// Render vin rapporter tabel
+function renderVinRapporter(){
+  const tbody = document.getElementById('vinReportsTableBody');
+  if(!tbody) return;
+  
+  loadVinReports();
+  tbody.innerHTML = '';
+  
+  if(vinReports.length === 0){
+    tbody.innerHTML = '<tr><td colspan="5" style="padding:20px; text-align:center; color:#666;">Ingen rapporter endnu</td></tr>';
+    return;
+  }
+  
+  vinReports.forEach((r, i) => {
+    const tr = document.createElement('tr');
+    const lokationer = r.details ? [...new Set(r.details.map(d => d.placering).filter(p => p))] : [];
+    const lokationDisplay = lokationer.length > 0 ? lokationer.join(', ') : (r.scope || '-');
+    
+    tr.innerHTML = `
+      <td style="padding:10px; border-bottom:1px solid #eee;">${formatTime(r.ts)}</td>
+      <td style="padding:10px; border-bottom:1px solid #eee;">${r.handling || 'Vin optælling'}</td>
+      <td style="padding:10px; border-bottom:1px solid #eee;">${lokationDisplay}</td>
+      <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">${(r.total || 0).toFixed(2)} kr.</td>
+      <td style="padding:10px; border-bottom:1px solid #eee; text-align:center;">
+        <button class="secondary small" onclick="viewVinReportPDF(${i})" style="margin-right:4px;">📄 Vis PDF</button>
+        <button class="secondary small" onclick="downloadVinReportPDF(${i})">💾 Download</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function viewVinReportPDF(index){
+  if(index < 0 || index >= vinReports.length){
+    alert('Ugyldig rapport index');
+    return;
+  }
+  const r = vinReports[index];
+  if(!r) return alert('Rapport ikke fundet');
+  try {
+    const pdfUrl = await generateVinReportPDF(r, true);
+    if(pdfUrl){
+      window.open(pdfUrl, '_blank');
+    }
+  } catch(err){
+    alert('Fejl ved visning af PDF: ' + err.message);
+  }
+}
+
+async function downloadVinReportPDF(index){
+  if(index < 0 || index >= vinReports.length){
+    alert('Ugyldig rapport index');
+    return;
+  }
+  const r = vinReports[index];
+  if(!r) return alert('Rapport ikke fundet');
+  try {
+    const doc = await generateVinReportPDF(r, false);
+    const filename = `vin_rapport_${(r.handling||'optaelling').replace(/[^\w\-]+/g,'_')}_${r.ts}.pdf`;
+    doc.save(filename);
+  } catch(err){
+    alert('Fejl ved download af PDF: ' + err.message);
+  }
+}
+
+// Generer PDF for vin rapport (baseret på generateReportPDF)
+async function generateVinReportPDF(r, forView = false){
+  const { jsPDF } = window.jspdf;
+  if(!jsPDF) return alert('jsPDF mangler');
+  const doc = new jsPDF({ unit:'mm', format:'a4' }); let y=15; const margin=15;
+  const titleStartX = margin + 2;
+  const tableLeft = margin;
+  const titleFrameWidth = 180;
+  const tableRight = margin + titleFrameWidth;
+  const tableWidth = tableRight - tableLeft;
+  
+  const logo = await getLogoDataURL(); if(logo){ try{ doc.addImage(logo,'SVG',margin,y,40,15); y+=20; }catch(e){ y+=5; } }
+  const startContentY = y;
+  
+  // Titel med ramme
+  doc.setDrawColor(100, 100, 100);
+  doc.setLineWidth(0.5);
+  doc.setFillColor(245, 245, 245);
+  doc.rect(margin, y-5, 180, 10, 'FD');
+  doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.text(r.handling || 'Vin optælling', titleStartX, y+2); y+=12;
+  doc.setFont('helvetica','normal'); doc.setFontSize(11); doc.text(`Dato: ${formatTime(r.ts)}`, titleStartX, y); y+=8;
+  
+  const drawSideBorders = (fromY, toY) => {
+    doc.setDrawColor(150, 150, 150);
+    doc.setLineWidth(0.5);
+    doc.line(tableLeft, fromY, tableLeft, toY);
+    doc.line(tableRight, fromY, tableRight, toY);
+  };
+  
+  // Kolonne positioner
+  doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  const colVinnavn = titleStartX;
+  const colVinnavnWidth = 50;
+  const colProducent = colVinnavn + colVinnavnWidth + 2;
+  const colProducentWidth = 30;
+  const colVarenummer = colProducent + colProducentWidth + 2;
+  const colVarenummerWidth = 20;
+  const colAntal = colVarenummer + colVarenummerWidth + 2;
+  const colAntalWidth = 20;
+  const colPris = colAntal + colAntalWidth + 2;
+  const colPrisWidth = 20;
+  const colLinjetotal = colPris + colPrisWidth + 2;
+  const colLinjetotalWidth = 25;
+  
+  if(r.type === 'vin_session' && r.details && r.details.length > 0){
+    // Sorter efter placering
+    const sortedDetails = [...r.details].sort((a, b) => {
+      if(a.placering !== b.placering) return (a.placering || '').localeCompare(b.placering || '');
+      return (a.navn || '').localeCompare(b.navn || '');
+    });
+    
+    // Gruppér efter placering
+    const grouped = {};
+    sortedDetails.forEach(d => {
+      const loc = d.placering || 'Ukendt lokation';
+      if(!grouped[loc]) grouped[loc] = [];
+      grouped[loc].push(d);
+    });
+    
+    let grandTotal = 0;
+    let pageStartY = y;
+    
+    // Vis header
+    if(y>250){ doc.addPage(); y=15; pageStartY = y; }
+    doc.setDrawColor(150, 150, 150);
+    doc.setFillColor(240, 240, 240);
+    doc.setLineWidth(0.3);
+    doc.rect(tableLeft, y-3, tableWidth, 5, 'FD');
+    doc.setFont('helvetica','bold'); doc.setFontSize(10);
+    doc.text('Vinnavn', colVinnavn, y+1);
+    doc.text('Producent', colProducent, y+1);
+    doc.text('Varenummer', colVarenummer, y+1);
+    doc.text('Antal', colAntal, y+1);
+    doc.text('Pris', colPris, y+1);
+    doc.text('Linjetotal', colLinjetotal, y+1);
+    y+=6;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(tableLeft, y, tableRight, y);
+    y+=3;
+    
+    // Gennemgå grupperet struktur
+    for(const loc of Object.keys(grouped)){
+      let locSubtotal = 0;
+      
+      // Lokation header
+      if(y>260){ 
+        drawSideBorders(pageStartY, y);
+        doc.addPage(); 
+        y=15;
+        pageStartY = y;
+        doc.setDrawColor(150, 150, 150);
+        doc.setFillColor(240, 240, 240);
+        doc.setLineWidth(0.3);
+        doc.rect(tableLeft, y-3, tableWidth, 5, 'FD');
+        doc.setFont('helvetica','bold'); doc.setFontSize(10);
+        doc.text('Vinnavn', colVinnavn, y+1);
+        doc.text('Producent', colProducent, y+1);
+        doc.text('Varenummer', colVarenummer, y+1);
+        doc.text('Antal', colAntal, y+1);
+        doc.text('Pris', colPris, y+1);
+        doc.text('Linjetotal', colLinjetotal, y+1);
+        y+=6;
+        doc.setDrawColor(200, 200, 200);
+        doc.line(tableLeft, y, tableRight, y);
+        y+=3;
+      }
+      
+      doc.setFont('helvetica','bold'); doc.setFontSize(11);
+      doc.setFillColor(250, 250, 250);
+      doc.rect(tableLeft, y-2, tableWidth, 5, 'F');
+      doc.text(`📍 ${loc}`, tableLeft + 2, y+2);
+      y+=7;
+      
+      grouped[loc].forEach((it, idx) => {
+        if(y>275){ 
+          drawSideBorders(pageStartY, y);
+          doc.addPage(); 
+          y=15;
+          pageStartY = y;
+          doc.setDrawColor(150, 150, 150);
+          doc.setFillColor(240, 240, 240);
+          doc.setLineWidth(0.3);
+          doc.rect(tableLeft, y-3, tableWidth, 5, 'FD');
+          doc.setFont('helvetica','bold'); doc.setFontSize(10);
+          doc.text('Vinnavn', colVinnavn, y+1);
+          doc.text('Producent', colProducent, y+1);
+          doc.text('Varenummer', colVarenummer, y+1);
+          doc.text('Antal', colAntal, y+1);
+          doc.text('Pris', colPris, y+1);
+          doc.text('Linjetotal', colLinjetotal, y+1);
+          y+=6;
+          doc.setDrawColor(200, 200, 200);
+          doc.line(tableLeft, y, tableRight, y);
+          y+=3;
+        }
+        
+        if(idx % 2 === 0){
+          doc.setFillColor(255, 255, 255);
+        } else {
+          doc.setFillColor(250, 250, 250);
+        }
+        doc.rect(tableLeft, y-2, tableWidth, 4, 'F');
+        
+        doc.setFont('helvetica','normal'); doc.setFontSize(9);
+        const vinnavn = String(it.navn || '').substring(0, 25);
+        doc.text(vinnavn, colVinnavn, y+1);
+        const producent = String(it.producent || '-').substring(0, 15);
+        doc.text(producent, colProducent, y+1);
+        const varenummer = String(it.varenummer || '-');
+        doc.text(varenummer, colVarenummer, y+1);
+        doc.text(String(it.antal || 0), colAntal, y+1);
+        doc.text(`${(it.pris || 0).toFixed(2)} kr.`, colPris, y+1);
+        doc.text(`${(it.linjetotal || 0).toFixed(2)} kr.`, colLinjetotal, y+1);
+        
+        y+=5;
+        locSubtotal += it.linjetotal || 0;
+      });
+      
+      // Subtotal for lokation
+      if(y>270){ doc.addPage(); y=15; pageStartY = y; }
+      doc.setDrawColor(150, 150, 150);
+      doc.setFillColor(245, 245, 245);
+      doc.rect(tableLeft, y-2, tableWidth, 5, 'FD');
+      doc.setFont('helvetica','bold'); doc.setFontSize(10);
+      doc.text(`Subtotal ${loc}:`, colVinnavn, y+2);
+      doc.text(`${locSubtotal.toFixed(2)} kr.`, colLinjetotal, y+2);
+      y+=7;
+      grandTotal += locSubtotal;
+    });
+    
+    // Grand total
+    if(y>270){ doc.addPage(); y=15; }
+    drawSideBorders(pageStartY, y);
+    doc.setDrawColor(100, 100, 100);
+    doc.setFillColor(240, 240, 240);
+    doc.setLineWidth(0.5);
+    doc.rect(tableLeft, y-3, tableWidth, 6, 'FD');
+    doc.setFont('helvetica','bold'); doc.setFontSize(12);
+    doc.text('SAMLET TOTAL:', colVinnavn, y+2);
+    doc.text(`${grandTotal.toFixed(2)} kr.`, colLinjetotal, y+2);
+  }
+  
+  drawSideBorders(startContentY, y);
+  
+  if(forView){
+    return doc.output('bloburl');
+  } else {
+    return doc;
+  }
+}
 
 /* =============
    END SCRIPT
