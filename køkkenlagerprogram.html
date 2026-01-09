@@ -516,7 +516,10 @@ a:hover{color:#45a049;text-decoration:none}
     <button class="secondary" onclick="showPage('licens'); updateLicenseStatusDisplay();" style="background:rgba(255,255,255,0.2); color:#fff; border-color:rgba(255,255,255,0.3);">🔑 Licens</button>
     <button class="secondary" onclick="logout()">🚪 Log ud</button>
     </div>
-    <div id="versionDisplay" style="color:#fff; font-size:16px; font-weight:700; text-align:right; padding:8px 12px; background:rgba(255,255,255,0.25); border-radius:6px; border:1px solid rgba(255,255,255,0.35); box-shadow:0 4px 12px rgba(0,0,0,0.15); font-family:'Segoe UI', sans-serif; line-height:1.5;"></div>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <div id="backupIndicator" style="color:#fff; font-size:13px; font-weight:600; padding:6px 10px; background:rgba(255,255,255,0.2); border-radius:6px; border:1px solid rgba(255,255,255,0.3); font-family:'Segoe UI', sans-serif; cursor:pointer;" onclick="showBackupPrompt()" title="Klik for at lave backup nu"></div>
+      <div id="versionDisplay" style="color:#fff; font-size:16px; font-weight:700; text-align:right; padding:8px 12px; background:rgba(255,255,255,0.25); border-radius:6px; border:1px solid rgba(255,255,255,0.35); box-shadow:0 4px 12px rgba(0,0,0,0.15); font-family:'Segoe UI', sans-serif; line-height:1.5;"></div>
+    </div>
   </div>
 </header>
 
@@ -1808,6 +1811,11 @@ function attemptLogin(){
       // Track login count for automatic backup
       trackLoginCount();
       
+      // Opdater backup indikator efter login
+      if(typeof updateBackupIndicator === 'function'){
+        setTimeout(() => updateBackupIndicator(), 500);
+      }
+      
       // Check if helper program should be installed (first time)
       checkAndInstallHelperProgram();
       
@@ -2819,9 +2827,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.78';
+const APP_VERSION = '4.79';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '10:55';
+const BUILD_TIME = '11:17';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -2832,9 +2840,49 @@ function updateVersionDisplay(){
   // Opdater også i title
   document.title = `Lager optælling — Færdig version v${APP_VERSION} (${BUILD_DATE} ${BUILD_TIME})`;
   
+  // Opdater backup indikator
+  updateBackupIndicator();
+  
   // VIGTIGT: Når version opdateres, skal der laves backup!
   // Backup oprettes automatisk når version opdateres via terminal kommando
   // Backup fil: "programmet backup\køkkenlagerprogram_v${APP_VERSION}.html"
+}
+
+// Opdater backup indikator
+function updateBackupIndicator(){
+  const indicator = document.getElementById('backupIndicator');
+  if(!indicator) return;
+  
+  const LOGIN_COUNT_KEY = 'køkkenlager_login_count';
+  const FIRST_BACKUP_PROMPT_SHOWN_KEY = 'køkkenlager_first_backup_prompt_shown';
+  
+  let loginCount = parseInt(localStorage.getItem(LOGIN_COUNT_KEY) || '0', 10);
+  const hasShownFirstPrompt = localStorage.getItem(FIRST_BACKUP_PROMPT_SHOWN_KEY) === 'true';
+  
+  // Beregn hvor mange logins der mangler til næste backup prompt
+  let loginsUntilBackup = 0;
+  if(!hasShownFirstPrompt){
+    // Nyt system - backup efter 2. login
+    loginsUntilBackup = Math.max(0, 2 - loginCount);
+  } else {
+    // Eksisterende system - backup hver 5. login
+    const nextBackupAt = Math.ceil(loginCount / 5) * 5;
+    loginsUntilBackup = nextBackupAt - loginCount;
+  }
+  
+  if(loginsUntilBackup === 0){
+    indicator.innerHTML = '💾 Backup nu';
+    indicator.style.background = 'rgba(255,193,7,0.3)';
+    indicator.style.borderColor = 'rgba(255,193,7,0.5)';
+  } else if(loginsUntilBackup === 1){
+    indicator.innerHTML = `💾 Backup om 1 login`;
+    indicator.style.background = 'rgba(255,152,0,0.25)';
+    indicator.style.borderColor = 'rgba(255,152,0,0.4)';
+  } else {
+    indicator.innerHTML = `💾 Backup om ${loginsUntilBackup} logins`;
+    indicator.style.background = 'rgba(255,255,255,0.2)';
+    indicator.style.borderColor = 'rgba(255,255,255,0.3)';
+  }
 }
 let leverandorer = [];
 let reports = [];
@@ -3011,6 +3059,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
 function initializeApp(){
   // Opdater version display
   updateVersionDisplay();
+  
+  // Opdater backup indikator
+  updateBackupIndicator();
   
   // Tjek licens igen ved initialisering
   const licenseStatus = checkLicense();
@@ -10231,6 +10282,9 @@ function trackLoginCount() {
       ? (loginCount % 5 === 0)  // Every 5th login for existing systems
       : (loginCount === 2);      // After 2nd login for new systems
     
+    // Opdater backup indikator
+    updateBackupIndicator();
+    
     if (shouldShowPrompt) {
       const lastPrompt = localStorage.getItem(LAST_BACKUP_PROMPT_KEY);
       const now = Date.now();
@@ -11209,7 +11263,7 @@ function showBackupPrompt() {
       <div style="display:flex;flex-direction:column;gap:12px;">
         <button id="backupToDefault" onclick="performFullBackup('default')" style="background:#2196F3;color:white;padding:12px 20px;border-radius:8px;border:none;font-weight:700;cursor:pointer;font-size:15px;text-align:left;">
           📁 Download til PC<br>
-          <span style="font-size:12px;opacity:0.9;">(Vælg mappe og placering)</span>
+          <span style="font-size:12px;opacity:0.9;">(Åbner file explorer - vælg mappe og placering)</span>
         </button>
         <button id="backupToServer" onclick="performFullBackup('server')" style="background:#28a745;color:white;padding:12px 20px;border-radius:8px;border:none;font-weight:700;cursor:pointer;font-size:15px;text-align:left;">
           ☁️ Upload til Server<br>
@@ -11308,6 +11362,9 @@ async function performFullBackup(method) {
           // Mark that user has backup history
           localStorage.setItem('køkkenlager_has_backup_history', 'true');
           
+          // Opdater backup indikator
+          updateBackupIndicator();
+          
           if (method === 'default') {
             alert(`✅ Komplet backup gemt!\n\n📄 Filnavn: ${fileHandle.name}\n\n💾 Filen er gemt hvor du valgte.`);
           }
@@ -11326,6 +11383,9 @@ async function performFullBackup(method) {
             URL.revokeObjectURL(url);
             
             localStorage.setItem('køkkenlager_has_backup_history', 'true');
+            
+            // Opdater backup indikator
+            updateBackupIndicator();
             
             if (method === 'default') {
               alert(`✅ Komplet backup downloadet!\n\n📄 Filnavn: ${defaultFilename}\n\n💾 Filen er downloadet. Du kan flytte den til ønsket mappe efterfølgende.`);
@@ -11350,6 +11410,9 @@ async function performFullBackup(method) {
         
         localStorage.setItem('køkkenlager_has_backup_history', 'true');
         
+        // Opdater backup indikator
+        updateBackupIndicator();
+        
         if (method === 'default') {
           alert(`✅ Komplet backup downloadet!\n\n📄 Filnavn: ${defaultFilename}\n\n💾 Din browser vil spørge hvor filen skal gemmes. Vælg ønsket mappe i dialogen.`);
         }
@@ -11364,6 +11427,9 @@ async function performFullBackup(method) {
     if (method === 'both') {
       alert(`✅ Komplet backup gennemført!\n\n📁 Lokal backup downloadet\n☁️ Backup uploadet til server\n\n💡 Alle dine data er nu sikret!`);
     }
+    
+    // Opdater backup indikator efter backup
+    updateBackupIndicator();
     
   } catch(err) {
     console.error('Fejl ved komplet backup:', err);
