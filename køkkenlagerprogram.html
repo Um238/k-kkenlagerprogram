@@ -754,11 +754,13 @@ a:hover{color:#45a049;text-decoration:none}
     <div id="vinOpsaetning" class="vinlager-section">
       <div class="card">
         <h2>⚙️ Opsætning Lager</h2>
-        <p>Konfigurer vinlager indstillinger her.</p>
         <div style="margin-top:20px;">
-          <label><strong>Vinlager Lokationer</strong></label>
-          <div id="vinlagerLocations"></div>
-          <button onclick="addVinlagerLocation()" style="margin-top:10px;">➕ Tilføj Lokation</button>
+          <label><strong>Tilføj Lokalisation</strong></label>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:15px;">
+            <input type="text" id="newVinlagerDropdownName" placeholder="Navn på ny dropdown (fx 'Europa', 'Amerika')" style="flex:1; min-width:200px; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+            <button onclick="addVinlagerDropdown()" style="background:#8B0000; color:white; padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-weight:700;">➕ Tilføj Dropdown</button>
+          </div>
+          <div id="vinlagerDropdownsContainer" style="margin-top:20px;"></div>
         </div>
         
         <div style="margin-top:40px;">
@@ -844,6 +846,17 @@ a:hover{color:#45a049;text-decoration:none}
         <h2>📋 Vinlager overblik</h2>
         <p>Her kan du se et overblik over hele vinlageret.</p>
         <div id="vinOverblikContainer" style="margin-top:20px;"></div>
+        
+        <div style="margin-top:30px;">
+          <h3 style="margin-bottom:12px;">📊 Grupperinger</h3>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px;">
+            <button onclick="showVinGruppering('land')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">🌍 Grupper efter Land</button>
+            <button onclick="showVinGruppering('producent')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">🏭 Grupper efter Producent</button>
+            <button onclick="showVinGruppering('årgang')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">📅 Grupper efter Årgang</button>
+            <button onclick="showVinGruppering('lagerplacering')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">📍 Grupper efter Placering</button>
+          </div>
+          <div id="vinGrupperingContainer" style="margin-bottom:30px;"></div>
+        </div>
       </div>
     </div>
 
@@ -1049,16 +1062,6 @@ a:hover{color:#45a049;text-decoration:none}
             </thead>
             <tbody id="vinReportsTableBody"></tbody>
           </table>
-          <div style="margin-top:30px;">
-            <h3 style="margin-bottom:12px;">📊 Grupperinger</h3>
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px;">
-              <button onclick="showVinGruppering('land')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">🌍 Grupper efter Land</button>
-              <button onclick="showVinGruppering('producent')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">🏭 Grupper efter Producent</button>
-              <button onclick="showVinGruppering('årgang')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">📅 Grupper efter Årgang</button>
-              <button onclick="showVinGruppering('lagerplacering')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">📍 Grupper efter Placering</button>
-            </div>
-            <div id="vinGrupperingContainer" style="margin-bottom:30px;"></div>
-          </div>
           <div style="margin-top:30px;">
             <h3>📜 Lagerhistorik</h3>
             <div id="vinHistorikList" style="margin-top:15px;"></div>
@@ -2827,9 +2830,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.79';
+const APP_VERSION = '4.80';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '11:17';
+const BUILD_TIME = '12:07';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -9089,7 +9092,7 @@ function showPage(id){
     if(firstMenuItem) {
       vinNavClick({currentTarget: firstMenuItem});
     }
-    renderVinlagerLocations();
+    renderVinlagerDropdowns();
     renderVinlagerDistrikter();
     collapseAllVinlagerDistrikter();
   } 
@@ -11750,50 +11753,240 @@ function vinNavClick(event) {
   }
 }
 
-// Vinlager locations
-function addVinlagerLocation() {
-  const name = prompt('Indtast navn på ny lokation:');
-  if (!name || !name.trim()) return;
+// Vinlager locations - Dropdown system
+function addVinlagerDropdown() {
+  const input = document.getElementById('newVinlagerDropdownName');
+  if (!input) return;
   
-  const data = loadAllData() || {};
-  if (!data.vinlagerLokationer) data.vinlagerLokationer = [];
-  
-  if (!data.vinlagerLokationer.includes(name.trim())) {
-    data.vinlagerLokationer.push(name.trim());
-    saveAllData();
-    renderVinlagerLocations();
-  }
-}
-
-function renderVinlagerLocations() {
-  const data = loadAllData() || {};
-  const locations = data.vinlagerLokationer || [];
-  const container = document.getElementById('vinlagerLocations');
-  
-  if (!container) return;
-  
-  if (locations.length === 0) {
-    container.innerHTML = '<p class="small">Ingen lokationer oprettet endnu.</p>';
+  const name = input.value.trim();
+  if (!name) {
+    alert('Indtast navn på dropdown');
     return;
   }
   
-  container.innerHTML = locations.map((loc, idx) => `
-    <div style="display:flex; align-items:center; gap:10px; padding:10px; background:#f5f5f5; border-radius:6px; margin-bottom:8px;">
-      <span style="flex:1;">${loc}</span>
-      <button onclick="removeVinlagerLocation(${idx})" style="background:#dc3545; padding:6px 12px; font-size:12px;">🗑️ Slet</button>
-    </div>
-  `).join('');
+  const data = loadAllData() || {};
+  if (!data.vinlagerDropdowns) data.vinlagerDropdowns = [];
+  
+  // Check if dropdown already exists
+  if (data.vinlagerDropdowns.some(d => d.name === name)) {
+    alert('Dropdown findes allerede');
+    return;
+  }
+  
+  data.vinlagerDropdowns.push({
+    name: name,
+    locations: []
+  });
+  
+  saveAllData();
+  input.value = '';
+  renderVinlagerDropdowns();
 }
 
-function removeVinlagerLocation(index) {
+function renderVinlagerDropdowns() {
+  const data = loadAllData() || {};
+  const dropdowns = data.vinlagerDropdowns || [];
+  const container = document.getElementById('vinlagerDropdownsContainer');
+  
+  if (!container) return;
+  
+  if (dropdowns.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  
+  container.innerHTML = dropdowns.map((dropdown, dropdownIdx) => `
+    <div style="margin-bottom:20px; border:2px solid #8B0000; border-radius:8px; padding:15px; background:#fff;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+        <h3 style="margin:0; color:#8B0000; font-size:18px;">📂 ${dropdown.name}</h3>
+        <button onclick="removeVinlagerDropdown(${dropdownIdx})" style="background:#dc3545; color:white; padding:6px 12px; border:none; border-radius:4px; cursor:pointer; font-size:12px;">🗑️ Slet Dropdown</button>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
+        <input type="text" id="newLocation_${dropdownIdx}" placeholder="Tilføj ny lokation" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px;" onkeypress="if(event.key==='Enter') addLocationToDropdown(${dropdownIdx})" />
+        <button onclick="addLocationToDropdown(${dropdownIdx})" style="background:#8B0000; color:white; padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-weight:700;">➕ Tilføj</button>
+      </div>
+      <ul id="dropdownLocations_${dropdownIdx}" style="list-style:none; padding:0; margin:0; min-height:40px;">
+        ${dropdown.locations.map((loc, locIdx) => `
+          <li draggable="true" data-dropdown="${dropdownIdx}" data-location="${locIdx}" style="display:flex; align-items:center; gap:10px; padding:10px; background:#f5f5f5; border-radius:6px; margin-bottom:8px; cursor:move; border:1px solid #ddd;" 
+              ondragstart="handleVinlagerLocationDragStart(event)" 
+              ondragover="event.preventDefault(); handleVinlagerLocationDragOver(event)" 
+              ondrop="handleVinlagerLocationDrop(event)"
+              ondragend="handleVinlagerLocationDragEnd(event)">
+            <span style="cursor:move;">☰</span>
+            <span style="flex:1;">${loc}</span>
+            <button onclick="removeLocationFromDropdown(${dropdownIdx}, ${locIdx})" style="background:#dc3545; color:white; padding:6px 12px; border:none; border-radius:4px; cursor:pointer; font-size:12px;">🗑️ Slet</button>
+          </li>
+        `).join('')}
+      </ul>
+    </div>
+  `).join('');
+  
+  // Update vinlagerLokationer array from all dropdowns
+  updateVinlagerLokationerFromDropdowns();
+}
+
+function addLocationToDropdown(dropdownIdx) {
+  const input = document.getElementById(`newLocation_${dropdownIdx}`);
+  if (!input) return;
+  
+  const name = input.value.trim();
+  if (!name) {
+    alert('Indtast navn på lokation');
+    return;
+  }
+  
+  const data = loadAllData() || {};
+  if (!data.vinlagerDropdowns || !data.vinlagerDropdowns[dropdownIdx]) return;
+  
+  const dropdown = data.vinlagerDropdowns[dropdownIdx];
+  if (dropdown.locations.includes(name)) {
+    alert('Lokation findes allerede i denne dropdown');
+    return;
+  }
+  
+  dropdown.locations.push(name);
+  saveAllData();
+  input.value = '';
+  renderVinlagerDropdowns();
+}
+
+function removeLocationFromDropdown(dropdownIdx, locationIdx) {
   if (!confirm('Er du sikker på at du vil slette denne lokation?')) return;
   
   const data = loadAllData() || {};
-  if (data.vinlagerLokationer) {
-    data.vinlagerLokationer.splice(index, 1);
-    saveAllData();
-    renderVinlagerLocations();
+  if (!data.vinlagerDropdowns || !data.vinlagerDropdowns[dropdownIdx]) return;
+  
+  data.vinlagerDropdowns[dropdownIdx].locations.splice(locationIdx, 1);
+  saveAllData();
+  renderVinlagerDropdowns();
+}
+
+function removeVinlagerDropdown(dropdownIdx) {
+  if (!confirm('Er du sikker på at du vil slette hele denne dropdown og alle dens lokationer?')) return;
+  
+  const data = loadAllData() || {};
+  if (!data.vinlagerDropdowns) return;
+  
+  data.vinlagerDropdowns.splice(dropdownIdx, 1);
+  saveAllData();
+  renderVinlagerDropdowns();
+}
+
+function updateVinlagerLokationerFromDropdowns() {
+  const data = loadAllData() || {};
+  const dropdowns = data.vinlagerDropdowns || [];
+  
+  // Combine all locations from all dropdowns into vinlagerLokationer
+  const allLocations = [];
+  dropdowns.forEach(dropdown => {
+    dropdown.locations.forEach(loc => {
+      if (!allLocations.includes(loc)) {
+        allLocations.push(loc);
+      }
+    });
+  });
+  
+  data.vinlagerLokationer = allLocations;
+  saveAllData();
+  
+  // Update selects that use vinlagerLokationer
+  updateVinAdminSelects();
+}
+
+// Drag & Drop handlers for vinlager locations
+let draggedVinlagerLocation = null;
+
+function handleVinlagerLocationDragStart(e) {
+  draggedVinlagerLocation = {
+    dropdown: parseInt(e.target.closest('li').dataset.dropdown),
+    location: parseInt(e.target.closest('li').dataset.location)
+  };
+  e.target.closest('li').style.opacity = '0.5';
+  e.target.closest('li').classList.add('vinlager-location-dragging');
+}
+
+function handleVinlagerLocationDragOver(e) {
+  e.preventDefault();
+  const draggedElement = document.querySelector('.vinlager-location-dragging');
+  if (!draggedElement) return;
+  
+  const afterElement = getDragAfterElement(e.currentTarget.closest('ul'), e.clientY);
+  if (afterElement == null) {
+    e.currentTarget.closest('ul').appendChild(draggedElement);
+  } else {
+    e.currentTarget.closest('ul').insertBefore(draggedElement, afterElement);
   }
+}
+
+function handleVinlagerLocationDrop(e) {
+  e.preventDefault();
+  if (!draggedVinlagerLocation) return;
+  
+  const targetLi = e.target.closest('li');
+  if (!targetLi) return;
+  
+  const targetDropdown = parseInt(targetLi.dataset.dropdown);
+  const targetLocation = parseInt(targetLi.dataset.location);
+  
+  if (targetDropdown === draggedVinlagerLocation.dropdown) {
+    // Same dropdown - reorder
+    const data = loadAllData() || {};
+    if (!data.vinlagerDropdowns || !data.vinlagerDropdowns[targetDropdown]) return;
+    
+    const locations = data.vinlagerDropdowns[targetDropdown].locations;
+    const draggedItem = locations[draggedVinlagerLocation.location];
+    locations.splice(draggedVinlagerLocation.location, 1);
+    
+    const newIndex = targetLocation > draggedVinlagerLocation.location ? targetLocation - 1 : targetLocation;
+    locations.splice(newIndex, 0, draggedItem);
+    
+    saveAllData();
+    renderVinlagerDropdowns();
+  }
+}
+
+function handleVinlagerLocationDragEnd(e) {
+  const draggedElement = document.querySelector('.vinlager-location-dragging');
+  if (draggedElement) {
+    draggedElement.style.opacity = '1';
+    draggedElement.classList.remove('vinlager-location-dragging');
+  }
+  draggedVinlagerLocation = null;
+}
+
+function getDragAfterElement(container, y) {
+  const draggableElements = [...container.querySelectorAll('li[draggable="true"]:not(.vinlager-location-dragging)')];
+  
+  return draggableElements.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    
+    if (offset < 0 && offset > closest.offset) {
+      return { offset: offset, element: child };
+    } else {
+      return closest;
+    }
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+// Legacy function for backward compatibility - now calls renderVinlagerDropdowns
+function renderVinlagerLocations() {
+  renderVinlagerDropdowns();
+}
+
+// Initialize vinlager dropdowns on first load
+function initializeVinlagerDropdowns() {
+  const data = loadAllData() || {};
+  // If vinlagerLokationer exists but vinlagerDropdowns doesn't, migrate
+  if (data.vinlagerLokationer && data.vinlagerLokationer.length > 0 && (!data.vinlagerDropdowns || data.vinlagerDropdowns.length === 0)) {
+    // Migrate old data to new dropdown structure
+    data.vinlagerDropdowns = [{
+      name: 'Standard Lokationer',
+      locations: [...data.vinlagerLokationer]
+    }];
+    saveAllData();
+  }
+  renderVinlagerDropdowns();
 }
 
 // Vindistrikter data
@@ -11978,12 +12171,21 @@ function toggleVinlagerKontinent(kontinentId) {
 // Tilføj lokation fra distrikt
 function addVinlagerLocationFromDistrikt(land) {
   const data = loadAllData() || {};
-  if (!data.vinlagerLokationer) data.vinlagerLokationer = [];
   
-  if (!data.vinlagerLokationer.includes(land)) {
-    data.vinlagerLokationer.push(land);
+  // Initialize dropdowns if they don't exist
+  if (!data.vinlagerDropdowns || data.vinlagerDropdowns.length === 0) {
+    data.vinlagerDropdowns = [{
+      name: 'Standard Lokationer',
+      locations: []
+    }];
+  }
+  
+  // Add to first dropdown (or create new one if needed)
+  const firstDropdown = data.vinlagerDropdowns[0];
+  if (!firstDropdown.locations.includes(land)) {
+    firstDropdown.locations.push(land);
     saveAllData();
-    renderVinlagerLocations();
+    renderVinlagerDropdowns();
     alert(`✅ ${land} er tilføjet til vinlager lokationer!`);
   } else {
     alert(`ℹ️ ${land} findes allerede i vinlager lokationer.`);
@@ -13499,7 +13701,7 @@ function processVinlagerImportText(text, importType = 'add') {
   updateVinFilters();
   updateVinLabelSelect();
   updateVinAdminSelects(); // Opdater alle selects
-  renderVinlagerLocations();
+  renderVinlagerDropdowns();
   
   alert(`✅ Import færdig!\n\nImporteret: ${imported}\nOpdateret: ${updated}\nSprunget over: ${skipped}`);
 }
