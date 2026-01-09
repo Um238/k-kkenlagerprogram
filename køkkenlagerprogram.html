@@ -2830,9 +2830,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.88';
+const APP_VERSION = '4.89';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '15:14';
+const BUILD_TIME = '15:23';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -13646,9 +13646,17 @@ function selectVinImportType(importType) {
     return;
   }
   
+  // Gem filen før vi lukker modal'en (da closeVinImportModal() sætter pendingVinImportFile til null)
+  const f = pendingVinImportFile;
+  
   closeVinImportModal();
   
-  const f = pendingVinImportFile;
+  // Tjek at filen stadig er gyldig
+  if(!f || !f.name) {
+    alert('Fejl: Filen blev ikke fundet. Prøv at vælge filen igen.');
+    return;
+  }
+  
   const fileName = f.name.toLowerCase();
   const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
   
