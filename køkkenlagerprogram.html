@@ -2830,9 +2830,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.93';
+const APP_VERSION = '4.94';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '16:25';
+const BUILD_TIME = '16:35';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -14105,26 +14105,38 @@ function processVinlagerImportText(text, importType = 'add') {
   // Først opdater selects så de har de nye lokationer
   updateVinAdminSelects();
   
-  // Naviger til vinAdmin sektionen hvis den ikke er synlig
+  // Naviger til vinAdmin sektionen og vis view sektionen
   const vinAdminSection = document.getElementById('vinAdmin');
+  const vinAdminMenuItem = document.querySelector('[data-target="vinAdmin"]');
+  
+  // Hvis vinAdmin sektionen er skjult, naviger til den først
   if (vinAdminSection && vinAdminSection.classList.contains('hidden')) {
-    // Find vinAdmin menu item og klik på det
-    const vinAdminMenuItem = document.querySelector('[data-target="vinAdmin"]');
     if (vinAdminMenuItem) {
+      // Simuler klik på menu item
       vinNavClick({ currentTarget: vinAdminMenuItem });
     }
   }
   
-  // Vis view sektionen og opdater tabellen
+  // Vis view sektionen og opdater tabellen - gør det flere gange for at sikre det virker
   setTimeout(() => {
+    // Vis sektionen
     showVinAdminSection('view');
+    
+    // Render tabellen flere gange med forsinkelse
     renderVinMasterTable();
     
-    // Opdater tabellen igen efter en lille forsinkelse for at sikre at containeren er synlig
     setTimeout(() => {
       renderVinMasterTable();
-    }, 200);
-  }, 100);
+    }, 100);
+    
+    setTimeout(() => {
+      renderVinMasterTable();
+    }, 300);
+    
+    setTimeout(() => {
+      renderVinMasterTable();
+    }, 500);
+  }, 200);
   
   // Opdater overblik hvis det er synligt
   const vinOverblikSection = document.getElementById('vinOverblik');
@@ -14136,7 +14148,21 @@ function processVinlagerImportText(text, importType = 'add') {
   const vinCsvImport = document.getElementById('vinCsvImport');
   if(vinCsvImport) vinCsvImport.value = '';
   
-  alert(`✅ Import færdig!\n\nImporteret: ${imported}\nOpdateret: ${updated}\nSprunget over: ${skipped}\n\nTotal vine i systemet: ${vinlagerVine.length}`);
+  // Vis besked og naviger til tabellen
+  const message = `✅ Import færdig!\n\nImporteret: ${imported}\nOpdateret: ${updated}\nSprunget over: ${skipped}\n\nTotal vine i systemet: ${vinlagerVine.length}\n\nTabellen er nu tilgængelig under "Vin Administration" → "Søg & Se hele Varelager"`;
+  alert(message);
+  
+  // Prøv at navigere til sektionen automatisk
+  setTimeout(() => {
+    const vinAdminMenuItem = document.querySelector('[data-target="vinAdmin"]');
+    if (vinAdminMenuItem) {
+      vinNavClick({ currentTarget: vinAdminMenuItem });
+      setTimeout(() => {
+        showVinAdminSection('view');
+        renderVinMasterTable();
+      }, 300);
+    }
+  }, 1000);
 }
 
 // Edit vin billede (ligesom uploadVareImage)
@@ -14359,7 +14385,15 @@ function updateVinMasterHylleFilter() {
 function renderVinMasterTable() {
   const container = document.getElementById('vinMasterTableContainer');
   if (!container) {
-    console.warn('vinMasterTableContainer ikke fundet');
+    console.warn('vinMasterTableContainer ikke fundet - prøver at finde containeren...');
+    // Prøv at finde containeren igen efter en lille forsinkelse
+    setTimeout(() => {
+      const retryContainer = document.getElementById('vinMasterTableContainer');
+      if (retryContainer) {
+        console.log('Container fundet på retry, renderer nu...');
+        renderVinMasterTable();
+      }
+    }, 100);
     return;
   }
   
@@ -14367,7 +14401,7 @@ function renderVinMasterTable() {
   const data = loadAllData() || {};
   vinlagerVine = data.vinlagerVine || [];
   
-  console.log('renderVinMasterTable kaldt, antal vine:', vinlagerVine.length);
+  console.log('renderVinMasterTable kaldt, antal vine:', vinlagerVine.length, 'Container:', container ? 'fundet' : 'ikke fundet');
   
   const search = (document.getElementById('vinSearchInput')?.value || '').toLowerCase();
   const filterPlacering = document.getElementById('vinMasterPlaceringFilter')?.value || '';
