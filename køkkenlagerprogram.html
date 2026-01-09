@@ -759,11 +759,11 @@ a:hover{color:#45a049;text-decoration:none}
         
         <div style="margin-top:40px;">
           <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">
-            <div style="flex:0 0 auto; min-width:320px; max-width:380px;">
+            <div style="flex:0 0 auto; min-width:360px; max-width:420px;">
               <h3 style="margin-bottom:20px;">🌍 Vindistrikter</h3>
               <div id="vinlagerDistrikter" style="display:flex; flex-direction:column; gap:15px;"></div>
             </div>
-            <div style="flex:0 0 auto; min-width:320px; max-width:380px;">
+            <div style="flex:0 0 auto; min-width:360px; max-width:420px;">
               <h3 style="margin-bottom:20px; color:#8B0000;">💎 Øvrige Lager</h3>
               <div id="vinlagerDropdownsContainer" style="display:flex; flex-direction:column; gap:15px;"></div>
             </div>
@@ -2832,9 +2832,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.97';
+const APP_VERSION = '4.98';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '17:10';
+const BUILD_TIME = '17:15';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -11830,7 +11830,7 @@ function vinNavClick(event) {
       setTimeout(() => {
         renderVinlagerDropdowns();
         renderVinlagerDistrikter();
-        collapseAllVinlagerDistrikter(); // Luk alle når man går ind på siden
+        collapseAllVinlagerDropdowns(); // Luk alle dropdowns når man går ind på siden
       }, 100);
     } else if (target === 'vinAdmin') {
       setTimeout(() => {
@@ -11842,8 +11842,8 @@ function vinNavClick(event) {
     } else if (target === 'vinLabels') {
       setTimeout(() => updateVinLabelSelect(), 100);
     } else {
-      // Luk alle distrikter når man går væk fra opsætning
-      collapseAllVinlagerDistrikter();
+      // Luk alle dropdowns når man går væk fra opsætning
+      collapseAllVinlagerDropdowns();
     }
   }
 }
@@ -12519,6 +12519,17 @@ function toggleVinlagerDropdown(dropdownId) {
   
   if (!content || !arrow) return;
   
+  // Luk alle andre dropdowns først
+  document.querySelectorAll('.vinlager-dropdown-content').forEach(c => {
+    if (c.id !== dropdownId) {
+      c.style.display = 'none';
+      const otherArrow = document.getElementById(`arrow-${c.id}`);
+      if (otherArrow) {
+        otherArrow.style.transform = 'rotate(0deg)';
+      }
+    }
+  });
+  
   // Toggle denne dropdown
   if (content.style.display === 'none') {
     content.style.display = 'block';
@@ -12559,6 +12570,22 @@ function collapseAllVinlagerDistrikter() {
     c.style.display = 'none';
   });
   document.querySelectorAll('.vinlager-arrow').forEach(a => {
+    a.style.transform = 'rotate(0deg)';
+  });
+}
+
+// Luk alle dropdowns (både kontinenter og øvrige lager)
+function collapseAllVinlagerDropdowns() {
+  // Luk alle kontinenter
+  collapseAllVinlagerDistrikter();
+  
+  // Luk alle øvrige lager dropdowns
+  document.querySelectorAll('.vinlager-dropdown-content').forEach(c => {
+    c.style.display = 'none';
+  });
+  
+  // Reset alle arrows for øvrige lager
+  document.querySelectorAll('.vinlager-dropdown .vinlager-arrow').forEach(a => {
     a.style.transform = 'rotate(0deg)';
   });
 }
