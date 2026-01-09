@@ -2830,9 +2830,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.91';
+const APP_VERSION = '4.92';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '15:55';
+const BUILD_TIME = '16:10';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -12207,12 +12207,15 @@ function updateVinlagerLokationerFromDropdowns() {
 let draggedVinlagerLocation = null;
 
 function handleVinlagerLocationDragStart(e) {
+  const dragElement = e.target.closest('[draggable="true"]');
+  if (!dragElement) return;
+  
   draggedVinlagerLocation = {
-    dropdown: parseInt(e.target.closest('li').dataset.dropdown),
-    location: parseInt(e.target.closest('li').dataset.location)
+    dropdown: parseInt(dragElement.dataset.dropdown),
+    location: parseInt(dragElement.dataset.location)
   };
-  e.target.closest('li').style.opacity = '0.5';
-  e.target.closest('li').classList.add('vinlager-location-dragging');
+  dragElement.style.opacity = '0.5';
+  dragElement.classList.add('vinlager-location-dragging');
 }
 
 function handleVinlagerLocationDragOver(e) {
@@ -12220,11 +12223,14 @@ function handleVinlagerLocationDragOver(e) {
   const draggedElement = document.querySelector('.vinlager-location-dragging');
   if (!draggedElement) return;
   
-  const afterElement = getDragAfterElement(e.currentTarget.closest('ul'), e.clientY);
+  const container = e.currentTarget.closest('[style*="display:grid"]');
+  if (!container) return;
+  
+  const afterElement = getDragAfterElement(container, e.clientY);
   if (afterElement == null) {
-    e.currentTarget.closest('ul').appendChild(draggedElement);
+    container.appendChild(draggedElement);
   } else {
-    e.currentTarget.closest('ul').insertBefore(draggedElement, afterElement);
+    container.insertBefore(draggedElement, afterElement);
   }
 }
 
@@ -12232,11 +12238,11 @@ function handleVinlagerLocationDrop(e) {
   e.preventDefault();
   if (!draggedVinlagerLocation) return;
   
-  const targetLi = e.target.closest('li');
-  if (!targetLi) return;
+  const targetElement = e.target.closest('[draggable="true"]');
+  if (!targetElement) return;
   
-  const targetDropdown = parseInt(targetLi.dataset.dropdown);
-  const targetLocation = parseInt(targetLi.dataset.location);
+  const targetDropdown = parseInt(targetElement.dataset.dropdown);
+  const targetLocation = parseInt(targetElement.dataset.location);
   
   if (targetDropdown === draggedVinlagerLocation.dropdown) {
     // Same dropdown - reorder
@@ -12265,7 +12271,7 @@ function handleVinlagerLocationDragEnd(e) {
 }
 
 function getDragAfterElement(container, y) {
-  const draggableElements = [...container.querySelectorAll('li[draggable="true"]:not(.vinlager-location-dragging)')];
+  const draggableElements = [...container.querySelectorAll('[draggable="true"]:not(.vinlager-location-dragging)')];
   
   return draggableElements.reduce((closest, child) => {
     const box = child.getBoundingClientRect();
@@ -14096,10 +14102,22 @@ function processVinlagerImportText(text, importType = 'add') {
   renderVinlagerDropdowns();
   
   // VIGTIGT: Opdater tabellen - både med og uden forsinkelse for at sikre at den vises
-  renderVinMasterTable(); // Opdater tabellen direkte
+  // Først opdater selects så de har de nye lokationer
+  updateVinAdminSelects();
+  
+  // Opdater tabellen direkte
+  renderVinMasterTable();
+  
+  // Opdater tabellen igen efter en lille forsinkelse for at sikre at containeren er synlig
   setTimeout(() => {
-    renderVinMasterTable(); // Opdater tabellen igen efter en lille forsinkelse - DETTE ER VIGTIGT!
-  }, 200);
+    renderVinMasterTable();
+  }, 300);
+  
+  // Hvis sektionen ikke er synlig, vis den automatisk
+  const viewSection = document.getElementById('vinAdmin-section-view');
+  if (viewSection && viewSection.style.display === 'none') {
+    showVinAdminSection('view');
+  }
   
   // Opdater overblik hvis det er synligt
   const vinOverblikSection = document.getElementById('vinOverblik');
@@ -14333,11 +14351,23 @@ function updateVinMasterHylleFilter() {
 // Render vin master table (ligesom renderMasterTable)
 function renderVinMasterTable() {
   const container = document.getElementById('vinMasterTableContainer');
-  if (!container) return;
+  if (!container) {
+    console.warn('vinMasterTableContainer ikke fundet');
+    return;
+  }
+  
+  // Tjek om sektionen er synlig
+  const section = document.getElementById('vinAdmin-section-view');
+  if (section && section.style.display === 'none') {
+    console.log('Sektionen er ikke synlig, venter på at den bliver vist');
+    return;
+  }
   
   // ALTID indlæs data først - ligesom i master varelager
   const data = loadAllData() || {};
   vinlagerVine = data.vinlagerVine || [];
+  
+  console.log('renderVinMasterTable kaldt, antal vine:', vinlagerVine.length);
   
   const search = (document.getElementById('vinSearchInput')?.value || '').toLowerCase();
   const filterPlacering = document.getElementById('vinMasterPlaceringFilter')?.value || '';
