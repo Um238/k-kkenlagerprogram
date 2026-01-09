@@ -2680,9 +2680,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.70';
+const APP_VERSION = '4.71';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '07:05';
+const BUILD_TIME = '07:15';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -13542,20 +13542,20 @@ function renderVinMasterTable() {
     <div style="overflow-x:auto; border:1px solid #ddd; border-radius:4px;">
       <table style="width:100%; border-collapse:collapse; table-layout:auto;">
         <thead style="position:sticky; top:0; z-index:10;">
-          <tr style="background:#8B0000; color:white;">
-            <th style="padding:10px 8px; text-align:center; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Billede</th>
-            <th style="padding:10px 8px; text-align:left; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Vinnavn</th>
-            <th style="padding:10px 8px; text-align:left; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Producent</th>
-            <th style="padding:10px 8px; text-align:left; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Land</th>
-            <th style="padding:10px 8px; text-align:left; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Region</th>
-            <th style="padding:10px 8px; text-align:center; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Årgang</th>
-            <th style="padding:10px 8px; text-align:left; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Druetype</th>
-            <th style="padding:10px 8px; text-align:left; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Flasketype</th>
-            <th style="padding:10px 8px; text-align:right; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Indkøbspris</th>
-            <th style="padding:10px 8px; text-align:center; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Antal</th>
-            <th style="padding:10px 8px; text-align:center; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Minimum beholdning</th>
-            <th style="padding:10px 8px; text-align:left; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Placering</th>
-            <th style="padding:10px 8px; text-align:center; white-space:nowrap; font-size:13px; font-weight:700; border:1px solid rgba(255,255,255,0.2);">Handlinger</th>
+          <tr style="background:#f5f5f5; color:#000;">
+            <th style="padding:12px 8px; text-align:center; white-space:nowrap; font-size:14px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Billede</th>
+            <th style="padding:12px 8px; text-align:left; white-space:nowrap; font-size:14px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Vinnavn</th>
+            <th style="padding:12px 8px; text-align:left; white-space:nowrap; font-size:14px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Producent</th>
+            <th style="padding:12px 8px; text-align:left; white-space:nowrap; font-size:14px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Land</th>
+            <th style="padding:12px 8px; text-align:left; white-space:nowrap; font-size:14px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Region</th>
+            <th style="padding:12px 8px; text-align:center; white-space:nowrap; font-size:14px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Årgang</th>
+            <th style="padding:12px 8px; text-align:left; white-space:nowrap; font-size:14px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Druetype</th>
+            <th style="padding:12px 8px; text-align:left; white-space:nowrap; font-size:14px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Flasketype</th>
+            <th style="padding:12px 8px; text-align:right; white-space:nowrap; font-size:14px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Indkøbspris</th>
+            <th style="padding:12px 8px; text-align:center; white-space:nowrap; font-size:14px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Antal</th>
+            <th style="padding:12px 8px; text-align:center; white-space:nowrap; font-size:14px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Minimum beholdning</th>
+            <th style="padding:12px 8px; text-align:left; white-space:nowrap; font-size:14px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Placering</th>
+            <th style="padding:12px 8px; text-align:center; white-space:nowrap; font-size:14px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Handlinger</th>
           </tr>
         </thead>
         <tbody>
