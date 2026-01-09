@@ -354,7 +354,7 @@ a:hover{color:#45a049;text-decoration:none}
 <!-- =========================
      [HTML 0] LOGIN MODAL
      ========================= -->
-<div id="loginModal" class="login-backdrop hidden">
+<div id="loginModal" class="login-backdrop">
   <div class="login-modal">
     <h2 id="loginTitle">Login</h2>
     <div id="loginError" class="error"></div>
@@ -1698,6 +1698,27 @@ const RECOVERY_EMAIL_HASH_KEY = 'køkkenlager_recovery_email_hash';
 let isLoggedIn = false;
 let appInitialized = false;
 
+// Sikr at login modal vises ved sideindlæsning
+window.addEventListener('load', function(){
+  setTimeout(function(){
+    const sessionLoggedIn = sessionStorage.getItem('køkkenlager_logged_in_session') === 'true';
+    if(!sessionLoggedIn){
+      if(typeof showLoginModal !== 'undefined'){
+        showLoginModal();
+      }
+    } else {
+      isLoggedIn = true;
+      if(typeof hideLoginModal !== 'undefined'){
+        hideLoginModal();
+      }
+      if(!appInitialized && typeof initializeApp !== 'undefined'){
+        initializeApp();
+        appInitialized = true;
+      }
+    }
+  }, 100);
+});
+
 // Simple hash function (ikke kryptografisk sikkert, men bedre end plaintext)
 function hashPassword(password, username = ''){
   const combined = username ? `${username}:${password}` : password;
@@ -2798,9 +2819,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.76';
+const APP_VERSION = '4.77';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '10:29';
+const BUILD_TIME = '10:44';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -15037,28 +15058,5 @@ async function generateVinReportPDF(r, forView = false){
     </div>
   </div>
 
-<script>
-// Sikr at login modal vises ved sideindlæsning hvis brugeren ikke er logget ind
-(function(){
-  function initLogin(){
-    const isLoggedIn = sessionStorage.getItem('køkkenlager_logged_in_session') === 'true';
-    if(!isLoggedIn){
-      showLoginModal();
-    } else {
-      hideLoginModal();
-      if(!appInitialized){
-        initializeApp();
-        appInitialized = true;
-      }
-    }
-  }
-  
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', initLogin);
-  } else {
-    initLogin();
-  }
-})();
-</script>
 </body>
 </html>
