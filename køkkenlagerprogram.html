@@ -755,12 +755,9 @@ a:hover{color:#45a049;text-decoration:none}
       <div class="card">
         <h2>⚙️ Opsætning Lager</h2>
         <div style="margin-top:20px;">
-          <label><strong>Tilføj Lokalisation</strong></label>
-          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:15px;">
-            <input type="text" id="newVinlagerDropdownName" placeholder="Navn på ny dropdown (fx 'Europa', 'Amerika')" style="flex:1; min-width:200px; padding:8px; border:1px solid #ddd; border-radius:4px;" />
-            <button onclick="addVinlagerDropdown()" style="background:#8B0000; color:white; padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-weight:700;">➕ Tilføj Dropdown</button>
-          </div>
-          <div id="vinlagerDropdownsContainer" style="margin-top:20px;"></div>
+          <label><strong>Øvrige Lager</strong></label>
+          <p style="color:#666; font-size:14px; margin-bottom:15px;">Her kan du oprette og administrere 5 lagerområder. Klik på navnet for at omdøbe, og tilføj lokationer under hvert område.</p>
+          <div id="vinlagerDropdownsContainer" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:15px; margin-top:20px;"></div>
         </div>
         
         <div style="margin-top:40px;">
@@ -2830,9 +2827,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.86';
+const APP_VERSION = '4.87';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '14:43';
+const BUILD_TIME = '15:01';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -11868,46 +11865,85 @@ function addVinlagerDropdown() {
 }
 
 function renderVinlagerDropdowns() {
-  const data = loadAllData() || {};
+  // Hent data direkte fra localStorage
+  const STORAGE_KEY = 'køkkenlager_data';
+  const saved = localStorage.getItem(STORAGE_KEY);
+  let data = {};
+  if (saved) {
+    try {
+      data = JSON.parse(saved);
+    } catch(err) {
+      console.error('Fejl ved parsing af data:', err);
+      data = {};
+    }
+  }
   
-  // Sikr at vinlagerDropdowns altid er et array
-  let dropdowns = data.vinlagerDropdowns;
-  if (!dropdowns || !Array.isArray(dropdowns)) {
-    dropdowns = [];
+  // Sikr at vinlagerDropdowns altid er et array med præcis 5 dropdowns
+  if (!data.vinlagerDropdowns || !Array.isArray(data.vinlagerDropdowns)) {
     data.vinlagerDropdowns = [];
   }
   
-  const container = document.getElementById('vinlagerDropdownsContainer');
-  
-  if (!container) return;
-  
-  if (dropdowns.length === 0) {
-    container.innerHTML = '';
-    return;
+  // Sikr at der altid er præcis 5 dropdowns
+  while (data.vinlagerDropdowns.length < 5) {
+    data.vinlagerDropdowns.push({
+      name: `Øvrige lager ${data.vinlagerDropdowns.length + 1}`,
+      locations: []
+    });
   }
   
-  container.innerHTML = dropdowns.map((dropdown, dropdownIdx) => `
-    <div style="margin-bottom:20px; border:2px solid #8B0000; border-radius:8px; padding:15px; background:#fff;">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
-        <h3 style="margin:0; color:#8B0000; font-size:18px;">📂 ${dropdown.name}</h3>
-        <button onclick="removeVinlagerDropdown(${dropdownIdx})" style="background:#dc3545; color:white; padding:6px 12px; border:none; border-radius:4px; cursor:pointer; font-size:12px;">🗑️ Slet Dropdown</button>
+  // Trim til 5 hvis der er flere
+  if (data.vinlagerDropdowns.length > 5) {
+    data.vinlagerDropdowns = data.vinlagerDropdowns.slice(0, 5);
+  }
+  
+  // Gem data hvis det er ændret
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch(err) {
+    console.error('Fejl ved gemning:', err);
+  }
+  
+  const container = document.getElementById('vinlagerDropdownsContainer');
+  if (!container) return;
+  
+  // Render 5 dropdowns ved siden af hinanden
+  container.innerHTML = data.vinlagerDropdowns.map((dropdown, dropdownIdx) => `
+    <div style="border:2px solid #8B0000; border-radius:8px; padding:15px; background:#fff; display:flex; flex-direction:column; height:100%;">
+      <div style="margin-bottom:12px;">
+        <input type="text" 
+               id="dropdownName_${dropdownIdx}" 
+               value="${dropdown.name}" 
+               style="width:100%; padding:8px; border:2px solid #8B0000; border-radius:4px; font-size:16px; font-weight:700; color:#8B0000; text-align:center;" 
+               onblur="renameVinlagerDropdown(${dropdownIdx})"
+               onkeypress="if(event.key==='Enter') { event.target.blur(); }" />
       </div>
       <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
-        <input type="text" id="newLocation_${dropdownIdx}" placeholder="Tilføj ny lokation" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px;" onkeypress="if(event.key==='Enter') addLocationToDropdown(${dropdownIdx})" />
-        <button onclick="addLocationToDropdown(${dropdownIdx})" style="background:#8B0000; color:white; padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-weight:700;">➕ Tilføj</button>
+        <input type="text" 
+               id="newLocation_${dropdownIdx}" 
+               placeholder="Tilføj lokation" 
+               style="flex:1; padding:6px; border:1px solid #ddd; border-radius:4px; font-size:13px;" 
+               onkeypress="if(event.key==='Enter') addLocationToDropdown(${dropdownIdx})" />
+        <button onclick="addLocationToDropdown(${dropdownIdx})" 
+                style="background:#8B0000; color:white; padding:6px 12px; border:none; border-radius:4px; cursor:pointer; font-weight:700; font-size:13px;">➕</button>
       </div>
-      <ul id="dropdownLocations_${dropdownIdx}" style="list-style:none; padding:0; margin:0; min-height:40px;">
+      <ul id="dropdownLocations_${dropdownIdx}" 
+          style="list-style:none; padding:0; margin:0; min-height:100px; max-height:300px; overflow-y:auto; flex:1;">
         ${dropdown.locations.map((loc, locIdx) => `
-          <li draggable="true" data-dropdown="${dropdownIdx}" data-location="${locIdx}" style="display:flex; align-items:center; gap:10px; padding:10px; background:#f5f5f5; border-radius:6px; margin-bottom:8px; cursor:move; border:1px solid #ddd;" 
+          <li draggable="true" 
+              data-dropdown="${dropdownIdx}" 
+              data-location="${locIdx}" 
+              style="display:flex; align-items:center; gap:8px; padding:8px; background:#f5f5f5; border-radius:4px; margin-bottom:6px; cursor:move; border:1px solid #ddd; font-size:13px;" 
               ondragstart="handleVinlagerLocationDragStart(event)" 
               ondragover="event.preventDefault(); handleVinlagerLocationDragOver(event)" 
               ondrop="handleVinlagerLocationDrop(event)"
               ondragend="handleVinlagerLocationDragEnd(event)">
-            <span style="cursor:move;">☰</span>
+            <span style="cursor:move; color:#8B0000;">☰</span>
             <span style="flex:1;">${loc}</span>
-            <button onclick="removeLocationFromDropdown(${dropdownIdx}, ${locIdx})" style="background:#dc3545; color:white; padding:6px 12px; border:none; border-radius:4px; cursor:pointer; font-size:12px;">🗑️ Slet</button>
+            <button onclick="removeLocationFromDropdown(${dropdownIdx}, ${locIdx})" 
+                    style="background:#dc3545; color:white; padding:4px 8px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">🗑️</button>
           </li>
         `).join('')}
+        ${dropdown.locations.length === 0 ? '<li style="padding:20px; text-align:center; color:#999; font-size:13px;">Ingen lokationer endnu</li>' : ''}
       </ul>
     </div>
   `).join('');
@@ -11926,14 +11962,29 @@ function addLocationToDropdown(dropdownIdx) {
     return;
   }
   
-  const data = loadAllData() || {};
+  // Hent data direkte fra localStorage
+  const STORAGE_KEY = 'køkkenlager_data';
+  const saved = localStorage.getItem(STORAGE_KEY);
+  let data = {};
+  if (saved) {
+    try {
+      data = JSON.parse(saved);
+    } catch(err) {
+      console.error('Fejl ved parsing af data:', err);
+      alert('Fejl ved indlæsning af data');
+      return;
+    }
+  }
   
   // Sikr at vinlagerDropdowns altid er et array
   if (!data.vinlagerDropdowns || !Array.isArray(data.vinlagerDropdowns)) {
     data.vinlagerDropdowns = [];
   }
   
-  if (!data.vinlagerDropdowns[dropdownIdx]) return;
+  if (!data.vinlagerDropdowns[dropdownIdx]) {
+    alert('Dropdown ikke fundet');
+    return;
+  }
   
   const dropdown = data.vinlagerDropdowns[dropdownIdx];
   if (!dropdown.locations || !Array.isArray(dropdown.locations)) {
@@ -11946,9 +11997,19 @@ function addLocationToDropdown(dropdownIdx) {
   }
   
   dropdown.locations.push(name);
-  saveAllData();
+  
+  // Gem data
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    saveAllData(); // Opdater også globale variabler
+  } catch(err) {
+    console.error('Fejl ved gemning:', err);
+    alert('Fejl ved gemning: ' + err.message);
+    return;
+  }
+  
   input.value = '';
-  renderVinlagerDropdowns();
+  renderVinlagerDropdowns(); // Dette kalder også updateVinlagerLokationerFromDropdowns()
 }
 
 function removeLocationFromDropdown(dropdownIdx, locationIdx) {
@@ -11974,24 +12035,63 @@ function removeLocationFromDropdown(dropdownIdx, locationIdx) {
   renderVinlagerDropdowns();
 }
 
-function removeVinlagerDropdown(dropdownIdx) {
-  if (!confirm('Er du sikker på at du vil slette hele denne dropdown og alle dens lokationer?')) return;
+function renameVinlagerDropdown(dropdownIdx) {
+  const input = document.getElementById(`dropdownName_${dropdownIdx}`);
+  if (!input) return;
   
-  const data = loadAllData() || {};
+  const newName = input.value.trim();
+  if (!newName) {
+    alert('Navn kan ikke være tomt');
+    input.value = 'Øvrige lager ' + (dropdownIdx + 1);
+    return;
+  }
+  
+  // Hent data direkte fra localStorage
+  const STORAGE_KEY = 'køkkenlager_data';
+  const saved = localStorage.getItem(STORAGE_KEY);
+  let data = {};
+  if (saved) {
+    try {
+      data = JSON.parse(saved);
+    } catch(err) {
+      console.error('Fejl ved parsing af data:', err);
+      return;
+    }
+  }
   
   // Sikr at vinlagerDropdowns altid er et array
   if (!data.vinlagerDropdowns || !Array.isArray(data.vinlagerDropdowns)) {
     data.vinlagerDropdowns = [];
-    return;
   }
   
-  data.vinlagerDropdowns.splice(dropdownIdx, 1);
-  saveAllData();
-  renderVinlagerDropdowns();
+  if (data.vinlagerDropdowns[dropdownIdx]) {
+    data.vinlagerDropdowns[dropdownIdx].name = newName;
+    
+    // Gem data
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      saveAllData(); // Opdater også globale variabler
+      updateVinlagerLokationerFromDropdowns(); // Opdater lokationer
+    } catch(err) {
+      console.error('Fejl ved gemning:', err);
+      alert('Fejl ved gemning: ' + err.message);
+    }
+  }
 }
 
 function updateVinlagerLokationerFromDropdowns() {
-  const data = loadAllData() || {};
+  // Hent data direkte fra localStorage
+  const STORAGE_KEY = 'køkkenlager_data';
+  const saved = localStorage.getItem(STORAGE_KEY);
+  let data = {};
+  if (saved) {
+    try {
+      data = JSON.parse(saved);
+    } catch(err) {
+      console.error('Fejl ved parsing af data:', err);
+      return;
+    }
+  }
   
   // Sikr at vinlagerDropdowns altid er et array
   let dropdowns = data.vinlagerDropdowns;
@@ -12005,7 +12105,7 @@ function updateVinlagerLokationerFromDropdowns() {
   dropdowns.forEach(dropdown => {
     if (dropdown && dropdown.locations && Array.isArray(dropdown.locations)) {
       dropdown.locations.forEach(loc => {
-        if (loc && !allLocations.includes(loc)) {
+        if (loc && loc.trim() && !allLocations.includes(loc)) {
           allLocations.push(loc);
         }
       });
@@ -12013,10 +12113,28 @@ function updateVinlagerLokationerFromDropdowns() {
   });
   
   data.vinlagerLokationer = allLocations;
-  saveAllData();
   
-  // Update selects that use vinlagerLokationer
+  // Gem data
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    saveAllData(); // Opdater også globale variabler
+  } catch(err) {
+    console.error('Fejl ved gemning:', err);
+  }
+  
+  // Update selects that use vinlagerLokationer - DETTE ER VIGTIGT FOR DYNAMISK OPDATERING
   updateVinAdminSelects();
+  
+  // Opdater også andre steder hvor lokationer bruges
+  if (typeof updateVinLabelSelect === 'function') {
+    updateVinLabelSelect();
+  }
+  
+  // Opdater master table hvis den er synlig
+  const vinMasterTableContainer = document.getElementById('vinMasterTableContainer');
+  if (vinMasterTableContainer && typeof renderVinMasterTable === 'function') {
+    renderVinMasterTable();
+  }
 }
 
 // Drag & Drop handlers for vinlager locations
