@@ -758,11 +758,13 @@ a:hover{color:#45a049;text-decoration:none}
         </div>
         
         <div style="margin-top:40px;">
-          <h3 style="margin-bottom:20px;">🌍 Vindistrikter</h3>
-          <div style="display:flex; gap:20px; flex-wrap:wrap;">
-            <div id="vinlagerDistrikter" style="flex:1; min-width:300px; display:flex; flex-direction:column; gap:15px;"></div>
-            <div id="vinlagerDropdownsWrapper" style="flex:1; min-width:300px; display:flex; flex-direction:column; gap:15px;">
-              <h4 style="margin-bottom:15px; color:#8B0000;">💎 Øvrige Lager</h4>
+          <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">
+            <div style="flex:0 0 auto; min-width:280px; max-width:320px;">
+              <h3 style="margin-bottom:20px;">🌍 Vindistrikter</h3>
+              <div id="vinlagerDistrikter" style="display:flex; flex-direction:column; gap:15px;"></div>
+            </div>
+            <div style="flex:0 0 auto; min-width:280px; max-width:320px;">
+              <h3 style="margin-bottom:20px; color:#8B0000;">💎 Øvrige Lager</h3>
               <div id="vinlagerDropdownsContainer" style="display:flex; flex-direction:column; gap:15px;"></div>
             </div>
           </div>
@@ -2830,9 +2832,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.95';
+const APP_VERSION = '4.96';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '16:50';
+const BUILD_TIME = '17:05';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -11963,7 +11965,7 @@ function renderVinlagerDropdowns() {
   container.innerHTML = data.vinlagerDropdowns.map((dropdown, dropdownIdx) => {
     const dropdownId = `dropdown-${dropdownIdx}`;
     return `
-      <div class="vinlager-dropdown" style="border:1px solid #ddd; border-radius:8px; overflow:hidden; background:#fff; max-width:100%;">
+      <div class="vinlager-dropdown" style="border:1px solid #ddd; border-radius:8px; overflow:hidden; background:#fff; width:100%;">
         <div class="vinlager-dropdown-header" onclick="toggleVinlagerDropdown('${dropdownId}')" style="padding:12px 15px; background:#8B0000; color:white; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-weight:700; user-select:none; font-size:15px;">
           <span>💎 ${dropdown.name}</span>
           <span class="vinlager-arrow" id="arrow-${dropdownId}" style="transition:transform 0.3s; font-size:12px;">▼</span>
@@ -12460,7 +12462,7 @@ function renderVinlagerDistrikter() {
     const kontinentId = `kontinent-${kontinent.toLowerCase().replace(/\s+/g, '-')}`;
     
     return `
-      <div class="vinlager-kontinent" style="border:1px solid #ddd; border-radius:8px; overflow:hidden; background:#fff; max-width:100%;">
+      <div class="vinlager-kontinent" style="border:1px solid #ddd; border-radius:8px; overflow:hidden; background:#fff; width:100%;">
         <div class="vinlager-kontinent-header" onclick="toggleVinlagerKontinent('${kontinentId}')" style="padding:12px 15px; background:#8B0000; color:white; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-weight:700; user-select:none; font-size:15px;">
           <span>${kontinentLabels[kontinent]}</span>
           <span class="vinlager-arrow" id="arrow-${kontinentId}" style="transition:transform 0.3s; font-size:12px;">▼</span>
@@ -14313,8 +14315,13 @@ function showVinAdminSection(sectionId) {
     clickedItem.classList.add('active');
   }
   
-  // IKKE automatisk åbn sidebar - lad brugeren selv styre det
-  // Sidebar skal kunne lukkes helt når man klikker på toggle knappen
+  // Automatisk luk sidebar efter valg
+  const sidebar = document.getElementById('vinAdminSidebar');
+  const toggleBtn = document.getElementById('vinAdminToggleBtn');
+  if (sidebar && !sidebar.classList.contains('collapsed')) {
+    sidebar.classList.add('collapsed');
+    if (toggleBtn) toggleBtn.setAttribute('data-state', 'closed');
+  }
   
   // Initialize section specific data
   if (sectionId === 'shelf') {
@@ -14499,19 +14506,19 @@ function renderVinMasterTable() {
     <div style="overflow-x:auto; border:1px solid #ddd; border-radius:4px;">
       <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
         <colgroup>
+          <col style="width:80px;">
+          <col style="width:160px;">
+          <col style="width:140px;">
+          <col style="width:90px;">
+          <col style="width:140px;">
           <col style="width:70px;">
           <col style="width:140px;">
-          <col style="width:120px;">
-          <col style="width:80px;">
-          <col style="width:120px;">
-          <col style="width:60px;">
-          <col style="width:120px;">
-          <col style="width:90px;">
-          <col style="width:90px;">
-          <col style="width:60px;">
-          <col style="width:70px;">
           <col style="width:100px;">
+          <col style="width:100px;">
+          <col style="width:70px;">
           <col style="width:80px;">
+          <col style="width:120px;">
+          <col style="width:90px;">
         </colgroup>
         <thead style="position:sticky; top:0; z-index:10;">
           <tr style="background:#f5f5f5; color:#000;">
