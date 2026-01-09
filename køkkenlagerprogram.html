@@ -2830,9 +2830,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.84';
+const APP_VERSION = '4.86';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '14:34';
+const BUILD_TIME = '14:43';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -2931,9 +2931,37 @@ function saveAllData(){
       vinlagerVine: vinlagerVine || [],
       vinlagerHistorik: vinlagerHistorik || [],
       vinlagerLokationer: (typeof vinlagerLokationer !== 'undefined' ? vinlagerLokationer : []),
+      vinlagerDropdowns: (() => {
+        // Hent vinlagerDropdowns fra localStorage hvis det findes
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) {
+            const data = JSON.parse(saved);
+            if (data.vinlagerDropdowns && Array.isArray(data.vinlagerDropdowns)) {
+              return data.vinlagerDropdowns;
+            }
+          }
+        } catch(err) {
+          console.warn('Kunne ikke hente vinlagerDropdowns:', err);
+        }
+        return [];
+      })(),
       version: '1.0',
       savedAt: Date.now()
     };
+    
+    // Gem også vinlagerDropdowns hvis det er blevet opdateret
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const existingData = JSON.parse(saved);
+        if (existingData.vinlagerDropdowns && Array.isArray(existingData.vinlagerDropdowns)) {
+          dataToSave.vinlagerDropdowns = existingData.vinlagerDropdowns;
+        }
+      }
+    } catch(err) {
+      console.warn('Kunne ikke hente eksisterende vinlagerDropdowns:', err);
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
   }catch(err){
     console.warn('Kunne ikke gemme data:', err);
@@ -7938,8 +7966,17 @@ function processImportText(text, importType = 'add'){
     return;
   }
   
+  // VIGTIGT: Indlæs data først - ligesom i vinlager import
+  loadAllData();
+  
+  // Sikr at masterVarelager er initialiseret
+  if (!masterVarelager || !Array.isArray(masterVarelager)) {
+    masterVarelager = [];
+  }
+  
   console.log('Import type:', importType);
   console.log('Text length:', text.length);
+  console.log('Eksisterende varer før import:', masterVarelager.length);
   
   // Fjern BOM (Byte Order Mark) hvis det findes
   if(text.charCodeAt(0) === 0xFEFF) {
@@ -8084,8 +8121,11 @@ function processImportText(text, importType = 'add'){
   console.log('Varer efter import:', masterVarelager.length);
   console.log('Imported:', imported, 'Updated:', updated, 'Skipped:', skipped);
   
-  // Opdater UI
-  renderMasterTable(); 
+  // VIGTIGT: Gem data først - ligesom i vinlager import
+  saveAllData();
+  
+  // Opdater UI - ligesom i vinlager import
+  renderMasterTable(); // Opdater tabellen i "Søg og se hele varelageret" - DETTE ER VIGTIGT!
   renderLagerOpsaetning(); // Opdater også lager opsætning hvis nye placeringer er tilføjet
   updateAllSelects();
   // Opdater hylle dropdowns
@@ -8093,24 +8133,25 @@ function processImportText(text, importType = 'add'){
   updateHylleHylleSelect();
   renderHylleRaekkefoelge();
   renderLagerTable(); 
-  saveAllData();
   
   // Nulstil fil-input og variabler
   if($('csvImport')) $('csvImport').value = '';
   selectedImportFile = null;
   selectedImportType = null;
   
-  let msg = `Import gennemført!\n\n`;
+  let msg = `✅ Import færdig!\n\nImporteret: ${imported}\nOpdateret: ${updated}\nSprunget over: ${skipped}\n\nTotal varer i systemet: ${masterVarelager.length}`;
+  
   if(importType === 'overwrite'){
-    msg += `✅ ${imported} varer importeret (hele varelageret er erstattet)`;
+    msg += `\n\n✅ ${imported} varer importeret (hele varelageret er erstattet)`;
   } else if(importType === 'add'){
-    msg += `✅ ${imported} nye varer tilføjet`;
+    msg += `\n\n✅ ${imported} nye varer tilføjet`;
     if(skipped > 0) msg += `\n⚠️ ${skipped} varer sprunget over (findes allerede)`;
   } else if(importType === 'update'){
-    msg += `✅ ${updated} varer opdateret`;
+    msg += `\n\n✅ ${updated} varer opdateret`;
     if(imported > 0) msg += `\n➕ ${imported} nye varer tilføjet`;
   }
-  if(errors.length > 0) msg += `\n❌ ${errors.length} fejl`;
+  if(errors && errors.length > 0) msg += `\n❌ ${errors.length} fejl`;
+  
   alert(msg);
 }
 
@@ -11772,7 +11813,22 @@ function addVinlagerDropdown() {
       return;
     }
     
-    const data = loadAllData() || {};
+    // VIGTIGT: loadAllData() returnerer true/false, ikke data objektet
+    // Vi skal hente data direkte fra localStorage
+    loadAllData(); // Indlæs data først
+    
+    // Hent data direkte fra localStorage
+    const STORAGE_KEY = 'køkkenlager_data';
+    const saved = localStorage.getItem(STORAGE_KEY);
+    let data = {};
+    if (saved) {
+      try {
+        data = JSON.parse(saved);
+      } catch(err) {
+        console.error('Fejl ved parsing af data:', err);
+        data = {};
+      }
+    }
     
     // Sikr at vinlagerDropdowns altid er et array
     if (!data.vinlagerDropdowns || !Array.isArray(data.vinlagerDropdowns)) {
@@ -11790,6 +11846,16 @@ function addVinlagerDropdown() {
       locations: []
     });
     
+    // Gem data tilbage til localStorage
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch(err) {
+      console.error('Fejl ved gemning af data:', err);
+      alert('Fejl ved gemning: ' + err.message);
+      return;
+    }
+    
+    // Opdater også globale variabler
     saveAllData();
     input.value = '';
     renderVinlagerDropdowns();
