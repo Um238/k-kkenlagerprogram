@@ -792,8 +792,8 @@ a:hover{color:#45a049;text-decoration:none}
                 <input type="text" id="newVinNavn" placeholder="Vinnavn" required />
                 <label class="small">Producent *</label>
                 <input type="text" id="newVinProducent" placeholder="Producent" required />
-                <label class="small">Område *</label>
-                <select id="newVinLandOmraade" onchange="updateVinLandSelect()" style="margin-bottom:6px; padding:6px; font-size:13px;">
+                <label class="small" style="font-weight:700; color:#222;">Område *</label>
+                <select id="newVinLandOmraade" onchange="updateVinLandSelect()" style="margin-bottom:6px; padding:6px; font-size:13px; font-weight:600; width:200px;">
                   <option value="">Vælg område</option>
                   <option value="Europa">🌍 Europa</option>
                   <option value="Amerika">🌎 Amerika</option>
@@ -801,8 +801,8 @@ a:hover{color:#45a049;text-decoration:none}
                   <option value="Asien">🌏 Asien</option>
                   <option value="Oceanien">🌏 Oceanien</option>
                 </select>
-                <label class="small">Land *</label>
-                <select id="newVinLand" required onchange="updateVinRegionSelect()" style="padding:6px; font-size:13px;">
+                <label class="small" style="font-weight:700; color:#222;">Land *</label>
+                <select id="newVinLand" required onchange="updateVinRegionSelect()" style="padding:6px; font-size:13px; font-weight:600;">
                   <option value="">Vælg land</option>
                 </select>
                 <label class="small" style="margin-top:8px;">Region</label>
@@ -868,14 +868,15 @@ a:hover{color:#45a049;text-decoration:none}
                 <input type="number" id="newVinAntalFlasker" min="0" value="24" placeholder="Antal flasker" />
                 <label class="small">Minimum beholdning</label>
                 <input type="number" id="newVinMinimumBeholdning" min="0" value="24" placeholder="Minimum beholdning" />
-                <label class="small">Lagerplacering</label>
-                <select id="newVinLagerplacering" style="padding:6px; font-size:13px;"></select>
-                <label class="small" style="margin-top:8px;">Reol nummer (valgfrit)</label>
-                <input type="text" id="newVinReolNr" placeholder="fx 1, 2, 3 eller A, B, C" />
-                <label class="small" style="margin-top:8px;">Hylle nummer (valgfrit)</label>
-                <input type="text" id="newVinHylleNr" placeholder="fx 1, 2, 3 eller A, B, C" />
-                <label class="small" style="margin-top:8px;">Rækkefølge (0 = automatisk)</label>
-                <input type="number" id="newVinRaekkefoelge" step="1" placeholder="0 = automatisk" value="0" />
+                <label class="small" style="font-weight:700; color:#222;">Lagerplacering *</label>
+                <select id="newVinLagerplacering" style="padding:6px; font-size:13px; font-weight:600;">
+                  <option value="">Vælg placering</option>
+                  <option value="Europa">🌍 Europa</option>
+                  <option value="Amerika">🌎 Amerika</option>
+                  <option value="Afrika">🌏 Afrika</option>
+                  <option value="Asien">🌏 Asien</option>
+                  <option value="Oceanien">🌏 Oceanien</option>
+                </select>
                 <textarea id="newVinNoter" rows="2" placeholder="Noter"></textarea>
                 <div style="margin-top:8px;"><button onclick="addNewVinFromForm()">➕ Tilføj vin</button></div>
               </div>
@@ -2679,9 +2680,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.69';
-const BUILD_DATE = '2026-01-08';
-const BUILD_TIME = '21:00';
+const APP_VERSION = '4.70';
+const BUILD_DATE = '2026-01-09';
+const BUILD_TIME = '07:05';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -12488,9 +12489,9 @@ function addNewVinFromForm() {
     antal_flasker: parseInt(document.getElementById('newVinAntalFlasker')?.value || 24),
     minimumBeholdning: parseInt(document.getElementById('newVinMinimumBeholdning')?.value || 24),
     lagerplacering: faktiskLagerplacering,
-    reolNr: document.getElementById('newVinReolNr')?.value.trim() || null,
-    hylleNr: document.getElementById('newVinHylleNr')?.value.trim() || null,
-    raekkefoelge: parseInt(document.getElementById('newVinRaekkefoelge')?.value || 0) || 0,
+    reolNr: null,
+    hylleNr: null,
+    raekkefoelge: 0,
     noter: document.getElementById('newVinNoter')?.value.trim() || null,
     billede: '',
     oprettet_dato: new Date().toISOString(),
@@ -12522,9 +12523,6 @@ function addNewVinFromForm() {
   document.getElementById('newVinAntalFlasker').value = '24';
   document.getElementById('newVinMinimumBeholdning').value = '24';
   document.getElementById('newVinLagerplacering').value = '';
-  document.getElementById('newVinReolNr').value = '';
-  document.getElementById('newVinHylleNr').value = '';
-  document.getElementById('newVinRaekkefoelge').value = '0';
   document.getElementById('newVinNoter').value = '';
   
   renderVineList();
@@ -13286,6 +13284,55 @@ function processVinlagerImportText(text, importType = 'add') {
   alert(`✅ Import færdig!\n\nImporteret: ${imported}\nOpdateret: ${updated}\nSprunget over: ${skipped}`);
 }
 
+// Edit vin billede (ligesom uploadVareImage)
+function editVinBillede(id) {
+  const vin = vinlagerVine.find(x => x.id === id);
+  if(!vin) return;
+  
+  // Opret skjult file input
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.style.display = 'none';
+  
+  input.onchange = function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Tjek filtype
+    if (!file.type.startsWith('image/')) {
+      alert('⚠️ Vælg venligst en billedfil (jpg, png, etc.)');
+      return;
+    }
+    
+    // Tjek filstørrelse (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('⚠️ Billedet er for stort. Maksimal størrelse er 2MB. Komprimer billedet og prøv igen.');
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const base64 = e.target.result;
+      vin.billede = base64;
+      renderVinMasterTable();
+      saveAllData();
+      alert('✅ Billede opdateret!');
+    };
+    reader.onerror = function() {
+      alert('❌ Fejl ved indlæsning af billede. Prøv igen.');
+    };
+    reader.readAsDataURL(file);
+    
+    // Fjern input element
+    document.body.removeChild(input);
+  };
+  
+  // Tilføj til DOM og trigger click
+  document.body.appendChild(input);
+  input.click();
+}
+
 // Når vinlager sektion vises
 function initializeVinlager() {
   // Indlæs data først
@@ -13301,12 +13348,17 @@ function initializeVinlager() {
   updateVinFilters();
   updateVinLabelSelect();
   
-  // Opdater lagerplacering select i form
-  const data = loadAllData() || {};
-  const lokationer = data.vinlagerLokationer || [];
+  // Opdater lagerplacering select i form - vis områderne
   const placeringSelect = document.getElementById('newVinLagerplacering');
   if(placeringSelect) {
-    placeringSelect.innerHTML = '<option value="">Vælg placering</option>' + lokationer.map(l => `<option value="${l}">${l}</option>`).join('');
+    placeringSelect.innerHTML = `
+      <option value="">Vælg placering</option>
+      <option value="Europa">🌍 Europa</option>
+      <option value="Amerika">🌎 Amerika</option>
+      <option value="Afrika">🌏 Afrika</option>
+      <option value="Asien">🌏 Asien</option>
+      <option value="Oceanien">🌏 Oceanien</option>
+    `;
   }
   
   // Opdater vin admin sektioner
@@ -13515,7 +13567,7 @@ function renderVinMasterTable() {
                 <td style="padding:8px; text-align:center;">
                   ${billedeUrl ? 
                     `<img src="${billedeUrl}" alt="${vin.navn}" style="width:50px; height:50px; object-fit:cover; border-radius:4px; cursor:pointer;" onclick="editVinBillede('${vin.id}')" title="Klik for at ændre billede">` : 
-                    `<div style="width:50px; height:50px; background:#f0f0f0; border:1px dashed #ccc; border-radius:4px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#999; font-size:11px;" onclick="editVinBillede('${vin.id}')" title="Klik for at tilføje billede">+</div>`
+                    `<div style="width:50px; height:50px; background:#f0f0f0; border:2px dashed #8B0000; border-radius:4px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#8B0000; font-size:20px; font-weight:700; transition:all 0.2s;" onclick="editVinBillede('${vin.id}')" onmouseover="this.style.background='#fff3cd'; this.style.borderColor='#8B0000';" onmouseout="this.style.background='#f0f0f0'; this.style.borderColor='#8B0000';" title="Klik for at tilføje billede">+</div>`
                   }
                 </td>
                 <td style="padding:8px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px;" title="${vin.navn}"><strong>${vin.navn}</strong>${lavLager ? ' <span style="color:#dc3545;">⚠️</span>' : ''}</td>
