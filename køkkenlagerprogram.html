@@ -2830,9 +2830,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.81';
+const APP_VERSION = '4.82';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '14:08';
+const BUILD_TIME = '14:20';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -13745,14 +13745,24 @@ function processVinlagerImportText(text, importType = 'add') {
     });
   }
   
+  // Gem data først
   saveAllData();
-  renderVineList();
-  renderVinMasterTable(); // Opdater master table
-  updateVinStats();
-  updateVinFilters();
+  
+  // Opdater UI - ligesom i master varelager import
+  renderVinMasterTable(); // Opdater tabellen i "Søg og se hele varelageret" - DETTE ER VIGTIGT!
   updateVinLabelSelect();
   updateVinAdminSelects(); // Opdater alle selects
   renderVinlagerDropdowns();
+  
+  // Opdater overblik hvis det er synligt
+  const vinOverblikSection = document.getElementById('vinOverblik');
+  if(vinOverblikSection && !vinOverblikSection.classList.contains('hidden')){
+    renderVinOverblik();
+  }
+  
+  // Nulstil fil-input - ligesom i master varelager import
+  const vinCsvImport = document.getElementById('vinCsvImport');
+  if(vinCsvImport) vinCsvImport.value = '';
   
   alert(`✅ Import færdig!\n\nImporteret: ${imported}\nOpdateret: ${updated}\nSprunget over: ${skipped}`);
 }
@@ -13974,11 +13984,9 @@ function renderVinMasterTable() {
   const container = document.getElementById('vinMasterTableContainer');
   if (!container) return;
   
-  // Sikr at vinlagerVine er initialiseret og indlæst
-  if (!vinlagerVine) {
-    const data = loadAllData() || {};
-    vinlagerVine = data.vinlagerVine || [];
-  }
+  // ALTID indlæs data først - ligesom i master varelager
+  const data = loadAllData() || {};
+  vinlagerVine = data.vinlagerVine || [];
   
   const search = (document.getElementById('vinSearchInput')?.value || '').toLowerCase();
   const filterPlacering = document.getElementById('vinMasterPlaceringFilter')?.value || '';
