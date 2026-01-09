@@ -2830,9 +2830,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.94';
+const APP_VERSION = '4.95';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '16:35';
+const BUILD_TIME = '16:50';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -2971,7 +2971,10 @@ function saveAllData(){
 function loadAllData(){
   try{
     const saved = localStorage.getItem(STORAGE_KEY);
-    if(!saved) return false;
+    if(!saved) {
+      console.log('Ingen data fundet i localStorage');
+      return false;
+    }
     const data = JSON.parse(saved);
     if(data.masterVarelager) masterVarelager = data.masterVarelager;
     if(data.lagerData) lagerData = data.lagerData;
@@ -2993,12 +2996,29 @@ function loadAllData(){
     if(data.archivePeriod !== undefined) archivePeriod = data.archivePeriod;
     if(data.sessionCounter !== undefined) sessionCounter = data.sessionCounter;
     if(data.activeSession) activeSession = data.activeSession;
-    // Vinlager data
-    if(data.vinlagerVine) vinlagerVine = data.vinlagerVine;
-    if(data.vinlagerHistorik) vinlagerHistorik = data.vinlagerHistorik;
+    // Vinlager data - VIGTIGT: Altid sæt til array selv hvis data ikke findes
+    if(data.vinlagerVine && Array.isArray(data.vinlagerVine)) {
+      vinlagerVine = data.vinlagerVine;
+      console.log('loadAllData: Indlæst', vinlagerVine.length, 'vine fra localStorage');
+    } else {
+      vinlagerVine = [];
+      console.log('loadAllData: Ingen vinlagerVine data fundet, sat til tom array');
+    }
+    if(data.vinlagerHistorik && Array.isArray(data.vinlagerHistorik)) {
+      vinlagerHistorik = data.vinlagerHistorik;
+    } else {
+      vinlagerHistorik = [];
+    }
     return true;
   }catch(err){
-    console.warn('Kunne ikke indlæse data:', err);
+    console.error('Kunne ikke indlæse data:', err);
+    // Sikr at variabler er initialiseret selv ved fejl
+    if(!vinlagerVine || !Array.isArray(vinlagerVine)) {
+      vinlagerVine = [];
+    }
+    if(!vinlagerHistorik || !Array.isArray(vinlagerHistorik)) {
+      vinlagerHistorik = [];
+    }
     return false;
   }
 }
@@ -14087,7 +14107,27 @@ function processVinlagerImportText(text, importType = 'add') {
   }
   
   // VIGTIGT: Gem data først - ligesom i master varelager import
+  // Sikr at vinlagerVine er et array før vi gemmer
+  if (!vinlagerVine || !Array.isArray(vinlagerVine)) {
+    vinlagerVine = [];
+  }
+  
+  console.log('Før saveAllData - antal vine:', vinlagerVine.length);
   saveAllData();
+  
+  // Verificer at data blev gemt
+  try {
+    const saved = localStorage.getItem('køkkenlager_data');
+    if (saved) {
+      const data = JSON.parse(saved);
+      console.log('Efter saveAllData - data i localStorage:', {
+        hasVinlagerVine: !!data.vinlagerVine,
+        vinlagerVineLength: data.vinlagerVine ? data.vinlagerVine.length : 0
+      });
+    }
+  } catch(err) {
+    console.error('Fejl ved verificering af gemt data:', err);
+  }
   
   console.log('Vinlager import færdig:', {
     imported,
@@ -14397,11 +14437,29 @@ function renderVinMasterTable() {
     return;
   }
   
-  // ALTID indlæs data først - ligesom i master varelager
-  const data = loadAllData() || {};
-  vinlagerVine = data.vinlagerVine || [];
+  // ALTID indlæs data først - loadAllData() opdaterer globale variabler direkte
+  loadAllData();
+  
+  // Sikr at vinlagerVine er et array
+  if (!vinlagerVine || !Array.isArray(vinlagerVine)) {
+    vinlagerVine = [];
+  }
   
   console.log('renderVinMasterTable kaldt, antal vine:', vinlagerVine.length, 'Container:', container ? 'fundet' : 'ikke fundet');
+  
+  // Debug: Tjek localStorage direkte
+  try {
+    const saved = localStorage.getItem('køkkenlager_data');
+    if (saved) {
+      const data = JSON.parse(saved);
+      console.log('Data i localStorage:', {
+        hasVinlagerVine: !!data.vinlagerVine,
+        vinlagerVineLength: data.vinlagerVine ? data.vinlagerVine.length : 0
+      });
+    }
+  } catch(err) {
+    console.error('Fejl ved læsning af localStorage:', err);
+  }
   
   const search = (document.getElementById('vinSearchInput')?.value || '').toLowerCase();
   const filterPlacering = document.getElementById('vinMasterPlaceringFilter')?.value || '';
