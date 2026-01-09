@@ -2830,9 +2830,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.82';
+const APP_VERSION = '4.83';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '14:20';
+const BUILD_TIME = '14:29';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -11773,10 +11773,14 @@ function addVinlagerDropdown() {
     }
     
     const data = loadAllData() || {};
-    if (!data.vinlagerDropdowns) data.vinlagerDropdowns = [];
+    
+    // Sikr at vinlagerDropdowns altid er et array
+    if (!data.vinlagerDropdowns || !Array.isArray(data.vinlagerDropdowns)) {
+      data.vinlagerDropdowns = [];
+    }
     
     // Check if dropdown already exists
-    if (data.vinlagerDropdowns.some(d => d.name === name)) {
+    if (data.vinlagerDropdowns.some(d => d && d.name === name)) {
       alert('Dropdown findes allerede');
       return;
     }
@@ -11799,7 +11803,14 @@ function addVinlagerDropdown() {
 
 function renderVinlagerDropdowns() {
   const data = loadAllData() || {};
-  const dropdowns = data.vinlagerDropdowns || [];
+  
+  // Sikr at vinlagerDropdowns altid er et array
+  let dropdowns = data.vinlagerDropdowns;
+  if (!dropdowns || !Array.isArray(dropdowns)) {
+    dropdowns = [];
+    data.vinlagerDropdowns = [];
+  }
+  
   const container = document.getElementById('vinlagerDropdownsContainer');
   
   if (!container) return;
@@ -11850,9 +11861,19 @@ function addLocationToDropdown(dropdownIdx) {
   }
   
   const data = loadAllData() || {};
-  if (!data.vinlagerDropdowns || !data.vinlagerDropdowns[dropdownIdx]) return;
+  
+  // Sikr at vinlagerDropdowns altid er et array
+  if (!data.vinlagerDropdowns || !Array.isArray(data.vinlagerDropdowns)) {
+    data.vinlagerDropdowns = [];
+  }
+  
+  if (!data.vinlagerDropdowns[dropdownIdx]) return;
   
   const dropdown = data.vinlagerDropdowns[dropdownIdx];
+  if (!dropdown.locations || !Array.isArray(dropdown.locations)) {
+    dropdown.locations = [];
+  }
+  
   if (dropdown.locations.includes(name)) {
     alert('Lokation findes allerede i denne dropdown');
     return;
@@ -11868,9 +11889,21 @@ function removeLocationFromDropdown(dropdownIdx, locationIdx) {
   if (!confirm('Er du sikker på at du vil slette denne lokation?')) return;
   
   const data = loadAllData() || {};
-  if (!data.vinlagerDropdowns || !data.vinlagerDropdowns[dropdownIdx]) return;
   
-  data.vinlagerDropdowns[dropdownIdx].locations.splice(locationIdx, 1);
+  // Sikr at vinlagerDropdowns altid er et array
+  if (!data.vinlagerDropdowns || !Array.isArray(data.vinlagerDropdowns)) {
+    data.vinlagerDropdowns = [];
+    return;
+  }
+  
+  if (!data.vinlagerDropdowns[dropdownIdx]) return;
+  
+  const dropdown = data.vinlagerDropdowns[dropdownIdx];
+  if (!dropdown.locations || !Array.isArray(dropdown.locations)) {
+    dropdown.locations = [];
+  }
+  
+  dropdown.locations.splice(locationIdx, 1);
   saveAllData();
   renderVinlagerDropdowns();
 }
@@ -11879,7 +11912,12 @@ function removeVinlagerDropdown(dropdownIdx) {
   if (!confirm('Er du sikker på at du vil slette hele denne dropdown og alle dens lokationer?')) return;
   
   const data = loadAllData() || {};
-  if (!data.vinlagerDropdowns) return;
+  
+  // Sikr at vinlagerDropdowns altid er et array
+  if (!data.vinlagerDropdowns || !Array.isArray(data.vinlagerDropdowns)) {
+    data.vinlagerDropdowns = [];
+    return;
+  }
   
   data.vinlagerDropdowns.splice(dropdownIdx, 1);
   saveAllData();
@@ -11888,16 +11926,24 @@ function removeVinlagerDropdown(dropdownIdx) {
 
 function updateVinlagerLokationerFromDropdowns() {
   const data = loadAllData() || {};
-  const dropdowns = data.vinlagerDropdowns || [];
+  
+  // Sikr at vinlagerDropdowns altid er et array
+  let dropdowns = data.vinlagerDropdowns;
+  if (!dropdowns || !Array.isArray(dropdowns)) {
+    dropdowns = [];
+    data.vinlagerDropdowns = [];
+  }
   
   // Combine all locations from all dropdowns into vinlagerLokationer
   const allLocations = [];
   dropdowns.forEach(dropdown => {
-    dropdown.locations.forEach(loc => {
-      if (!allLocations.includes(loc)) {
-        allLocations.push(loc);
-      }
-    });
+    if (dropdown && dropdown.locations && Array.isArray(dropdown.locations)) {
+      dropdown.locations.forEach(loc => {
+        if (loc && !allLocations.includes(loc)) {
+          allLocations.push(loc);
+        }
+      });
+    }
   });
   
   data.vinlagerLokationer = allLocations;
@@ -11991,8 +12037,14 @@ function renderVinlagerLocations() {
 // Initialize vinlager dropdowns on first load
 function initializeVinlagerDropdowns() {
   const data = loadAllData() || {};
+  
+  // Sikr at vinlagerDropdowns altid er et array
+  if (!data.vinlagerDropdowns || !Array.isArray(data.vinlagerDropdowns)) {
+    data.vinlagerDropdowns = [];
+  }
+  
   // If vinlagerLokationer exists but vinlagerDropdowns doesn't, migrate
-  if (data.vinlagerLokationer && data.vinlagerLokationer.length > 0 && (!data.vinlagerDropdowns || data.vinlagerDropdowns.length === 0)) {
+  if (data.vinlagerLokationer && Array.isArray(data.vinlagerLokationer) && data.vinlagerLokationer.length > 0 && data.vinlagerDropdowns.length === 0) {
     // Migrate old data to new dropdown structure
     data.vinlagerDropdowns = [{
       name: 'Standard Lokationer',
