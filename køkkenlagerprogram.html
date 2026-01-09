@@ -2832,9 +2832,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.98';
+const APP_VERSION = '4.99';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '17:15';
+const BUILD_TIME = '17:20';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -14545,7 +14545,7 @@ function renderVinMasterTable() {
           <col style="width:70px;">
           <col style="width:80px;">
           <col style="width:120px;">
-          <col style="width:90px;">
+          <col style="width:140px;">
         </colgroup>
         <thead style="position:sticky; top:0; z-index:10;">
           <tr style="background:#f5f5f5; color:#000;">
@@ -14561,7 +14561,7 @@ function renderVinMasterTable() {
             <th style="padding:10px 6px; text-align:center; white-space:nowrap; font-size:13px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Antal</th>
             <th style="padding:10px 6px; text-align:center; white-space:nowrap; font-size:13px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Min. beh.</th>
             <th style="padding:10px 6px; text-align:left; white-space:nowrap; font-size:13px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Placering</th>
-            <th style="padding:10px 6px; text-align:center; white-space:nowrap; font-size:13px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Handlinger</th>
+            <th style="padding:10px 6px; text-align:center; white-space:nowrap; font-size:13px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Indstillinger</th>
           </tr>
         </thead>
         <tbody>
@@ -14588,9 +14588,9 @@ function renderVinMasterTable() {
                 <td style="padding:6px; text-align:center; white-space:nowrap;">${vin.minimumBeholdning || 24}</td>
                 <td style="padding:6px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${vin.lagerplacering || '-'}">${vin.lagerplacering || '-'}</td>
                 <td style="padding:8px; text-align:center; white-space:nowrap;">
-                  <button onclick="editVin('${vin.id}')" style="background:#007bff; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; margin-right:3px; font-size:12px;">✏️</button>
-                  <button onclick="updateVinAntal('${vin.id}')" style="background:#28a745; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; margin-right:3px; font-size:12px;">📊</button>
-                  <button onclick="deleteVin('${vin.id}')" style="background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:12px;">🗑️</button>
+                  <button onclick="editVin('${vin.id}')" style="background:#007bff; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-right:4px; font-size:13px; min-width:38px;">✏️</button>
+                  <button onclick="updateVinAntal('${vin.id}')" style="background:#28a745; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-right:4px; font-size:13px; min-width:38px;">📊</button>
+                  <button onclick="deleteVin('${vin.id}')" style="background:#dc3545; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:13px; min-width:38px;">🗑️</button>
                 </td>
               </tr>
             `;
