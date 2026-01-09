@@ -2819,9 +2819,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.77';
+const APP_VERSION = '4.78';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '10:44';
+const BUILD_TIME = '10:55';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -13553,7 +13553,6 @@ function showVinAdminSection(sectionId) {
     sidebar.classList.remove('collapsed');
     if(toggleBtn) toggleBtn.setAttribute('data-state', 'open');
   }
-}
   
   // Initialize section specific data
   if (sectionId === 'shelf') {
@@ -15019,7 +15018,7 @@ async function generateVinReportPDF(r, forView = false){
       doc.text(`${locSubtotal.toFixed(2)} kr.`, colLinjetotal, y+2);
       y+=7;
       grandTotal += locSubtotal;
-    });
+    }
     
     // Grand total
     if(y>270){ doc.addPage(); y=15; }
