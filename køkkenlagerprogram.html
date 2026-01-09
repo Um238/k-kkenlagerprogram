@@ -2830,9 +2830,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.83';
+const APP_VERSION = '4.84';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '14:29';
+const BUILD_TIME = '14:34';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -13485,6 +13485,14 @@ function processVinlagerImportText(text, importType = 'add') {
     return;
   }
   
+  // VIGTIGT: Indlæs data først - ligesom i master varelager import
+  loadAllData();
+  
+  // Sikr at vinlagerVine er initialiseret
+  if (!vinlagerVine || !Array.isArray(vinlagerVine)) {
+    vinlagerVine = [];
+  }
+  
   // Fjern BOM
   if(text.charCodeAt(0) === 0xFEFF) {
     text = text.slice(1);
@@ -13797,8 +13805,15 @@ function processVinlagerImportText(text, importType = 'add') {
     });
   }
   
-  // Gem data først
+  // VIGTIGT: Gem data først - ligesom i master varelager import
   saveAllData();
+  
+  console.log('Vinlager import færdig:', {
+    imported,
+    updated,
+    skipped,
+    totalVine: vinlagerVine.length
+  });
   
   // Opdater UI - ligesom i master varelager import
   renderVinMasterTable(); // Opdater tabellen i "Søg og se hele varelageret" - DETTE ER VIGTIGT!
@@ -13816,7 +13831,7 @@ function processVinlagerImportText(text, importType = 'add') {
   const vinCsvImport = document.getElementById('vinCsvImport');
   if(vinCsvImport) vinCsvImport.value = '';
   
-  alert(`✅ Import færdig!\n\nImporteret: ${imported}\nOpdateret: ${updated}\nSprunget over: ${skipped}`);
+  alert(`✅ Import færdig!\n\nImporteret: ${imported}\nOpdateret: ${updated}\nSprunget over: ${skipped}\n\nTotal vine i systemet: ${vinlagerVine.length}`);
 }
 
 // Edit vin billede (ligesom uploadVareImage)
