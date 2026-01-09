@@ -761,7 +761,7 @@ a:hover{color:#45a049;text-decoration:none}
           <h3 style="margin-bottom:20px;">🌍 Vindistrikter</h3>
           <div style="display:flex; gap:20px; flex-wrap:wrap;">
             <div id="vinlagerDistrikter" style="flex:1; min-width:300px; display:flex; flex-direction:column; gap:15px;"></div>
-            <div style="flex:2; min-width:400px;">
+            <div id="vinlagerDropdownsWrapper" style="flex:1; min-width:300px; display:flex; flex-direction:column; gap:15px;">
               <h4 style="margin-bottom:15px; color:#8B0000;">💎 Øvrige Lager</h4>
               <div id="vinlagerDropdownsContainer" style="display:flex; flex-direction:column; gap:15px;"></div>
             </div>
@@ -2830,9 +2830,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '4.90';
+const APP_VERSION = '4.91';
 const BUILD_DATE = '2026-01-09';
-const BUILD_TIME = '15:41';
+const BUILD_TIME = '15:55';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -11939,6 +11939,7 @@ function renderVinlagerDropdowns() {
   if (!container) return;
   
   // Render 5 dropdowns med samme udseende som vindistrikterne (med diamant-ikon)
+  // Samme størrelse og layout som vindistrikterne - side-by-side
   container.innerHTML = data.vinlagerDropdowns.map((dropdown, dropdownIdx) => {
     const dropdownId = `dropdown-${dropdownIdx}`;
     return `
@@ -14090,13 +14091,15 @@ function processVinlagerImportText(text, importType = 'add') {
   });
   
   // Opdater UI - ligesom i master varelager import
-  // VIGTIGT: Opdater tabellen med en lille forsinkelse for at sikre at containeren er synlig
-  setTimeout(() => {
-    renderVinMasterTable(); // Opdater tabellen i "Søg og se hele varelageret" - DETTE ER VIGTIGT!
-  }, 100);
   updateVinLabelSelect();
   updateVinAdminSelects(); // Opdater alle selects
   renderVinlagerDropdowns();
+  
+  // VIGTIGT: Opdater tabellen - både med og uden forsinkelse for at sikre at den vises
+  renderVinMasterTable(); // Opdater tabellen direkte
+  setTimeout(() => {
+    renderVinMasterTable(); // Opdater tabellen igen efter en lille forsinkelse - DETTE ER VIGTIGT!
+  }, 200);
   
   // Opdater overblik hvis det er synligt
   const vinOverblikSection = document.getElementById('vinOverblik');
@@ -14227,7 +14230,11 @@ function showVinAdminSection(sectionId) {
     updateVinHylleReolSelect();
     renderVinHylleRaekkefoelge();
   } else if (sectionId === 'view') {
+    // VIGTIGT: Opdater tabellen både direkte og med forsinkelse for at sikre at den vises
     renderVinMasterTable();
+    setTimeout(() => {
+      renderVinMasterTable();
+    }, 100);
   }
 }
 
