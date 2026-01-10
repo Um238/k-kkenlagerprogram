@@ -2871,9 +2871,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '5.07';
+const APP_VERSION = '5.08';
 const BUILD_DATE = '2026-01-10';
-const BUILD_TIME = '10:13';
+const BUILD_TIME = '10:50';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -15165,19 +15165,16 @@ function generateVinLabels() {
       
       try {
         const barcodeEl = d.querySelector('.barcode');
-        // Calculate appropriate width based on barcode value length
-        // Shorter IDs need smaller width multiplier to keep barcode compact
-        const idLength = barcodeValue ? barcodeValue.toString().length : 10;
-        // Use smaller width (1.2-1.5) to make barcode around 60-70mm wide (6-7 cm) instead of 10.5 cm
-        // This allows ~15 labels per meter instead of ~10
-        const widthMultiplier = idLength > 15 ? 1.0 : (idLength > 10 ? 1.2 : 1.4);
         
+        // Use same size as kitchen inventory (width: 2, height: 40) for scannability
+        // This matches the size of barcodes on milk cartons and other products
+        // The barcode will be around 10.5cm wide (same as kitchen inventory) which is scannable on phones
         JsBarcode(barcodeEl, barcodeValue, {
           format: 'CODE128',
           displayValue: false,
-          width: widthMultiplier,
-          height: 35, // Slightly shorter to match smaller width
-          margin: 3, // Adequate quiet zone for scanning
+          width: 2, // Same as kitchen inventory - ensures scannability on phones
+          height: 40, // Same as kitchen inventory - good height for scanning
+          margin: 2, // Adequate quiet zone for scanning (same as kitchen)
           valid: function(valid) {
             if(!valid) {
               console.warn('Invalid barcode value:', barcodeValue);
@@ -15185,12 +15182,13 @@ function generateVinLabels() {
           }
         });
         
-        // Ensure barcode doesn't exceed 70mm (7cm) - compact but scannable
+        // Ensure barcode maintains proper size for scanning
+        // Don't restrict max-width - let it be full size like kitchen inventory
         setTimeout(() => {
           if(barcodeEl) {
-            barcodeEl.style.maxWidth = '70mm';
             barcodeEl.style.width = 'auto';
-            barcodeEl.style.height = '35px';
+            barcodeEl.style.height = '40px';
+            barcodeEl.style.maxWidth = 'none'; // Remove max-width restriction for better scannability
           }
         }, 10);
       } catch(e) {
