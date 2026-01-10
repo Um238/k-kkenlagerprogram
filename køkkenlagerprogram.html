@@ -2871,9 +2871,33 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '5.13';
+const APP_VERSION = '5.14';
 const BUILD_DATE = '2026-01-10';
-const BUILD_TIME = '13:19';
+const BUILD_TIME = '13:38';
+
+// Standard vin-billede (base64 placeholder - skal erstattes med faktisk billede)
+// Dette er en placeholder - brugeren skal uploade et faktisk billede
+// SVG placeholder med vin-ikon
+const DEFAULT_VIN_BILEDE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzhiMDAwMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj7wn5CvPC90ZXh0Pjwvc3ZnPg==';
+
+// Funktion til at sætte standard billede på alle vine der mangler billede
+function setDefaultVinBilledeForAll() {
+  loadAllData();
+  let updated = 0;
+  vinlagerVine.forEach(vin => {
+    if (!vin.billede || vin.billede === '' || vin.billede === null) {
+      vin.billede = DEFAULT_VIN_BILEDE;
+      updated++;
+    }
+  });
+  if (updated > 0) {
+    saveAllData();
+    renderVinMasterTable();
+    alert(`✅ Standard billede sat på ${updated} vine`);
+  } else {
+    alert('ℹ️ Alle vine har allerede billeder');
+  }
+}
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -13779,7 +13803,7 @@ function genererDemoVine(antal) {
         'Minimum beholdning': minimumBeholdning,
         Placering: placering, // Europa for europæiske lande, ellers region
         Noter: '',
-        Billede: ''
+        Billede: DEFAULT_VIN_BILEDE // Standard vin-billede - kan ændres individuelt
       });
     });
   });
@@ -14241,7 +14265,7 @@ function processVinlagerImportText(text, importType = 'add') {
         hylleNr: v.hylleNr || null,
         raekkefoelge: v.raekkefoelge || 0,
         noter: v.noter,
-        billede: v.billede || '',
+        billede: v.billede || DEFAULT_VIN_BILEDE,
         oprettet_dato: new Date().toISOString(),
         sidst_opdateret: new Date().toISOString()
       };
@@ -14283,7 +14307,7 @@ function processVinlagerImportText(text, importType = 'add') {
           hylleNr: v.hylleNr || null,
           raekkefoelge: v.raekkefoelge || 0,
           noter: v.noter,
-          billede: v.billede || '',
+          billede: v.billede || DEFAULT_VIN_BILEDE,
           oprettet_dato: new Date().toISOString(),
           sidst_opdateret: new Date().toISOString()
         };
@@ -14349,7 +14373,7 @@ function processVinlagerImportText(text, importType = 'add') {
           hylleNr: v.hylleNr || null,
           raekkefoelge: v.raekkefoelge || 0,
           noter: v.noter,
-          billede: v.billede || '',
+          billede: v.billede || DEFAULT_VIN_BILEDE,
           oprettet_dato: new Date().toISOString(),
           sidst_opdateret: new Date().toISOString()
         };
@@ -14797,14 +14821,12 @@ function renderVinMasterTable() {
         <tbody>
           ${filtered.map(vin => {
             const lavLager = vin.antal_flasker < (vin.minimumBeholdning || 24);
-            const billedeUrl = vin.billede || '';
+            // Brug standard billede hvis vin ikke har et billede
+            const billedeUrl = vin.billede || DEFAULT_VIN_BILEDE;
             return `
               <tr style="border-bottom:1px solid #eee; ${lavLager ? 'background:#fff3cd;' : ''}">
                 <td style="padding:8px; text-align:center;">
-                  ${billedeUrl ? 
-                    `<img src="${billedeUrl}" alt="${vin.navn}" style="width:50px; height:50px; object-fit:cover; border-radius:4px; cursor:pointer;" onclick="editVinBillede('${vin.id}')" title="Klik for at ændre billede">` : 
-                    `<div style="width:50px; height:50px; background:#f0f0f0; border:2px dashed #8B0000; border-radius:4px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#8B0000; font-size:20px; font-weight:700; transition:all 0.2s;" onclick="editVinBillede('${vin.id}')" onmouseover="this.style.background='#fff3cd'; this.style.borderColor='#8B0000';" onmouseout="this.style.background='#f0f0f0'; this.style.borderColor='#8B0000';" title="Klik for at tilføje billede">+</div>`
-                  }
+                  <img src="${billedeUrl}" alt="${vin.navn}" style="width:50px; height:50px; object-fit:cover; border-radius:4px; cursor:pointer; border:${vin.billede ? 'none' : '2px solid #8B0000'};" onclick="editVinBillede('${vin.id}')" title="Klik for at ændre billede" />
                 </td>
                 <td style="padding:6px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${vin.navn}"><strong>${vin.navn}</strong>${lavLager ? ' <span style="color:#dc3545;">⚠️</span>' : ''}</td>
                 <td style="padding:6px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${vin.producent}">${vin.producent}</td>
@@ -15172,70 +15194,73 @@ function generateVinLabels() {
       d.appendChild(barcodeContainer);
       container.appendChild(d);
       
-      try {
-        // Match the exact format of barcodes on milk cartons (like in user's images)
-        // Key features of milk carton barcodes:
-        // - Numbers displayed below the barcode (displayValue: true) - THIS IS CRITICAL
-        // - Width 1.3-1.4 for optimal balance: compact but scannable (creates ~5.5-6cm wide)
-        // - Height 30-32px for good scanning while compact
-        // - Proper margin/quiet zone (4-5px) on both sides
-        // - High contrast black on white
-        // Generate barcode matching milk carton format exactly
-        // Milk carton barcodes are typically 50-55mm wide with numbers below
-        // Width: 1.25 creates barcodes around 50-55mm (5-5.5cm) - perfect for milk cartons
-        // This is compact enough for shelves but scannable on phones
-        JsBarcode(barcodeSvg, barcodeValue, {
-          format: 'CODE128',
-          displayValue: true, // CRITICAL: Numbers below barcode (like milk cartons) - REQUIRED for phone scanning
-          fontSize: 11, // Font size matching milk cartons
-          textMargin: 3, // Space between barcode lines and numbers
-          textPosition: 'bottom', // Numbers below barcode (standard for milk cartons)
-          textAlign: 'center', // Center align numbers
-          width: 1.3, // Width parameter - creates ~52-58mm wide barcode (matching milk cartons - scannable on phones)
-          height: 26, // Compact height matching milk cartons - sufficient for phone scanning
-          margin: 7, // Good quiet zone (white space) on both sides - critical for phone scanning (matches milk cartons)
-          background: '#ffffff', // Pure white background
-          lineColor: '#000000', // Pure black lines - maximum contrast for scanning
-          valid: function(valid) {
-            if(!valid) {
-              console.error('Invalid barcode value - cannot generate barcode:', barcodeValue);
-            }
-          }
-        });
+      // Wait for JsBarcode to be available, then generate barcode
+      const generateBarcode = () => {
+        if (typeof JsBarcode === 'undefined') {
+          console.warn('JsBarcode not loaded yet, retrying...');
+          setTimeout(generateBarcode, 100);
+          return;
+        }
         
-        // CRITICAL: Don't scale or transform the SVG - this breaks scannability
-        // Let the barcode be its natural size (like milk cartons)
-        setTimeout(() => {
-          if(barcodeSvg) {
-            // Remove any forced dimensions that might distort the barcode
-            barcodeSvg.removeAttribute('width');
-            barcodeSvg.removeAttribute('height');
-            
-            // Apply minimal styling - let barcode be natural size (like milk cartons)
-            barcodeSvg.style.cssText = 'display:block; width:auto; height:auto; max-width:55mm; margin:0 auto; background:#ffffff;';
-            
-            // Ensure text (numbers below barcode) is properly styled and visible
-            const textElements = barcodeSvg.querySelectorAll('text');
-            textElements.forEach(text => {
-              text.setAttribute('fill', '#000000');
-              text.style.fontSize = '11px';
-              text.style.fontFamily = 'monospace, Arial';
-              text.style.fontWeight = 'normal';
-            });
-            
-            // Ensure all barcode lines are black with proper stroke width
-            const rects = barcodeSvg.querySelectorAll('rect');
-            rects.forEach(rect => {
-              if(!rect.getAttribute('fill') || rect.getAttribute('fill') !== '#000000') {
-                rect.setAttribute('fill', '#000000');
+        try {
+          // Match the exact format of barcodes on milk cartons (like in user's images)
+          // Generate barcode matching milk carton format exactly
+          JsBarcode(barcodeSvg, barcodeValue, {
+            format: 'CODE128',
+            displayValue: true, // CRITICAL: Numbers below barcode (like milk cartons) - REQUIRED for phone scanning
+            fontSize: 11, // Font size matching milk cartons
+            textMargin: 3, // Space between barcode lines and numbers
+            textPosition: 'bottom', // Numbers below barcode (standard for milk cartons)
+            textAlign: 'center', // Center align numbers
+            width: 1.3, // Width parameter - creates ~52-58mm wide barcode (matching milk cartons - scannable on phones)
+            height: 26, // Compact height matching milk cartons - sufficient for phone scanning
+            margin: 7, // Good quiet zone (white space) on both sides - critical for phone scanning (matches milk cartons)
+            background: '#ffffff', // Pure white background
+            lineColor: '#000000', // Pure black lines - maximum contrast for scanning
+            valid: function(valid) {
+              if(!valid) {
+                console.error('Invalid barcode value - cannot generate barcode:', barcodeValue);
               }
-            });
-          }
-        }, 100);
-      } catch(e) {
-        console.error('Barcode generation error:', e);
-        barcodeContainer.innerHTML = '<span style="color:red; font-size:10px;">Fejl ved generering af stregkode</span>';
-      }
+            }
+          });
+          
+          // CRITICAL: Don't scale or transform the SVG - this breaks scannability
+          // Let the barcode be its natural size (like milk cartons)
+          setTimeout(() => {
+            if(barcodeSvg) {
+              // Remove any forced dimensions that might distort the barcode
+              barcodeSvg.removeAttribute('width');
+              barcodeSvg.removeAttribute('height');
+              
+              // Apply minimal styling - let barcode be natural size (like milk cartons)
+              barcodeSvg.style.cssText = 'display:block; width:auto; height:auto; max-width:55mm; margin:0 auto; background:#ffffff;';
+              
+              // Ensure text (numbers below barcode) is properly styled and visible
+              const textElements = barcodeSvg.querySelectorAll('text');
+              textElements.forEach(text => {
+                text.setAttribute('fill', '#000000');
+                text.style.fontSize = '11px';
+                text.style.fontFamily = 'monospace, Arial';
+                text.style.fontWeight = 'normal';
+              });
+              
+              // Ensure all barcode lines are black with proper stroke width
+              const rects = barcodeSvg.querySelectorAll('rect');
+              rects.forEach(rect => {
+                if(!rect.getAttribute('fill') || rect.getAttribute('fill') !== '#000000') {
+                  rect.setAttribute('fill', '#000000');
+                }
+              });
+            }
+          }, 50);
+        } catch(e) {
+          console.error('Barcode generation error:', e);
+          barcodeContainer.innerHTML = '<span style="color:red; font-size:10px;">Fejl ved generering af stregkode</span>';
+        }
+      };
+      
+      // Start barcode generation
+      generateBarcode();
     }
   });
 }
