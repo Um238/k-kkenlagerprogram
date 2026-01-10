@@ -2871,9 +2871,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '5.15';
+const APP_VERSION = '5.16';
 const BUILD_DATE = '2026-01-10';
-const BUILD_TIME = '13:57';
+const BUILD_TIME = '14:43';
 
 // Standard vin-billede (base64 placeholder - skal erstattes med faktisk billede)
 // Dette er en placeholder - brugeren skal uploade et faktisk billede
@@ -13803,7 +13803,7 @@ function genererDemoVine(antal) {
         'Minimum beholdning': minimumBeholdning,
         Placering: placering, // Europa for europæiske lande, ellers region
         Noter: '',
-        Billede: DEFAULT_VIN_BILEDE // Standard vin-billede - kan ændres individuelt
+        Billede: DEFAULT_VIN_BILEDE
       });
     });
   });
@@ -14265,7 +14265,7 @@ function processVinlagerImportText(text, importType = 'add') {
         hylleNr: v.hylleNr || null,
         raekkefoelge: v.raekkefoelge || 0,
         noter: v.noter,
-        billede: v.billede || DEFAULT_VIN_BILEDE,
+        billede: (v.billede && v.billede.trim() !== '') ? v.billede : DEFAULT_VIN_BILEDE,
         oprettet_dato: new Date().toISOString(),
         sidst_opdateret: new Date().toISOString()
       };
@@ -14307,7 +14307,7 @@ function processVinlagerImportText(text, importType = 'add') {
           hylleNr: v.hylleNr || null,
           raekkefoelge: v.raekkefoelge || 0,
           noter: v.noter,
-          billede: v.billede || DEFAULT_VIN_BILEDE,
+          billede: (v.billede && v.billede.trim() !== '') ? v.billede : DEFAULT_VIN_BILEDE,
           oprettet_dato: new Date().toISOString(),
           sidst_opdateret: new Date().toISOString()
         };
@@ -14345,7 +14345,7 @@ function processVinlagerImportText(text, importType = 'add') {
         existing.hylleNr = v.hylleNr !== undefined ? v.hylleNr : existing.hylleNr;
         existing.raekkefoelge = v.raekkefoelge !== undefined ? v.raekkefoelge : existing.raekkefoelge;
         existing.noter = v.noter !== undefined ? v.noter : existing.noter;
-        existing.billede = v.billede !== undefined ? v.billede : existing.billede;
+        existing.billede = (v.billede !== undefined && v.billede && v.billede.trim() !== '') ? v.billede : (existing.billede || DEFAULT_VIN_BILEDE);
         existing.sidst_opdateret = new Date().toISOString();
         updated++;
       } else {
@@ -14373,7 +14373,7 @@ function processVinlagerImportText(text, importType = 'add') {
           hylleNr: v.hylleNr || null,
           raekkefoelge: v.raekkefoelge || 0,
           noter: v.noter,
-          billede: v.billede || DEFAULT_VIN_BILEDE,
+          billede: (v.billede && v.billede.trim() !== '') ? v.billede : DEFAULT_VIN_BILEDE,
           oprettet_dato: new Date().toISOString(),
           sidst_opdateret: new Date().toISOString()
         };
@@ -14408,6 +14408,13 @@ function processVinlagerImportText(text, importType = 'add') {
   } catch(err) {
     console.error('Fejl ved verificering af gemt data:', err);
   }
+  
+  // Sæt default billede på alle vine der mangler billede
+  vinlagerVine.forEach(vin => {
+    if (!vin.billede || vin.billede === '' || vin.billede === null || vin.billede === undefined) {
+      vin.billede = DEFAULT_VIN_BILEDE;
+    }
+  });
   
   console.log('Vinlager import færdig:', {
     imported,
@@ -14557,10 +14564,180 @@ function editVinBillede(id) {
   input.click();
 }
 
+// Edit funktioner for vin (ligesom i køkkenlager)
+function editVinVarenummer(id) {
+  loadAllData();
+  const vin = vinlagerVine.find(x => x.id === id);
+  if(!vin) return;
+  const ny = prompt("Varenummer:", vin.varenummer || '');
+  if(ny === null) return;
+  vin.varenummer = ny.trim() || null;
+  vin.sidst_opdateret = new Date().toISOString();
+  saveAllData();
+  renderVinMasterTable();
+}
+
+function editVinNavn(id) {
+  loadAllData();
+  const vin = vinlagerVine.find(x => x.id === id);
+  if(!vin) return;
+  const ny = prompt("Nyt vinnavn:", vin.navn);
+  if(ny === null || !ny.trim()) return;
+  vin.navn = ny.trim();
+  vin.sidst_opdateret = new Date().toISOString();
+  saveAllData();
+  renderVinMasterTable();
+}
+
+function editVinProducent(id) {
+  loadAllData();
+  const vin = vinlagerVine.find(x => x.id === id);
+  if(!vin) return;
+  const ny = prompt("Ny producent:", vin.producent);
+  if(ny === null || !ny.trim()) return;
+  vin.producent = ny.trim();
+  vin.sidst_opdateret = new Date().toISOString();
+  saveAllData();
+  renderVinMasterTable();
+}
+
+function editVinLand(id) {
+  loadAllData();
+  const vin = vinlagerVine.find(x => x.id === id);
+  if(!vin) return;
+  const ny = prompt("Nyt land:", vin.land);
+  if(ny === null || !ny.trim()) return;
+  vin.land = ny.trim();
+  vin.sidst_opdateret = new Date().toISOString();
+  saveAllData();
+  renderVinMasterTable();
+}
+
+function editVinRegion(id) {
+  loadAllData();
+  const vin = vinlagerVine.find(x => x.id === id);
+  if(!vin) return;
+  const ny = prompt("Ny region:", vin.region || '');
+  if(ny === null) return;
+  vin.region = ny.trim() || null;
+  vin.sidst_opdateret = new Date().toISOString();
+  saveAllData();
+  renderVinMasterTable();
+}
+
+function editVinÅrgang(id) {
+  loadAllData();
+  const vin = vinlagerVine.find(x => x.id === id);
+  if(!vin) return;
+  const ny = prompt("Ny årgang:", vin.årgang || '');
+  if(ny === null) return;
+  vin.årgang = ny.trim() ? parseInt(ny.trim()) : null;
+  vin.sidst_opdateret = new Date().toISOString();
+  saveAllData();
+  renderVinMasterTable();
+}
+
+function editVinDruetype(id) {
+  loadAllData();
+  const vin = vinlagerVine.find(x => x.id === id);
+  if(!vin) return;
+  const ny = prompt("Ny druetype:", vin.druetype || '');
+  if(ny === null) return;
+  vin.druetype = ny.trim() || null;
+  vin.sidst_opdateret = new Date().toISOString();
+  saveAllData();
+  renderVinMasterTable();
+}
+
+function editVinFlasketype(id) {
+  loadAllData();
+  const vin = vinlagerVine.find(x => x.id === id);
+  if(!vin) return;
+  const ny = prompt("Ny flasketype:", vin.flasketype || '75 cl');
+  if(ny === null || !ny.trim()) return;
+  vin.flasketype = ny.trim();
+  vin.sidst_opdateret = new Date().toISOString();
+  saveAllData();
+  renderVinMasterTable();
+}
+
+function editVinIndkøbspris(id) {
+  loadAllData();
+  const vin = vinlagerVine.find(x => x.id === id);
+  if(!vin) return;
+  const ny = prompt("Ny indkøbspris:", vin.indkøbspris);
+  if(ny === null) return;
+  const pris = parseFloat(ny.replace(',', '.'));
+  if(isNaN(pris)) return alert("Ugyldig pris");
+  vin.indkøbspris = pris;
+  vin.sidst_opdateret = new Date().toISOString();
+  saveAllData();
+  renderVinMasterTable();
+}
+
+function editVinAntal(id) {
+  loadAllData();
+  const vin = vinlagerVine.find(x => x.id === id);
+  if(!vin) return;
+  const ny = prompt("Nyt antal flasker:", vin.antal_flasker);
+  if(ny === null) return;
+  const antal = parseInt(ny);
+  if(isNaN(antal) || antal < 0) return alert("Ugyldigt antal");
+  const ændring = antal - vin.antal_flasker;
+  vin.antal_flasker = antal;
+  vin.sidst_opdateret = new Date().toISOString();
+  if(ændring !== 0) {
+    logVinHistorik(vin.id, ændring, 'manuel justering', 'Manuel ændring via tabel');
+  }
+  saveAllData();
+  renderVinMasterTable();
+}
+
+function editVinMinimumBeholdning(id) {
+  loadAllData();
+  const vin = vinlagerVine.find(x => x.id === id);
+  if(!vin) return;
+  const ny = prompt("Ny minimum beholdning:", vin.minimumBeholdning || 24);
+  if(ny === null) return;
+  const min = parseInt(ny);
+  if(isNaN(min) || min < 0) return alert("Ugyldigt antal");
+  vin.minimumBeholdning = min;
+  vin.sidst_opdateret = new Date().toISOString();
+  saveAllData();
+  renderVinMasterTable();
+}
+
+function editVinPlacering(id) {
+  loadAllData();
+  const vin = vinlagerVine.find(x => x.id === id);
+  if(!vin) return;
+  const ny = prompt("Ny placering:", vin.lagerplacering || '');
+  if(ny === null) return;
+  vin.lagerplacering = ny.trim() || '';
+  vin.sidst_opdateret = new Date().toISOString();
+  saveAllData();
+  renderVinMasterTable();
+  updateVinAdminSelects();
+}
+
 // Når vinlager sektion vises
 function initializeVinlager() {
   // Indlæs data først
   loadAllData();
+  
+  // Sæt default billede på alle vine der mangler billede
+  if (vinlagerVine && vinlagerVine.length > 0) {
+    let needsUpdate = false;
+    vinlagerVine.forEach(vin => {
+      if (!vin.billede || vin.billede === '' || vin.billede === null || vin.billede === undefined) {
+        vin.billede = DEFAULT_VIN_BILEDE;
+        needsUpdate = true;
+      }
+    });
+    if (needsUpdate) {
+      saveAllData();
+    }
+  }
   
   // Sikr at arrays er initialiseret
   if (!vinlagerVine) vinlagerVine = [];
@@ -14811,6 +14988,7 @@ function renderVinMasterTable() {
       <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
         <colgroup>
           <col style="width:80px;">
+          <col style="width:100px;">
           <col style="width:160px;">
           <col style="width:140px;">
           <col style="width:90px;">
@@ -14822,11 +15000,12 @@ function renderVinMasterTable() {
           <col style="width:70px;">
           <col style="width:80px;">
           <col style="width:120px;">
-          <col style="width:140px;">
+          <col style="width:100px;">
         </colgroup>
         <thead style="position:sticky; top:0; z-index:10;">
           <tr style="background:#f5f5f5; color:#000;">
             <th style="padding:10px 6px; text-align:center; white-space:nowrap; font-size:13px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Billede</th>
+            <th style="padding:10px 6px; text-align:left; white-space:nowrap; font-size:13px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Varenummer</th>
             <th style="padding:10px 6px; text-align:left; white-space:nowrap; font-size:13px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Vinnavn</th>
             <th style="padding:10px 6px; text-align:left; white-space:nowrap; font-size:13px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Producent</th>
             <th style="padding:10px 6px; text-align:left; white-space:nowrap; font-size:13px; font-weight:800; border:1px solid #ddd; color:#000 !important; background:#f5f5f5 !important;">Land</th>
@@ -14851,25 +15030,24 @@ function renderVinMasterTable() {
               <tr style="border-bottom:1px solid #eee; ${lavLager ? 'background:#fff3cd;' : ''}">
                 <td style="padding:8px; text-align:center;">
                   ${hasCustomImage ? 
-                    `<img src="${billedeUrl}" alt="${vin.navn}" style="width:60px; height:60px; object-fit:contain; border:2px solid #0078D4; border-radius:4px; cursor:pointer;" onclick="editVinBillede('${vin.id}')" title="Klik for at uploade nyt billede" />` : 
-                    `<div style="width:60px; height:60px; border:2px dashed #ccc; border-radius:4px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#999; font-size:11px;" onclick="editVinBillede('${vin.id}')" title="Klik for at uploade billede">+ Billede</div>`
+                    `<img src="${billedeUrl}" alt="${vin.navn}" style="width:60px; height:60px; object-fit:contain; border:2px solid #0078D4; border-radius:4px; cursor:pointer;" onclick="event.stopPropagation(); editVinBillede('${vin.id}')" title="Klik for at uploade nyt billede" />` : 
+                    `<div style="width:60px; height:60px; border:2px dashed #ccc; border-radius:4px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#999; font-size:11px;" onclick="event.stopPropagation(); editVinBillede('${vin.id}')" title="Klik for at uploade billede">+ Billede</div>`
                   }
                 </td>
-                <td style="padding:6px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${vin.navn}"><strong>${vin.navn}</strong>${lavLager ? ' <span style="color:#dc3545;">⚠️</span>' : ''}</td>
-                <td style="padding:6px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${vin.producent}">${vin.producent}</td>
-                <td style="padding:6px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${vin.land}">${vin.land}</td>
-                <td style="padding:6px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${vin.region || '-'}">${vin.region || '-'}</td>
-                <td style="padding:6px; text-align:center; white-space:nowrap;">${vin.årgang || '-'}</td>
-                <td style="padding:6px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${vin.druetype || '-'}">${vin.druetype || '-'}</td>
-                <td style="padding:6px; text-align:left; white-space:nowrap;">${vin.flasketype || '75 cl'}</td>
-                <td style="padding:6px; text-align:right; white-space:nowrap;">${vin.indkøbspris.toFixed(2).replace('.', ',')} kr</td>
-                <td style="padding:6px; text-align:center; white-space:nowrap;"><strong>${vin.antal_flasker}</strong></td>
-                <td style="padding:6px; text-align:center; white-space:nowrap;">${vin.minimumBeholdning || 24}</td>
-                <td style="padding:6px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${vin.lagerplacering || '-'}">${vin.lagerplacering || '-'}</td>
+                <td onclick="editVinVarenummer('${vin.id}')" style="padding:6px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer; color:#0066cc; font-weight:600;" title="Klik for at redigere varenummer">${vin.varenummer || '-'}</td>
+                <td onclick="editVinNavn('${vin.id}')" style="padding:6px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;" title="Klik for at redigere vinnavn"><strong>${vin.navn}</strong>${lavLager ? ' <span style="color:#dc3545;">⚠️</span>' : ''}</td>
+                <td onclick="editVinProducent('${vin.id}')" style="padding:6px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;" title="Klik for at redigere producent">${vin.producent}</td>
+                <td onclick="editVinLand('${vin.id}')" style="padding:6px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;" title="Klik for at redigere land">${vin.land}</td>
+                <td onclick="editVinRegion('${vin.id}')" style="padding:6px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;" title="Klik for at redigere region">${vin.region || '-'}</td>
+                <td onclick="editVinÅrgang('${vin.id}')" style="padding:6px; text-align:center; white-space:nowrap; cursor:pointer;" title="Klik for at redigere årgang">${vin.årgang || '-'}</td>
+                <td onclick="editVinDruetype('${vin.id}')" style="padding:6px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;" title="Klik for at redigere druetype">${vin.druetype || '-'}</td>
+                <td onclick="editVinFlasketype('${vin.id}')" style="padding:6px; text-align:left; white-space:nowrap; cursor:pointer;" title="Klik for at redigere flasketype">${vin.flasketype || '75 cl'}</td>
+                <td onclick="editVinIndkøbspris('${vin.id}')" style="padding:6px; text-align:right; white-space:nowrap; cursor:pointer;" title="Klik for at redigere indkøbspris">${vin.indkøbspris.toFixed(2).replace('.', ',')} kr</td>
+                <td onclick="editVinAntal('${vin.id}')" style="padding:6px; text-align:center; white-space:nowrap; cursor:pointer;" title="Klik for at redigere antal"><strong>${vin.antal_flasker}</strong></td>
+                <td onclick="editVinMinimumBeholdning('${vin.id}')" style="padding:6px; text-align:center; white-space:nowrap; cursor:pointer;" title="Klik for at redigere minimum beholdning">${vin.minimumBeholdning || 24}</td>
+                <td onclick="editVinPlacering('${vin.id}')" style="padding:6px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;" title="Klik for at redigere placering">${vin.lagerplacering || '-'}</td>
                 <td style="padding:8px; text-align:center; white-space:nowrap;">
-                  <button onclick="event.stopPropagation(); editVin('${vin.id}')" style="background:#007bff; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-right:4px; font-size:13px; min-width:38px; z-index:1000; position:relative;">✏️</button>
-                  <button onclick="event.stopPropagation(); updateVinAntal('${vin.id}')" style="background:#28a745; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-right:4px; font-size:13px; min-width:38px; z-index:1000; position:relative;">📊</button>
-                  <button onclick="event.stopPropagation(); deleteVin('${vin.id}')" style="background:#dc3545; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:13px; min-width:38px; z-index:1000; position:relative;">🗑️</button>
+                  <button onclick="event.stopPropagation(); deleteVin('${vin.id}')" style="background:#dc3545; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:13px; min-width:38px; z-index:1000; position:relative;" title="Slet vin">🗑️</button>
                 </td>
               </tr>
             `;
@@ -15207,98 +15385,30 @@ function generateVinLabels() {
         infoText += vin.land;
       }
       
-      const barcodeValue = vin.id;
+      const barcodeValue = vin.id || vin.varenummer || String(Date.now());
       
-      // Create barcode container with proper styling
-      const barcodeContainer = document.createElement('div');
-      barcodeContainer.style.cssText = 'display:flex; justify-content:center; align-items:center; width:100%; margin-top:6px; padding:4px 0; background:#ffffff;';
-      const barcodeSvg = document.createElement('svg');
-      barcodeSvg.className = 'barcode';
-      barcodeSvg.style.cssText = 'display:block; max-width:100%; height:auto;';
-      barcodeContainer.appendChild(barcodeSvg);
-      
-      d.innerHTML = `<strong style="font-size:14px; margin-bottom:4px;">${vin.navn}</strong>${infoText ? `<div style="font-size:11px; color:#666; margin-bottom:6px;">${infoText}</div>` : ''}`;
-      d.appendChild(barcodeContainer);
+      // Use same approach as kitchen inventory - add SVG directly in innerHTML
+      d.innerHTML = `<strong style="font-size:14px; margin-bottom:4px;">${vin.navn}</strong>${infoText ? `<div style="font-size:11px; color:#666; margin-bottom:6px;">${infoText}</div>` : ''}<svg class="barcode"></svg>`;
       container.appendChild(d);
       
-      // Wait for JsBarcode to be available AND for SVG to be in DOM, then generate barcode
-      const generateBarcode = () => {
-        if (typeof JsBarcode === 'undefined') {
-          console.warn('JsBarcode not loaded yet, retrying...');
-          setTimeout(generateBarcode, 100);
-          return;
-        }
-        
-        // Check if SVG is actually in the DOM
-        if (!barcodeSvg.parentNode || !document.body.contains(barcodeSvg)) {
-          setTimeout(generateBarcode, 50);
-          return;
-        }
-        
-        try {
-          // Match the exact format of barcodes on milk cartons (like in user's images)
-          // Generate barcode matching milk carton format exactly
-          JsBarcode(barcodeSvg, barcodeValue, {
-            format: 'CODE128',
-            displayValue: true, // CRITICAL: Numbers below barcode (like milk cartons) - REQUIRED for phone scanning
-            fontSize: 11, // Font size matching milk cartons
-            textMargin: 3, // Space between barcode lines and numbers
-            textPosition: 'bottom', // Numbers below barcode (standard for milk cartons)
-            textAlign: 'center', // Center align numbers
-            width: 1.3, // Width parameter - creates ~52-58mm wide barcode (matching milk cartons - scannable on phones)
-            height: 26, // Compact height matching milk cartons - sufficient for phone scanning
-            margin: 7, // Good quiet zone (white space) on both sides - critical for phone scanning (matches milk cartons)
-            background: '#ffffff', // Pure white background
-            lineColor: '#000000', // Pure black lines - maximum contrast for scanning
-            valid: function(valid) {
-              if(!valid) {
-                console.error('Invalid barcode value - cannot generate barcode:', barcodeValue);
-              }
-            }
-          });
-          
-          // CRITICAL: Don't scale or transform the SVG - this breaks scannability
-          // Let the barcode be its natural size (like milk cartons)
-          setTimeout(() => {
-            if(barcodeSvg && barcodeSvg.parentNode) {
-              // Remove any forced dimensions that might distort the barcode
-              barcodeSvg.removeAttribute('width');
-              barcodeSvg.removeAttribute('height');
-              
-              // Apply minimal styling - let barcode be natural size (like milk cartons)
-              barcodeSvg.style.cssText = 'display:block !important; width:auto; height:auto; max-width:55mm; margin:0 auto; background:#ffffff; visibility:visible; opacity:1;';
-              
-              // Ensure text (numbers below barcode) is properly styled and visible
-              const textElements = barcodeSvg.querySelectorAll('text');
-              textElements.forEach(text => {
-                text.setAttribute('fill', '#000000');
-                text.style.fontSize = '11px';
-                text.style.fontFamily = 'monospace, Arial';
-                text.style.fontWeight = 'normal';
-              });
-              
-              // Ensure all barcode lines are black with proper stroke width
-              const rects = barcodeSvg.querySelectorAll('rect');
-              rects.forEach(rect => {
-                if(!rect.getAttribute('fill') || rect.getAttribute('fill') !== '#000000') {
-                  rect.setAttribute('fill', '#000000');
-                }
-              });
-              
-              // Force SVG to be visible
-              barcodeContainer.style.cssText = 'display:flex !important; justify-content:center; align-items:center; width:100%; margin-top:6px; padding:4px 0; background:#ffffff; visibility:visible; opacity:1;';
-            }
-          }, 100);
-        } catch(e) {
-          console.error('Barcode generation error:', e);
-          barcodeContainer.innerHTML = '<span style="color:red; font-size:10px;">Fejl ved generering af stregkode</span>';
-        }
-      };
-      
-      // Start barcode generation after a short delay to ensure DOM is ready
-      setTimeout(() => {
-        generateBarcode();
-      }, 50);
+      // Generate barcode immediately after appending (same as kitchen inventory)
+      try {
+        JsBarcode(d.querySelector('.barcode'), barcodeValue, {
+          format: 'CODE128',
+          displayValue: true, // CRITICAL: Numbers below barcode (like milk cartons) - REQUIRED for phone scanning
+          fontSize: 11,
+          textMargin: 3,
+          textPosition: 'bottom',
+          textAlign: 'center',
+          width: 1.3, // Width parameter - creates ~52-58mm wide barcode (matching milk cartons - scannable on phones)
+          height: 26, // Compact height matching milk cartons - sufficient for phone scanning
+          margin: 7, // Good quiet zone (white space) on both sides - critical for phone scanning (matches milk cartons)
+          background: '#ffffff',
+          lineColor: '#000000'
+        });
+      } catch(e) {
+        console.error('Barcode generation error:', e);
+      }
     }
   });
 }
