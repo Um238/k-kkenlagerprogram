@@ -79,7 +79,7 @@ table th{background:#fafafa;font-weight:800}
 }
 
 /* [CSS 9] Labels */
-.label-container{display:flex;flex-direction:column;margin-top:15px;gap:15mm;align-items:flex-start;padding-left:20mm}
+.label-container{display:flex;flex-direction:column;margin-top:15px;gap:15mm;align-items:flex-start;padding-left:30mm}
 .label{border:1px solid #000;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0;padding:8px;box-sizing:border-box;background:#fff;page-break-inside:avoid;break-inside:avoid;margin-bottom:15mm;text-align:center}
 
 /* [CSS 10] Login Modal */
@@ -126,7 +126,7 @@ body.login-active #content{display:none}
 @media print{
   nav,button,input,select{display:none !important} 
   body{background:white;margin:0;padding:0}
-  .label-container{display:flex;flex-direction:column;gap:20mm;margin:0;padding:10mm;padding-left:30mm;align-items:flex-start}
+  .label-container{display:flex;flex-direction:column;gap:20mm;margin:0;padding:10mm;padding-left:40mm;align-items:flex-start}
   .label{margin-bottom:20mm !important;margin-right:0;margin-top:0;page-break-after:auto;break-after:auto;page-break-inside:avoid;break-inside:avoid;text-align:center}
   .label:not(:last-child){margin-bottom:20mm !important}
   @page{margin:10mm}
@@ -1074,8 +1074,19 @@ a:hover{color:#45a049;text-decoration:none}
     <div id="vinLabels" class="vinlager-section hidden">
       <h2>Print Labels</h2>
       <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-        <label class="small">Vælg lagerplacering</label>
-        <select id="vinLabelSelect" onchange="updateVinLabelSelect()"></select>
+        <label class="small">Vælg kontinent</label>
+        <select id="vinLabelKontinent" onchange="updateVinLabelLand()">
+          <option value="">--- Vælg kontinent ---</option>
+          <option value="Europa">🌍 Europa</option>
+          <option value="Amerika">🌎 Amerika</option>
+          <option value="Afrika">🌏 Afrika</option>
+          <option value="Asien">🌏 Asien</option>
+          <option value="Oceanien">🌏 Oceanien</option>
+        </select>
+        <label class="small" id="vinLabelLandLabel" style="display:none;">Vælg land</label>
+        <select id="vinLabelLand" style="display:none;" onchange="updateVinLabelSingle()">
+          <option value="">--- Vælg land ---</option>
+        </select>
         <label class="small">Eller vælg enkelt vin</label>
         <select id="vinLabelSingle"><option value="">--- Ingen ---</option></select>
         <label class="small">Antal labels pr. vin</label>
@@ -11841,7 +11852,9 @@ function vinNavClick(event) {
     } else if (target === 'vinRapporter') {
       setTimeout(() => renderVinHistorik(), 100);
     } else if (target === 'vinLabels') {
-      setTimeout(() => updateVinLabelSelect(), 100);
+      setTimeout(() => {
+        updateVinLabelSingle();
+      }, 100);
     } else {
       // Luk alle dropdowns når man går væk fra opsætning
       collapseAllVinlagerDropdowns();
@@ -14849,22 +14862,63 @@ function addVin() {
   showAddVinModal();
 }
 
-// Opdater vin label select
-function updateVinLabelSelect() {
-  const data = loadAllData() || {};
-  const lokationer = data.vinlagerLokationer || [];
-  const select = document.getElementById('vinLabelSelect');
+// Update vin label land dropdown based on selected kontinent
+function updateVinLabelLand() {
+  const kontinentSelect = document.getElementById('vinLabelKontinent');
+  const landSelect = document.getElementById('vinLabelLand');
+  const landLabel = document.getElementById('vinLabelLandLabel');
+  
+  if(!kontinentSelect || !landSelect) return;
+  
+  const selectedKontinent = kontinentSelect.value;
+  
+  if(!selectedKontinent) {
+    landSelect.style.display = 'none';
+    if(landLabel) landLabel.style.display = 'none';
+    landSelect.innerHTML = '<option value="">--- Vælg land ---</option>';
+    updateVinLabelSingle();
+    return;
+  }
+  
+  const lande = vinlagerDistrikter[selectedKontinent] || [];
+  
+  landSelect.innerHTML = '<option value="">--- Vælg land ---</option>' + lande.map(land => `<option value="${land}">${land}</option>`).join('');
+  landSelect.style.display = 'block';
+  if(landLabel) landLabel.style.display = 'block';
+  
+  updateVinLabelSingle();
+}
+
+// Update vin label single select based on selected land
+function updateVinLabelSingle() {
+  const kontinentSelect = document.getElementById('vinLabelKontinent');
+  const landSelect = document.getElementById('vinLabelLand');
   const singleSelect = document.getElementById('vinLabelSingle');
   
-  if(select) {
-    select.innerHTML = '<option value="">Alle placeringer</option>' + lokationer.map(l => `<option value="${l}">${l}</option>`).join('');
+  if(!singleSelect) return;
+  
+  const selectedKontinent = kontinentSelect?.value || '';
+  const selectedLand = landSelect?.value || '';
+  
+  let filteredVine = vinlagerVine;
+  
+  // Filter by land if selected
+  if(selectedLand) {
+    filteredVine = vinlagerVine.filter(v => v.land === selectedLand);
+  } else if(selectedKontinent) {
+    // Filter by all countries in the selected continent
+    const lande = vinlagerDistrikter[selectedKontinent] || [];
+    filteredVine = vinlagerVine.filter(v => lande.includes(v.land));
   }
   
-  if(singleSelect) {
-    singleSelect.innerHTML = '<option value="">--- Ingen ---</option>' + vinlagerVine.map(vin => 
-      `<option value="${vin.id}">${vin.navn}${vin.årgang ? ' (' + vin.årgang + ')' : ''} - ${vin.producent}</option>`
-    ).join('');
-  }
+  singleSelect.innerHTML = '<option value="">--- Ingen ---</option>' + filteredVine.map(vin => 
+    `<option value="${vin.id}">${vin.navn}${vin.årgang ? ' (' + vin.årgang + ')' : ''} - ${vin.producent}</option>`
+  ).join('');
+}
+
+// Update vin label select (kept for backward compatibility, but redirects to new function)
+function updateVinLabelSelect() {
+  updateVinLabelSingle();
 }
 
 // Generer vin labels
@@ -14874,17 +14928,30 @@ function generateVinLabels() {
   container.innerHTML = '';
   
   const count = parseInt(document.getElementById('vinLabelCount')?.value) || 1;
-  const selectedLoc = document.getElementById('vinLabelSelect')?.value || '';
+  const selectedKontinent = document.getElementById('vinLabelKontinent')?.value || '';
+  const selectedLand = document.getElementById('vinLabelLand')?.value || '';
   const single = document.getElementById('vinLabelSingle')?.value || '';
   
   let items = [];
   if(single) {
+    // Single wine selected
     const found = vinlagerVine.find(v => v.id === single);
     if(found) items = [found];
-  } else if(selectedLoc) {
-    items = vinlagerVine.filter(v => v.lagerplacering === selectedLoc);
+  } else if(selectedLand) {
+    // Filter by selected land
+    items = vinlagerVine.filter(v => v.land === selectedLand);
+  } else if(selectedKontinent) {
+    // Filter by all countries in the selected continent
+    const lande = vinlagerDistrikter[selectedKontinent] || [];
+    items = vinlagerVine.filter(v => lande.includes(v.land));
   } else {
+    // No filter - show all
     items = [...vinlagerVine];
+  }
+  
+  if(items.length === 0) {
+    container.innerHTML = '<p style="text-align:center; color:#666; padding:20px;">Ingen vine fundet med de valgte kriterier.</p>';
+    return;
   }
   
   items.forEach(vin => {
@@ -14898,10 +14965,6 @@ function generateVinLabels() {
       if(vin.flasketype) {
         infoText += vin.flasketype;
       }
-      if(vin.lagerplacering) {
-        if(infoText) infoText += ' • ';
-        infoText += vin.lagerplacering;
-      }
       if(vin.årgang) {
         if(infoText) infoText += ' • ';
         infoText += vin.årgang;
@@ -14913,7 +14976,7 @@ function generateVinLabels() {
       
       const barcodeValue = vin.id;
       
-      d.innerHTML = `<strong style="font-size:14px; margin-bottom:4px;">${vin.navn}</strong>${infoText ? `<div style="font-size:11px; color:#666; margin-bottom:6px;">${infoText}</div>` : ''}<svg class="barcode"></svg>`;
+      d.innerHTML = `<strong style="font-size:14px; margin-bottom:4px;">${vin.navn}</strong>${infoText ? `<div style="font-size:11px; color:#666; margin-bottom:6px;">${infoText}</div>` : ''}<div style="margin-top:8px; display:flex; justify-content:center;"><svg class="barcode"></svg></div>`;
       container.appendChild(d);
       
       try {
@@ -14938,17 +15001,30 @@ function generateVinQRCodes() {
   container.innerHTML = '';
   
   const count = parseInt(document.getElementById('vinLabelCount')?.value) || 1;
-  const selectedLoc = document.getElementById('vinLabelSelect')?.value || '';
+  const selectedKontinent = document.getElementById('vinLabelKontinent')?.value || '';
+  const selectedLand = document.getElementById('vinLabelLand')?.value || '';
   const single = document.getElementById('vinLabelSingle')?.value || '';
   
   let items = [];
   if(single) {
+    // Single wine selected
     const found = vinlagerVine.find(v => v.id === single);
     if(found) items = [found];
-  } else if(selectedLoc) {
-    items = vinlagerVine.filter(v => v.lagerplacering === selectedLoc);
+  } else if(selectedLand) {
+    // Filter by selected land
+    items = vinlagerVine.filter(v => v.land === selectedLand);
+  } else if(selectedKontinent) {
+    // Filter by all countries in the selected continent
+    const lande = vinlagerDistrikter[selectedKontinent] || [];
+    items = vinlagerVine.filter(v => lande.includes(v.land));
   } else {
+    // No filter - show all
     items = [...vinlagerVine];
+  }
+  
+  if(items.length === 0) {
+    container.innerHTML = '<p style="text-align:center; color:#666; padding:20px;">Ingen vine fundet med de valgte kriterier.</p>';
+    return;
   }
   
   items.forEach(vin => {
@@ -14962,10 +15038,6 @@ function generateVinQRCodes() {
       if(vin.flasketype) {
         infoText += vin.flasketype;
       }
-      if(vin.lagerplacering) {
-        if(infoText) infoText += ' • ';
-        infoText += vin.lagerplacering;
-      }
       if(vin.årgang) {
         if(infoText) infoText += ' • ';
         infoText += vin.årgang;
@@ -14977,7 +15049,7 @@ function generateVinQRCodes() {
       
       const qrValue = vin.id;
       
-      d.innerHTML = `<strong style="font-size:14px; margin-bottom:4px;">${vin.navn}</strong>${infoText ? `<div style="font-size:11px; color:#666; margin-bottom:6px;">${infoText}</div>` : ''}<div id="qr-${vin.id}-${i}" style="margin-top:8px;"></div>`;
+      d.innerHTML = `<strong style="font-size:14px; margin-bottom:4px;">${vin.navn}</strong>${infoText ? `<div style="font-size:11px; color:#666; margin-bottom:6px;">${infoText}</div>` : ''}<div id="qr-${vin.id}-${i}" style="margin-top:8px; display:flex; justify-content:center;"></div>`;
       container.appendChild(d);
       
       try {
