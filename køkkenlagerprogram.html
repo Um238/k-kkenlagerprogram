@@ -14976,14 +14976,14 @@ function generateVinLabels() {
       
       const barcodeValue = vin.id;
       
-      d.innerHTML = `<strong style="font-size:14px; margin-bottom:4px;">${vin.navn}</strong>${infoText ? `<div style="font-size:11px; color:#666; margin-bottom:6px;">${infoText}</div>` : ''}<div style="margin-top:8px; display:flex; justify-content:center; width:100%; overflow:hidden;"><svg class="barcode" style="max-width:100%; height:auto;"></svg></div>`;
+      d.innerHTML = `<strong style="font-size:14px; margin-bottom:4px;">${vin.navn}</strong>${infoText ? `<div style="font-size:11px; color:#666; margin-bottom:6px;">${infoText}</div>` : ''}<svg class="barcode"></svg>`;
       container.appendChild(d);
       
       try {
         JsBarcode(d.querySelector('.barcode'), barcodeValue, {
           format: 'CODE128',
           displayValue: false,
-          width: 1.5,
+          width: 2,
           height: 40,
           margin: 2
         });
