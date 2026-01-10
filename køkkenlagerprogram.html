@@ -2871,9 +2871,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '5.21';
+const APP_VERSION = '5.22';
 const BUILD_DATE = '2026-01-10';
-const BUILD_TIME = '15:53';
+const BUILD_TIME = '16:38';
 
 // Standard vin-billede (base64 placeholder - skal erstattes med faktisk billede)
 // Dette er en placeholder - brugeren skal uploade et faktisk billede
@@ -15385,50 +15385,74 @@ function generateVinLabels() {
         infoText += vin.land;
       }
       
-      // Use vin ID or varenummer - ensure it's a valid string
+      // Generate EAN-13 barcode (standard format like milk cartons)
+      // EAN-13 requires exactly 13 digits
       let barcodeValue = vin.id || vin.varenummer || String(Date.now());
-      // Remove any non-numeric characters for better compatibility
-      barcodeValue = String(barcodeValue).replace(/[^0-9A-Za-z]/g, '');
-      // Ensure minimum length for CODE128
-      if(barcodeValue.length < 3) {
-        barcodeValue = 'VIN' + barcodeValue.padStart(8, '0');
+      // Extract only digits
+      barcodeValue = String(barcodeValue).replace(/[^0-9]/g, '');
+      
+      // If we have a varenummer that's numeric, use it, otherwise generate one
+      if(barcodeValue.length === 0 || barcodeValue.length < 8) {
+        // Generate a 13-digit number from vin ID or create new one
+        const vinHash = vin.id ? vin.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) : Date.now();
+        barcodeValue = String(vinHash % 10000000000000).padStart(13, '0');
+      } else if(barcodeValue.length < 13) {
+        // Pad to 13 digits if shorter
+        barcodeValue = barcodeValue.padStart(13, '0');
+      } else if(barcodeValue.length > 13) {
+        // Take first 13 digits if longer
+        barcodeValue = barcodeValue.substring(0, 13);
       }
+      
+      // Ensure exactly 13 digits for EAN-13
+      barcodeValue = barcodeValue.padStart(13, '0').substring(0, 13);
       
       // Use EXACT same approach as kitchen inventory - add SVG directly in innerHTML
       d.innerHTML = `<strong style="font-size:14px; margin-bottom:4px;">${vin.navn}</strong>${infoText ? `<div style="font-size:11px; color:#666; margin-bottom:6px;">${infoText}</div>` : ''}<svg class="barcode"></svg>`;
       container.appendChild(d);
       
-      // Generate barcode immediately after appending - use same settings as kitchen inventory but with displayValue
+      // Generate EAN-13 barcode (standard format on milk cartons and products)
       try {
         const barcodeEl = d.querySelector('.barcode');
         if(barcodeEl) {
-          // Match milk carton size: ~5cm wide (half of current size)
           JsBarcode(barcodeEl, barcodeValue, {
-            format: 'CODE128',
-            displayValue: true, // Show numbers below barcode (like milk cartons)
-            fontSize: 10, // Smaller font for compact labels
+            format: 'EAN13', // EAN-13 format (standard on milk cartons and products)
+            displayValue: true, // Show numbers below barcode (standard on products)
+            fontSize: 12, // Standard font size
             textMargin: 2, // Space between barcode and numbers
             textPosition: 'bottom',
             textAlign: 'center',
-            width: 0.75, // Reduced to create ~50mm (5cm) wide barcodes (half of 1.5)
-            height: 25, // Slightly reduced height for compact labels
-            margin: 3, // Good quiet zone for scanning
+            width: 1, // Standard width for EAN-13 (~37.29mm = ~3.7cm module width, total ~50mm = 5cm)
+            height: 50, // Standard height for EAN-13
+            margin: 5, // Quiet zone (white space) on both sides - required for EAN-13 scanning
             background: '#ffffff',
             lineColor: '#000000'
           });
         }
       } catch(e) {
-        console.error('Barcode generation error:', e);
-        // Fallback: try without displayValue if error
+        console.error('EAN-13 barcode generation error:', e);
+        // Fallback to CODE128 if EAN-13 fails
         try {
           const barcodeEl = d.querySelector('.barcode');
           if(barcodeEl) {
-            JsBarcode(barcodeEl, barcodeValue, {
+            // Ensure value is valid for CODE128
+            let code128Value = vin.id || vin.varenummer || String(Date.now());
+            code128Value = String(code128Value).replace(/[^0-9A-Za-z]/g, '');
+            if(code128Value.length < 3) {
+              code128Value = 'VIN' + code128Value.padStart(8, '0');
+            }
+            JsBarcode(barcodeEl, code128Value, {
               format: 'CODE128',
-              displayValue: false,
+              displayValue: true,
+              fontSize: 10,
+              textMargin: 2,
+              textPosition: 'bottom',
+              textAlign: 'center',
               width: 0.75,
               height: 25,
-              margin: 3
+              margin: 3,
+              background: '#ffffff',
+              lineColor: '#000000'
             });
           }
         } catch(e2) {
