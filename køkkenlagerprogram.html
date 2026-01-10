@@ -2871,9 +2871,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '5.20';
+const APP_VERSION = '5.21';
 const BUILD_DATE = '2026-01-10';
-const BUILD_TIME = '15:41';
+const BUILD_TIME = '15:53';
 
 // Standard vin-billede (base64 placeholder - skal erstattes med faktisk billede)
 // Dette er en placeholder - brugeren skal uploade et faktisk billede
@@ -15402,17 +15402,17 @@ function generateVinLabels() {
       try {
         const barcodeEl = d.querySelector('.barcode');
         if(barcodeEl) {
-          // Use same parameters as kitchen inventory (width:2, height:40, margin:2) but with displayValue for numbers
+          // Match milk carton size: ~5cm wide (half of current size)
           JsBarcode(barcodeEl, barcodeValue, {
             format: 'CODE128',
             displayValue: true, // Show numbers below barcode (like milk cartons)
-            fontSize: 12, // Standard font size
+            fontSize: 10, // Smaller font for compact labels
             textMargin: 2, // Space between barcode and numbers
             textPosition: 'bottom',
             textAlign: 'center',
-            width: 1.5, // Slightly smaller than kitchen (2) but still scannable - creates ~60-65mm wide
-            height: 35, // Slightly smaller than kitchen (40) but still scannable
-            margin: 4, // Good quiet zone for scanning
+            width: 0.75, // Reduced to create ~50mm (5cm) wide barcodes (half of 1.5)
+            height: 25, // Slightly reduced height for compact labels
+            margin: 3, // Good quiet zone for scanning
             background: '#ffffff',
             lineColor: '#000000'
           });
@@ -15426,9 +15426,9 @@ function generateVinLabels() {
             JsBarcode(barcodeEl, barcodeValue, {
               format: 'CODE128',
               displayValue: false,
-              width: 1.5,
-              height: 35,
-              margin: 4
+              width: 0.75,
+              height: 25,
+              margin: 3
             });
           }
         } catch(e2) {
