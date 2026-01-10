@@ -2871,9 +2871,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '5.05';
+const APP_VERSION = '5.07';
 const BUILD_DATE = '2026-01-10';
-const BUILD_TIME = '09:58';
+const BUILD_TIME = '10:13';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -10711,16 +10711,147 @@ function restoreFromBackupData(backupData) {
   try {
     const storageKey = 'køkkenlager_data';
     
-    // Restore all data
-    if (backupData.masterVarelager !== undefined || backupData.backupType) {
-      localStorage.setItem(storageKey, JSON.stringify(backupData));
-      alert('✅ Backup gendannet!\n\nGenindlæs siden for at se dine data.');
-      location.reload();
-    } else {
-      alert('⚠️ Backup filen ser ikke ud til at være gyldig.');
+    // Validate backup file
+    if (!backupData.masterVarelager && !backupData.backupType && !backupData.version) {
+      alert('⚠️ Backup filen ser ikke ud til at være gyldig.\n\nFilen skal indeholde backup data fra Køkkenlager programmet.');
+      return;
     }
+    
+    let restored = [];
+    let warnings = [];
+    
+    // Restore main program data
+    if (backupData.masterVarelager) {
+      restored.push(`✅ ${backupData.masterVarelager.length} varer`);
+    }
+    if (backupData.lagerData) {
+      restored.push('✅ Lager data');
+    }
+    if (backupData.lagerLokationer) {
+      restored.push('✅ Lager lokationer');
+    }
+    if (backupData.leverandorer) {
+      restored.push(`✅ ${backupData.leverandorer.length} leverandører`);
+    }
+    if (backupData.reports) {
+      restored.push(`✅ ${backupData.reports.length} rapporter`);
+    }
+    if (backupData.archivedReports) {
+      restored.push(`✅ ${backupData.archivedReports.length} arkiverede rapporter`);
+    }
+    
+    // Restore vinlager data if exists
+    if (backupData.vinlagerVine) {
+      restored.push(`✅ ${backupData.vinlagerVine.length} vine`);
+    }
+    if (backupData.vinlagerHistorik) {
+      restored.push(`✅ ${backupData.vinlagerHistorik.length} vin historik poster`);
+    }
+    if (backupData.vinlagerLokationer) {
+      restored.push('✅ Vinlager lokationer');
+    }
+    if (backupData.vinlagerDropdowns) {
+      restored.push('✅ Vinlager dropdowns');
+    }
+    
+    // Restore login data (CRITICAL)
+    if (backupData.loginData) {
+      if (backupData.loginData.passwordHash) {
+        localStorage.setItem(PASSWORD_KEY, backupData.loginData.passwordHash);
+        restored.push('✅ Login password');
+      }
+      if (backupData.loginData.username) {
+        localStorage.setItem(USERNAME_KEY, backupData.loginData.username);
+        restored.push('✅ Brugernavn');
+      }
+      if (backupData.loginData.recoveryEmail) {
+        localStorage.setItem(RECOVERY_EMAIL_KEY, backupData.loginData.recoveryEmail);
+        restored.push('✅ Recovery email');
+      }
+    } else if (backupData.passwordHash) {
+      // Fallback: direct password hash in backup
+      localStorage.setItem(PASSWORD_KEY, backupData.passwordHash);
+      restored.push('✅ Login password');
+    } else {
+      warnings.push('⚠️ Ingen login password i backup');
+    }
+    
+    // Restore license data (CRITICAL)
+    if (backupData.licenseData) {
+      try {
+        localStorage.setItem('app_license', backupData.licenseData);
+        restored.push('✅ Licens data');
+      } catch(e) {
+        warnings.push('⚠️ Kunne ikke gendanne licens data: ' + e.message);
+      }
+    } else if (backupData.license) {
+      try {
+        localStorage.setItem('app_license', typeof backupData.license === 'string' ? backupData.license : JSON.stringify(backupData.license));
+        restored.push('✅ Licens data');
+      } catch(e) {
+        warnings.push('⚠️ Kunne ikke gendanne licens data: ' + e.message);
+      }
+    } else {
+      warnings.push('⚠️ Ingen licens data i backup');
+    }
+    
+    // Restore installation ID
+    if (backupData.installationId) {
+      const currentId = getInstallationId();
+      if (backupData.installationId !== currentId) {
+        // Store backup ID for reference
+        localStorage.setItem('backup_installation_id', backupData.installationId);
+        warnings.push(`⚠️ Installation ID matcher ikke (backup: ${backupData.installationId.substring(0, 8)}..., nuværende: ${currentId.substring(0, 8)}...)`);
+        warnings.push('💡 Licensen kan være bundet til den gamle installation ID. Kontakt support hvis du har problemer med licens.');
+      } else {
+        restored.push('✅ Installation ID (matcher)');
+      }
+    }
+    
+    // Save all restored data to localStorage
+    const dataToSave = {
+      masterVarelager: backupData.masterVarelager || [],
+      lagerData: backupData.lagerData || {},
+      lagerLokationer: backupData.lagerLokationer || [],
+      leverandorer: backupData.leverandorer || [],
+      reports: backupData.reports || [],
+      archivedReports: backupData.archivedReports || [],
+      archivePeriod: backupData.archivePeriod,
+      sessionCounter: backupData.sessionCounter,
+      activeSession: backupData.activeSession,
+      vinlagerVine: backupData.vinlagerVine || [],
+      vinlagerHistorik: backupData.vinlagerHistorik || [],
+      vinlagerLokationer: backupData.vinlagerLokationer || [],
+      vinlagerDropdowns: backupData.vinlagerDropdowns || [],
+      installationId: backupData.installationId || getInstallationId(),
+      version: backupData.version || APP_VERSION,
+      type: backupData.type || 'køkkenlager',
+      savedAt: Date.now()
+    };
+    
+    localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+    
+    // Update global variables
+    loadAllData();
+    
+    // Show success message
+    let msg = '✅ BACKUP GENDANNET!\n\n';
+    msg += 'Gendannet:\n' + restored.join('\n') + '\n';
+    
+    if (warnings.length > 0) {
+      msg += '\n⚠️ ADVARSELER:\n' + warnings.join('\n') + '\n';
+    }
+    
+    msg += '\n💡 Siden genindlæses nu for at anvende alle ændringerne.';
+    
+    alert(msg);
+    
+    // Reload page to apply all changes
+    location.reload();
+    
   } catch(err) {
-    alert('❌ Fejl ved gendannelse: ' + err.message);
+    console.error('Fejl ved gendannelse af backup:', err);
+    alert('❌ Fejl ved gendannelse: ' + err.message + '\n\nTjek at backup filen er korrekt og prøv igen.');
   }
 }
 
