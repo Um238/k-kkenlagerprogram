@@ -2871,9 +2871,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '5.08';
+const APP_VERSION = '5.09';
 const BUILD_DATE = '2026-01-10';
-const BUILD_TIME = '10:50';
+const BUILD_TIME = '12:27';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -15166,15 +15166,16 @@ function generateVinLabels() {
       try {
         const barcodeEl = d.querySelector('.barcode');
         
-        // Use same size as kitchen inventory (width: 2, height: 40) for scannability
-        // This matches the size of barcodes on milk cartons and other products
-        // The barcode will be around 10.5cm wide (same as kitchen inventory) which is scannable on phones
+        // Use smaller size suitable for shelf labels - similar to milk carton barcodes (5-6cm wide)
+        // This is compact enough for shelves but still scannable on phones
+        // Width: 1.0 creates barcodes around 5-6cm wide (depending on ID length)
+        // Height: 30px is sufficient for phone scanning while keeping labels compact
         JsBarcode(barcodeEl, barcodeValue, {
           format: 'CODE128',
           displayValue: false,
-          width: 2, // Same as kitchen inventory - ensures scannability on phones
-          height: 40, // Same as kitchen inventory - good height for scanning
-          margin: 2, // Adequate quiet zone for scanning (same as kitchen)
+          width: 1.0, // Smaller width for compact shelf labels (like milk cartons)
+          height: 30, // Sufficient height for scanning but compact
+          margin: 2, // Adequate quiet zone for scanning
           valid: function(valid) {
             if(!valid) {
               console.warn('Invalid barcode value:', barcodeValue);
@@ -15182,13 +15183,15 @@ function generateVinLabels() {
           }
         });
         
-        // Ensure barcode maintains proper size for scanning
-        // Don't restrict max-width - let it be full size like kitchen inventory
+        // Ensure barcode fits within label and is scannable
+        // Limit max-width to around 60mm (6cm) to keep it compact like milk cartons
         setTimeout(() => {
           if(barcodeEl) {
             barcodeEl.style.width = 'auto';
-            barcodeEl.style.height = '40px';
-            barcodeEl.style.maxWidth = 'none'; // Remove max-width restriction for better scannability
+            barcodeEl.style.height = '30px';
+            barcodeEl.style.maxWidth = '60mm'; // Limit to 6cm - compact like milk cartons
+            barcodeEl.style.display = 'block';
+            barcodeEl.style.margin = '0 auto'; // Center the barcode
           }
         }, 10);
       } catch(e) {
