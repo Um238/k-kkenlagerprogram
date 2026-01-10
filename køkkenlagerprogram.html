@@ -2871,9 +2871,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '5.22';
+const APP_VERSION = '5.23';
 const BUILD_DATE = '2026-01-10';
-const BUILD_TIME = '16:38';
+const BUILD_TIME = '16:51';
 
 // Standard vin-billede (base64 placeholder - skal erstattes med faktisk billede)
 // Dette er en placeholder - brugeren skal uploade et faktisk billede
@@ -15386,26 +15386,35 @@ function generateVinLabels() {
       }
       
       // Generate EAN-13 barcode (standard format like milk cartons)
-      // EAN-13 requires exactly 13 digits
+      // EAN-13: JsBarcode requires 12 digits (it calculates checksum automatically) OR 13 digits with correct checksum
       let barcodeValue = vin.id || vin.varenummer || String(Date.now());
       // Extract only digits
       barcodeValue = String(barcodeValue).replace(/[^0-9]/g, '');
       
       // If we have a varenummer that's numeric, use it, otherwise generate one
       if(barcodeValue.length === 0 || barcodeValue.length < 8) {
-        // Generate a 13-digit number from vin ID or create new one
+        // Generate a 12-digit number from vin ID (JsBarcode will calculate checksum)
         const vinHash = vin.id ? vin.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) : Date.now();
-        barcodeValue = String(vinHash % 10000000000000).padStart(13, '0');
-      } else if(barcodeValue.length < 13) {
-        // Pad to 13 digits if shorter
-        barcodeValue = barcodeValue.padStart(13, '0');
-      } else if(barcodeValue.length > 13) {
-        // Take first 13 digits if longer
+        barcodeValue = String(vinHash % 1000000000000).padStart(12, '0');
+      } else if(barcodeValue.length < 12) {
+        // Pad to 12 digits if shorter (JsBarcode calculates checksum)
+        barcodeValue = barcodeValue.padStart(12, '0');
+      } else if(barcodeValue.length === 13) {
+        // If 13 digits, use as-is (assumes correct checksum)
         barcodeValue = barcodeValue.substring(0, 13);
+      } else if(barcodeValue.length > 13) {
+        // Take first 12 digits if longer (let JsBarcode calculate checksum)
+        barcodeValue = barcodeValue.substring(0, 12);
       }
       
-      // Ensure exactly 13 digits for EAN-13
-      barcodeValue = barcodeValue.padStart(13, '0').substring(0, 13);
+      // Ensure 12 digits for EAN-13 (JsBarcode will calculate checksum automatically)
+      if(barcodeValue.length === 13) {
+        // Keep 13 if already valid
+        barcodeValue = barcodeValue.substring(0, 13);
+      } else {
+        // Use 12 digits, let JsBarcode calculate checksum
+        barcodeValue = barcodeValue.padStart(12, '0').substring(0, 12);
+      }
       
       // Use EXACT same approach as kitchen inventory - add SVG directly in innerHTML
       d.innerHTML = `<strong style="font-size:14px; margin-bottom:4px;">${vin.navn}</strong>${infoText ? `<div style="font-size:11px; color:#666; margin-bottom:6px;">${infoText}</div>` : ''}<svg class="barcode"></svg>`;
@@ -15416,15 +15425,15 @@ function generateVinLabels() {
         const barcodeEl = d.querySelector('.barcode');
         if(barcodeEl) {
           JsBarcode(barcodeEl, barcodeValue, {
-            format: 'EAN13', // EAN-13 format (standard on milk cartons and products)
+            format: 'EAN13', // EAN-13 format (standard on milk cartons and products) - requires 12 or 13 digits
             displayValue: true, // Show numbers below barcode (standard on products)
             fontSize: 12, // Standard font size
             textMargin: 2, // Space between barcode and numbers
             textPosition: 'bottom',
             textAlign: 'center',
-            width: 1, // Standard width for EAN-13 (~37.29mm = ~3.7cm module width, total ~50mm = 5cm)
-            height: 50, // Standard height for EAN-13
-            margin: 5, // Quiet zone (white space) on both sides - required for EAN-13 scanning
+            width: 0.8, // Reduced width for compact labels (~5cm total width like milk cartons)
+            height: 40, // Standard height for EAN-13 (reduced for compact labels)
+            margin: 4, // Quiet zone (white space) on both sides - required for EAN-13 scanning
             background: '#ffffff',
             lineColor: '#000000'
           });
@@ -16368,6 +16377,19 @@ async function generateVinReportPDF(r, forView = false){
     for(const loc of Object.keys(grouped)){
       let locSubtotal = 0;
       
+      // Fix encoding issue: Ensure proper UTF-8 encoding for special characters in location name
+      const locText = (loc || 'Ukendt lokation').replace(/[^\x00-\x7F]/g, function(char) {
+        // Map Danish and special characters correctly for PDF
+        const map = {
+          'ø': 'o', 'Ø': 'O',
+          'æ': 'ae', 'Æ': 'AE',
+          'å': 'aa', 'Å': 'AA',
+          'ü': 'u', 'Ü': 'U',
+          'í': 'i', 'Í': 'I'
+        };
+        return map[char] || char;
+      });
+      
       // Lokation header
       if(y>260){ 
         drawSideBorders(pageStartY, y);
@@ -16394,7 +16416,7 @@ async function generateVinReportPDF(r, forView = false){
       doc.setFont('helvetica','bold'); doc.setFontSize(11);
       doc.setFillColor(250, 250, 250);
       doc.rect(tableLeft, y-2, tableWidth, 5, 'F');
-      doc.text(`📍 ${loc}`, tableLeft + 2, y+2);
+      doc.text('📍 ' + locText, tableLeft + 2, y+2);
       y+=7;
       
       grouped[loc].forEach((it, idx) => {
@@ -16448,7 +16470,12 @@ async function generateVinReportPDF(r, forView = false){
       doc.setFillColor(245, 245, 245);
       doc.rect(tableLeft, y-2, tableWidth, 5, 'FD');
       doc.setFont('helvetica','bold'); doc.setFontSize(10);
-      doc.text(`Subtotal ${loc}:`, colVinnavn, y+2);
+      // Fix encoding for subtotal header
+      const locSubtotalText = locText || (loc || 'Ukendt').replace(/[^\x00-\x7F]/g, function(char) {
+        const map = { 'ø': 'o', 'Ø': 'O', 'æ': 'ae', 'Æ': 'AE', 'å': 'aa', 'Å': 'AA', 'ü': 'u', 'Ü': 'U', 'í': 'i', 'Í': 'I' };
+        return map[char] || char;
+      });
+      doc.text(`Subtotal ${locSubtotalText}:`, colVinnavn, y+2);
       doc.text(`${locSubtotal.toFixed(2)} kr.`, colLinjetotal, y+2);
       y+=7;
       grandTotal += locSubtotal;
