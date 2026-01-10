@@ -2871,9 +2871,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '5.14';
+const APP_VERSION = '5.15';
 const BUILD_DATE = '2026-01-10';
-const BUILD_TIME = '13:38';
+const BUILD_TIME = '13:57';
 
 // Standard vin-billede (base64 placeholder - skal erstattes med faktisk billede)
 // Dette er en placeholder - brugeren skal uploade et faktisk billede
@@ -14485,10 +14485,16 @@ function processVinlagerImportText(text, importType = 'add') {
   }, 1000);
 }
 
-// Edit vin billede (ligesom uploadVareImage)
+// Edit vin billede (ligesom uploadVareImage i køkkenlager)
 function editVinBillede(id) {
+  // Indlæs data først for at sikre vi har de seneste vine
+  loadAllData();
+  
   const vin = vinlagerVine.find(x => x.id === id);
-  if(!vin) return;
+  if(!vin) {
+    alert('❌ Vin ikke fundet');
+    return;
+  }
   
   // Opret skjult file input
   const input = document.createElement('input');
@@ -14498,17 +14504,29 @@ function editVinBillede(id) {
   
   input.onchange = function(e) {
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file) {
+      // Fjern input element hvis ingen fil valgt
+      if(input.parentNode) {
+        input.parentNode.removeChild(input);
+      }
+      return;
+    }
     
     // Tjek filtype
     if (!file.type.startsWith('image/')) {
       alert('⚠️ Vælg venligst en billedfil (jpg, png, etc.)');
+      if(input.parentNode) {
+        input.parentNode.removeChild(input);
+      }
       return;
     }
     
     // Tjek filstørrelse (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
       alert('⚠️ Billedet er for stort. Maksimal størrelse er 2MB. Komprimer billedet og prøv igen.');
+      if(input.parentNode) {
+        input.parentNode.removeChild(input);
+      }
       return;
     }
     
@@ -14516,17 +14534,22 @@ function editVinBillede(id) {
     reader.onload = function(e) {
       const base64 = e.target.result;
       vin.billede = base64;
-      renderVinMasterTable();
       saveAllData();
+      renderVinMasterTable();
       alert('✅ Billede opdateret!');
+      
+      // Fjern input element
+      if(input.parentNode) {
+        input.parentNode.removeChild(input);
+      }
     };
     reader.onerror = function() {
       alert('❌ Fejl ved indlæsning af billede. Prøv igen.');
+      if(input.parentNode) {
+        input.parentNode.removeChild(input);
+      }
     };
     reader.readAsDataURL(file);
-    
-    // Fjern input element
-    document.body.removeChild(input);
   };
   
   // Tilføj til DOM og trigger click
@@ -14823,10 +14846,14 @@ function renderVinMasterTable() {
             const lavLager = vin.antal_flasker < (vin.minimumBeholdning || 24);
             // Brug standard billede hvis vin ikke har et billede
             const billedeUrl = vin.billede || DEFAULT_VIN_BILEDE;
+            const hasCustomImage = vin.billede && vin.billede !== DEFAULT_VIN_BILEDE && vin.billede !== '';
             return `
               <tr style="border-bottom:1px solid #eee; ${lavLager ? 'background:#fff3cd;' : ''}">
                 <td style="padding:8px; text-align:center;">
-                  <img src="${billedeUrl}" alt="${vin.navn}" style="width:50px; height:50px; object-fit:cover; border-radius:4px; cursor:pointer; border:${vin.billede ? 'none' : '2px solid #8B0000'};" onclick="editVinBillede('${vin.id}')" title="Klik for at ændre billede" />
+                  ${hasCustomImage ? 
+                    `<img src="${billedeUrl}" alt="${vin.navn}" style="width:60px; height:60px; object-fit:contain; border:2px solid #0078D4; border-radius:4px; cursor:pointer;" onclick="editVinBillede('${vin.id}')" title="Klik for at uploade nyt billede" />` : 
+                    `<div style="width:60px; height:60px; border:2px dashed #ccc; border-radius:4px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#999; font-size:11px;" onclick="editVinBillede('${vin.id}')" title="Klik for at uploade billede">+ Billede</div>`
+                  }
                 </td>
                 <td style="padding:6px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${vin.navn}"><strong>${vin.navn}</strong>${lavLager ? ' <span style="color:#dc3545;">⚠️</span>' : ''}</td>
                 <td style="padding:6px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${vin.producent}">${vin.producent}</td>
@@ -15194,11 +15221,17 @@ function generateVinLabels() {
       d.appendChild(barcodeContainer);
       container.appendChild(d);
       
-      // Wait for JsBarcode to be available, then generate barcode
+      // Wait for JsBarcode to be available AND for SVG to be in DOM, then generate barcode
       const generateBarcode = () => {
         if (typeof JsBarcode === 'undefined') {
           console.warn('JsBarcode not loaded yet, retrying...');
           setTimeout(generateBarcode, 100);
+          return;
+        }
+        
+        // Check if SVG is actually in the DOM
+        if (!barcodeSvg.parentNode || !document.body.contains(barcodeSvg)) {
+          setTimeout(generateBarcode, 50);
           return;
         }
         
@@ -15227,13 +15260,13 @@ function generateVinLabels() {
           // CRITICAL: Don't scale or transform the SVG - this breaks scannability
           // Let the barcode be its natural size (like milk cartons)
           setTimeout(() => {
-            if(barcodeSvg) {
+            if(barcodeSvg && barcodeSvg.parentNode) {
               // Remove any forced dimensions that might distort the barcode
               barcodeSvg.removeAttribute('width');
               barcodeSvg.removeAttribute('height');
               
               // Apply minimal styling - let barcode be natural size (like milk cartons)
-              barcodeSvg.style.cssText = 'display:block; width:auto; height:auto; max-width:55mm; margin:0 auto; background:#ffffff;';
+              barcodeSvg.style.cssText = 'display:block !important; width:auto; height:auto; max-width:55mm; margin:0 auto; background:#ffffff; visibility:visible; opacity:1;';
               
               // Ensure text (numbers below barcode) is properly styled and visible
               const textElements = barcodeSvg.querySelectorAll('text');
@@ -15251,16 +15284,21 @@ function generateVinLabels() {
                   rect.setAttribute('fill', '#000000');
                 }
               });
+              
+              // Force SVG to be visible
+              barcodeContainer.style.cssText = 'display:flex !important; justify-content:center; align-items:center; width:100%; margin-top:6px; padding:4px 0; background:#ffffff; visibility:visible; opacity:1;';
             }
-          }, 50);
+          }, 100);
         } catch(e) {
           console.error('Barcode generation error:', e);
           barcodeContainer.innerHTML = '<span style="color:red; font-size:10px;">Fejl ved generering af stregkode</span>';
         }
       };
       
-      // Start barcode generation
-      generateBarcode();
+      // Start barcode generation after a short delay to ensure DOM is ready
+      setTimeout(() => {
+        generateBarcode();
+      }, 50);
     }
   });
 }
