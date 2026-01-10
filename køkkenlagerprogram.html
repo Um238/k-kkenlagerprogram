@@ -2871,9 +2871,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '5.16';
+const APP_VERSION = '5.17';
 const BUILD_DATE = '2026-01-10';
-const BUILD_TIME = '14:43';
+const BUILD_TIME = '14:50';
 
 // Standard vin-billede (base64 placeholder - skal erstattes med faktisk billede)
 // Dette er en placeholder - brugeren skal uploade et faktisk billede
@@ -15369,8 +15369,8 @@ function generateVinLabels() {
     for(let i = 0; i < count; i++) {
       const d = document.createElement('div');
       d.className = 'label';
-      d.style.width = '70mm'; // Smaller label for shelf compatibility (compact like milk cartons)
-      d.style.height = '45mm'; // Slightly shorter for compact shelf labels
+      d.style.width = '90mm'; // Same as kitchen inventory
+      d.style.height = '50mm'; // Same as kitchen inventory
       
       let infoText = '';
       if(vin.flasketype) {
@@ -15391,20 +15391,14 @@ function generateVinLabels() {
       d.innerHTML = `<strong style="font-size:14px; margin-bottom:4px;">${vin.navn}</strong>${infoText ? `<div style="font-size:11px; color:#666; margin-bottom:6px;">${infoText}</div>` : ''}<svg class="barcode"></svg>`;
       container.appendChild(d);
       
-      // Generate barcode immediately after appending (same as kitchen inventory)
+      // Generate barcode immediately after appending (EXACT same as kitchen inventory)
       try {
         JsBarcode(d.querySelector('.barcode'), barcodeValue, {
           format: 'CODE128',
-          displayValue: true, // CRITICAL: Numbers below barcode (like milk cartons) - REQUIRED for phone scanning
-          fontSize: 11,
-          textMargin: 3,
-          textPosition: 'bottom',
-          textAlign: 'center',
-          width: 1.3, // Width parameter - creates ~52-58mm wide barcode (matching milk cartons - scannable on phones)
-          height: 26, // Compact height matching milk cartons - sufficient for phone scanning
-          margin: 7, // Good quiet zone (white space) on both sides - critical for phone scanning (matches milk cartons)
-          background: '#ffffff',
-          lineColor: '#000000'
+          displayValue: false, // Hide the text value (same as kitchen inventory)
+          width: 2, // Same as kitchen inventory
+          height: 40, // Same as kitchen inventory
+          margin: 2 // Same as kitchen inventory
         });
       } catch(e) {
         console.error('Barcode generation error:', e);
