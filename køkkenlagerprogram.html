@@ -856,8 +856,10 @@ a:hover{color:#45a049;text-decoration:none}
             <button onclick="showVinGruppering('producent')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">🏭 Grupper efter Producent</button>
             <button onclick="showVinGruppering('årgang')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">📅 Grupper efter Årgang</button>
             <button onclick="showVinGruppering('lagerplacering')" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">📍 Grupper efter Placering</button>
+            <button onclick="showVinLagerhistorik()" style="background:#8B0000; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:700;">📜 Lagerhistorik</button>
           </div>
           <div id="vinGrupperingContainer" style="margin-bottom:30px;"></div>
+          <div id="vinLagerhistorikContainer" style="margin-bottom:30px; display:none;"></div>
         </div>
       </div>
     </div>
@@ -1064,10 +1066,6 @@ a:hover{color:#45a049;text-decoration:none}
             </thead>
             <tbody id="vinReportsTableBody"></tbody>
           </table>
-          <div style="margin-top:30px;">
-            <h3>📜 Lagerhistorik</h3>
-            <div id="vinHistorikList" style="margin-top:15px;"></div>
-          </div>
         </div>
       </div>
     </div>
@@ -3283,6 +3281,8 @@ function initializeApp(){
           // Opdater logo i UI
           const logoWrap = document.querySelector('.logo-svg');
           if(logoWrap){
+            // Clear first to prevent duplicates
+            logoWrap.innerHTML = '';
             logoWrap.innerHTML = `<img src="${logoDataURL}" style="width:100%;height:100%;object-fit:contain;" alt="Logo" />`;
           }
           saveAllData(); // Gem også i hoveddata
@@ -3296,7 +3296,8 @@ function initializeApp(){
       const savedLogo = localStorage.getItem('custom_logo');
       if(savedLogo){
         const logoWrap = document.querySelector('.logo-svg');
-        if(logoWrap){
+        if(logoWrap && !logoWrap.querySelector('img')){
+          // Only set if no image already exists to prevent duplicates
           logoWrap.innerHTML = `<img src="${savedLogo}" style="width:100%;height:100%;object-fit:contain;" alt="Logo" />`;
         }
       }
@@ -13122,6 +13123,9 @@ function renderVinOverblik() {
   const container = document.getElementById('vinOverblikContainer');
   if (!container) return;
   
+  // Clear container first to prevent duplicates
+  container.innerHTML = '';
+  
   loadAllData(); // Ensure data is loaded
   const totalFlasker = vinlagerVine.reduce((sum, v) => sum + (v.antal_flasker || 0), 0);
   const totalVaerdi = vinlagerVine.reduce((sum, v) => sum + ((v.antal_flasker || 0) * (v.indkøbspris || 0)), 0);
@@ -13157,7 +13161,11 @@ function renderVinOverblik() {
 // Vis gruppering
 function showVinGruppering(type) {
   const container = document.getElementById('vinGrupperingContainer');
+  const historikContainer = document.getElementById('vinLagerhistorikContainer');
   if (!container) return;
+  
+  // Hide historik when showing grouping
+  if (historikContainer) historikContainer.style.display = 'none';
   
   const grupperet = {};
   vinlagerVine.forEach(vin => {
@@ -13196,11 +13204,28 @@ function showVinGruppering(type) {
       </div>
     </div>
   `;
+  container.style.display = 'block';
+}
+
+// Vis lagerhistorik
+function showVinLagerhistorik() {
+  const container = document.getElementById('vinLagerhistorikContainer');
+  const grupperingContainer = document.getElementById('vinGrupperingContainer');
+  if (!container) return;
+  
+  // Hide grouping when showing historik
+  if (grupperingContainer) grupperingContainer.style.display = 'none';
+  
+  // Render historik
+  renderVinHistorik();
+  
+  container.style.display = 'block';
 }
 
 // Render historik
 function renderVinHistorik() {
-  const container = document.getElementById('vinHistorikList');
+  // Try both containers - old one in vinRapporter and new one in vinOverblik
+  const container = document.getElementById('vinLagerhistorikContainer') || document.getElementById('vinHistorikList');
   if (!container) return;
   
   const sorted = [...vinlagerHistorik].sort((a, b) => new Date(b.dato_tid) - new Date(a.dato_tid));
@@ -13211,35 +13236,38 @@ function renderVinHistorik() {
   }
   
   container.innerHTML = `
-    <div style="max-height:500px; overflow-y:auto;">
-      <table style="width:100%; border-collapse:collapse;">
-        <thead style="position:sticky; top:0; background:#8B0000; color:white;">
-          <tr>
-            <th style="padding:12px; text-align:left;">Dato/Tid</th>
-            <th style="padding:12px; text-align:left;">Vin</th>
-            <th style="padding:12px; text-align:center;">Ændring</th>
-            <th style="padding:12px; text-align:left;">Årsag</th>
-            <th style="padding:12px; text-align:left;">Kommentar</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${sorted.map(hist => {
-            const vin = vinlagerVine.find(v => v.id === hist.vin_id);
-            const dato = new Date(hist.dato_tid);
-            return `
-              <tr style="border-bottom:1px solid #eee;">
-                <td style="padding:12px;">${dato.toLocaleString('da-DK')}</td>
-                <td style="padding:12px;">${vin ? vin.navn : 'Slettet vin'}</td>
-                <td style="padding:12px; text-align:center; ${hist.ændring > 0 ? 'color:#28a745;' : 'color:#dc3545;'}">
-                  <strong>${hist.ændring > 0 ? '+' : ''}${hist.ændring}</strong>
-                </td>
-                <td style="padding:12px;">${hist.årsag}</td>
-                <td style="padding:12px;">${hist.kommentar || '-'}</td>
-              </tr>
-            `;
-          }).join('')}
-        </tbody>
-      </table>
+    <div class="card" style="background:#f8f9fa;">
+      <h3>📜 Lagerhistorik</h3>
+      <div style="max-height:500px; overflow-y:auto; margin-top:15px;">
+        <table style="width:100%; border-collapse:collapse;">
+          <thead style="position:sticky; top:0; background:#8B0000; color:white;">
+            <tr>
+              <th style="padding:12px; text-align:left;">Dato/Tid</th>
+              <th style="padding:12px; text-align:left;">Vin</th>
+              <th style="padding:12px; text-align:center;">Ændring</th>
+              <th style="padding:12px; text-align:left;">Årsag</th>
+              <th style="padding:12px; text-align:left;">Kommentar</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sorted.map(hist => {
+              const vin = vinlagerVine.find(v => v.id === hist.vin_id);
+              const dato = new Date(hist.dato_tid);
+              return `
+                <tr style="border-bottom:1px solid #eee; background:white;">
+                  <td style="padding:12px;">${dato.toLocaleString('da-DK')}</td>
+                  <td style="padding:12px;">${vin ? vin.navn : 'Slettet vin'}</td>
+                  <td style="padding:12px; text-align:center; ${hist.ændring > 0 ? 'color:#28a745;' : 'color:#dc3545;'}">
+                    <strong>${hist.ændring > 0 ? '+' : ''}${hist.ændring}</strong>
+                  </td>
+                  <td style="padding:12px;">${hist.årsag}</td>
+                  <td style="padding:12px;">${hist.kommentar || '-'}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
     </div>
   `;
 }
@@ -14592,10 +14620,10 @@ function renderVinMasterTable() {
                 <td style="padding:6px; text-align:center; white-space:nowrap;"><strong>${vin.antal_flasker}</strong></td>
                 <td style="padding:6px; text-align:center; white-space:nowrap;">${vin.minimumBeholdning || 24}</td>
                 <td style="padding:6px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${vin.lagerplacering || '-'}">${vin.lagerplacering || '-'}</td>
-                <td style="padding:8px; text-align:center; white-space:nowrap; position:relative; z-index:1;">
-                  <button onclick="editVin('${vin.id}')" style="background:#007bff; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-right:4px; font-size:13px; min-width:38px; pointer-events:auto; position:relative; z-index:10;">✏️</button>
-                  <button onclick="updateVinAntal('${vin.id}')" style="background:#28a745; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-right:4px; font-size:13px; min-width:38px; pointer-events:auto; position:relative; z-index:10;">📊</button>
-                  <button onclick="deleteVin('${vin.id}')" style="background:#dc3545; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:13px; min-width:38px; pointer-events:auto; position:relative; z-index:10;">🗑️</button>
+                <td style="padding:8px; text-align:center; white-space:nowrap;">
+                  <button onclick="event.stopPropagation(); editVin('${vin.id}')" style="background:#007bff; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-right:4px; font-size:13px; min-width:38px; z-index:1000; position:relative;">✏️</button>
+                  <button onclick="event.stopPropagation(); updateVinAntal('${vin.id}')" style="background:#28a745; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-right:4px; font-size:13px; min-width:38px; z-index:1000; position:relative;">📊</button>
+                  <button onclick="event.stopPropagation(); deleteVin('${vin.id}')" style="background:#dc3545; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:13px; min-width:38px; z-index:1000; position:relative;">🗑️</button>
                 </td>
               </tr>
             `;
