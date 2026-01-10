@@ -2871,9 +2871,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '5.09';
+const APP_VERSION = '5.13';
 const BUILD_DATE = '2026-01-10';
-const BUILD_TIME = '12:27';
+const BUILD_TIME = '13:19';
 
 // Opdater versionsnummer i header
 function updateVersionDisplay(){
@@ -15142,8 +15142,8 @@ function generateVinLabels() {
     for(let i = 0; i < count; i++) {
       const d = document.createElement('div');
       d.className = 'label';
-      d.style.width = '90mm';
-      d.style.height = '50mm';
+      d.style.width = '70mm'; // Smaller label for shelf compatibility (compact like milk cartons)
+      d.style.height = '45mm'; // Slightly shorter for compact shelf labels
       
       let infoText = '';
       if(vin.flasketype) {
@@ -15160,42 +15160,81 @@ function generateVinLabels() {
       
       const barcodeValue = vin.id;
       
-      d.innerHTML = `<strong style="font-size:14px; margin-bottom:4px;">${vin.navn}</strong>${infoText ? `<div style="font-size:11px; color:#666; margin-bottom:6px;">${infoText}</div>` : ''}<div style="display:flex; justify-content:center; width:100%; margin-top:4px;"><svg class="barcode"></svg></div>`;
+      // Create barcode container with proper styling
+      const barcodeContainer = document.createElement('div');
+      barcodeContainer.style.cssText = 'display:flex; justify-content:center; align-items:center; width:100%; margin-top:6px; padding:4px 0; background:#ffffff;';
+      const barcodeSvg = document.createElement('svg');
+      barcodeSvg.className = 'barcode';
+      barcodeSvg.style.cssText = 'display:block; max-width:100%; height:auto;';
+      barcodeContainer.appendChild(barcodeSvg);
+      
+      d.innerHTML = `<strong style="font-size:14px; margin-bottom:4px;">${vin.navn}</strong>${infoText ? `<div style="font-size:11px; color:#666; margin-bottom:6px;">${infoText}</div>` : ''}`;
+      d.appendChild(barcodeContainer);
       container.appendChild(d);
       
       try {
-        const barcodeEl = d.querySelector('.barcode');
-        
-        // Use smaller size suitable for shelf labels - similar to milk carton barcodes (5-6cm wide)
-        // This is compact enough for shelves but still scannable on phones
-        // Width: 1.0 creates barcodes around 5-6cm wide (depending on ID length)
-        // Height: 30px is sufficient for phone scanning while keeping labels compact
-        JsBarcode(barcodeEl, barcodeValue, {
+        // Match the exact format of barcodes on milk cartons (like in user's images)
+        // Key features of milk carton barcodes:
+        // - Numbers displayed below the barcode (displayValue: true) - THIS IS CRITICAL
+        // - Width 1.3-1.4 for optimal balance: compact but scannable (creates ~5.5-6cm wide)
+        // - Height 30-32px for good scanning while compact
+        // - Proper margin/quiet zone (4-5px) on both sides
+        // - High contrast black on white
+        // Generate barcode matching milk carton format exactly
+        // Milk carton barcodes are typically 50-55mm wide with numbers below
+        // Width: 1.25 creates barcodes around 50-55mm (5-5.5cm) - perfect for milk cartons
+        // This is compact enough for shelves but scannable on phones
+        JsBarcode(barcodeSvg, barcodeValue, {
           format: 'CODE128',
-          displayValue: false,
-          width: 1.0, // Smaller width for compact shelf labels (like milk cartons)
-          height: 30, // Sufficient height for scanning but compact
-          margin: 2, // Adequate quiet zone for scanning
+          displayValue: true, // CRITICAL: Numbers below barcode (like milk cartons) - REQUIRED for phone scanning
+          fontSize: 11, // Font size matching milk cartons
+          textMargin: 3, // Space between barcode lines and numbers
+          textPosition: 'bottom', // Numbers below barcode (standard for milk cartons)
+          textAlign: 'center', // Center align numbers
+          width: 1.3, // Width parameter - creates ~52-58mm wide barcode (matching milk cartons - scannable on phones)
+          height: 26, // Compact height matching milk cartons - sufficient for phone scanning
+          margin: 7, // Good quiet zone (white space) on both sides - critical for phone scanning (matches milk cartons)
+          background: '#ffffff', // Pure white background
+          lineColor: '#000000', // Pure black lines - maximum contrast for scanning
           valid: function(valid) {
             if(!valid) {
-              console.warn('Invalid barcode value:', barcodeValue);
+              console.error('Invalid barcode value - cannot generate barcode:', barcodeValue);
             }
           }
         });
         
-        // Ensure barcode fits within label and is scannable
-        // Limit max-width to around 60mm (6cm) to keep it compact like milk cartons
+        // CRITICAL: Don't scale or transform the SVG - this breaks scannability
+        // Let the barcode be its natural size (like milk cartons)
         setTimeout(() => {
-          if(barcodeEl) {
-            barcodeEl.style.width = 'auto';
-            barcodeEl.style.height = '30px';
-            barcodeEl.style.maxWidth = '60mm'; // Limit to 6cm - compact like milk cartons
-            barcodeEl.style.display = 'block';
-            barcodeEl.style.margin = '0 auto'; // Center the barcode
+          if(barcodeSvg) {
+            // Remove any forced dimensions that might distort the barcode
+            barcodeSvg.removeAttribute('width');
+            barcodeSvg.removeAttribute('height');
+            
+            // Apply minimal styling - let barcode be natural size (like milk cartons)
+            barcodeSvg.style.cssText = 'display:block; width:auto; height:auto; max-width:55mm; margin:0 auto; background:#ffffff;';
+            
+            // Ensure text (numbers below barcode) is properly styled and visible
+            const textElements = barcodeSvg.querySelectorAll('text');
+            textElements.forEach(text => {
+              text.setAttribute('fill', '#000000');
+              text.style.fontSize = '11px';
+              text.style.fontFamily = 'monospace, Arial';
+              text.style.fontWeight = 'normal';
+            });
+            
+            // Ensure all barcode lines are black with proper stroke width
+            const rects = barcodeSvg.querySelectorAll('rect');
+            rects.forEach(rect => {
+              if(!rect.getAttribute('fill') || rect.getAttribute('fill') !== '#000000') {
+                rect.setAttribute('fill', '#000000');
+              }
+            });
           }
-        }, 10);
+        }, 100);
       } catch(e) {
         console.error('Barcode generation error:', e);
+        barcodeContainer.innerHTML = '<span style="color:red; font-size:10px;">Fejl ved generering af stregkode</span>';
       }
     }
   });
