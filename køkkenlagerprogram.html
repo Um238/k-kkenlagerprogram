@@ -198,8 +198,14 @@ a:hover{color:#45a049;text-decoration:none}
     return false;
   }, true);
   
-  // Bloker alle keyboard shortcuts til kildekode
+  // Bloker alle keyboard shortcuts til kildekode (undtagen for Avanceret Vinlager)
   document.addEventListener('keydown', function(e){
+    // Tillad debugging i Avanceret Vinlager System
+    const isAvanceretVinActive = document.getElementById('avanceretVinSystem') && !document.getElementById('avanceretVinSystem').classList.contains('hidden');
+    if (isAvanceretVinActive && window.ALLOW_ADVANCED_WINE_DEBUG) {
+      return true;
+    }
+    
     // F12 (Developer Tools)
     if(e.keyCode === 123 || e.key === 'F12' || e.keyCode === 116){
       e.preventDefault();
@@ -280,8 +286,8 @@ a:hover{color:#45a049;text-decoration:none}
     return false;
   }, true);
   
-  // Skjul console
-  if(typeof console !== 'undefined'){
+  // Skjul console (undtagen for Avanceret Vinlager System)
+  if(typeof console !== 'undefined' && !window.ALLOW_ADVANCED_WINE_DEBUG){
     console.log = function(){};
     console.warn = function(){};
     console.error = function(){};
@@ -1457,7 +1463,7 @@ a:hover{color:#45a049;text-decoration:none}
   <!-- [HTML 3.5] AVANCERET VINLAGER SYSTEM -->
   <section id="avanceretVinSystem" class="page hidden">
     <div id="advanced-wine-root">
-      <!-- ALT NYT SYSTEM MOUNTES HER -->
+      <!-- React app mountes her -->
     </div>
   </section>
 
@@ -3059,9 +3065,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '5.35';
+const APP_VERSION = '5.36';
 const BUILD_DATE = '2026-01-11';
-const BUILD_TIME = '14:30';
+const BUILD_TIME = '14:35';
 
 // Standard vin-billede (base64 placeholder - skal erstattes med faktisk billede)
 // Dette er en placeholder - brugeren skal uploade et faktisk billede
@@ -16694,11 +16700,7 @@ async function generateVinReportPDF(r, forView = false){
    ============= */
 </script>
 
-  <!-- Avanceret Vinlager System - Build Output (ingen inline React) -->
-  <link rel="stylesheet" href="frontend-avanceret-vin/dist/assets/app.css">
-  <script src="frontend-avanceret-vin/dist/assets/app.js"></script>
-
-  <!-- Server Reports Modal -->
+    <!-- Server Reports Modal -->
   <div id="serverReportsModal" class="modal hidden" aria-hidden="true" style="display:none;">
     <div class="modal-content" style="max-width:700px; width:90%;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
