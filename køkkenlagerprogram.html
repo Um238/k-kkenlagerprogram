@@ -2871,9 +2871,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '5.23';
+const APP_VERSION = '5.24';
 const BUILD_DATE = '2026-01-10';
-const BUILD_TIME = '16:51';
+const BUILD_TIME = '17:16';
 
 // Standard vin-billede (base64 placeholder - skal erstattes med faktisk billede)
 // Dette er en placeholder - brugeren skal uploade et faktisk billede
@@ -15427,13 +15427,13 @@ function generateVinLabels() {
           JsBarcode(barcodeEl, barcodeValue, {
             format: 'EAN13', // EAN-13 format (standard on milk cartons and products) - requires 12 or 13 digits
             displayValue: true, // Show numbers below barcode (standard on products)
-            fontSize: 12, // Standard font size
-            textMargin: 2, // Space between barcode and numbers
+            fontSize: 13, // Slightly larger font for better readability
+            textMargin: 3, // Space between barcode and numbers
             textPosition: 'bottom',
             textAlign: 'center',
-            width: 0.8, // Reduced width for compact labels (~5cm total width like milk cartons)
-            height: 40, // Standard height for EAN-13 (reduced for compact labels)
-            margin: 4, // Quiet zone (white space) on both sides - required for EAN-13 scanning
+            width: 1.0, // Increased width for better scanning (~6cm total width)
+            height: 50, // Increased height for better scanning
+            margin: 5, // Quiet zone (white space) on both sides - required for EAN-13 scanning
             background: '#ffffff',
             lineColor: '#000000'
           });
@@ -16377,18 +16377,17 @@ async function generateVinReportPDF(r, forView = false){
     for(const loc of Object.keys(grouped)){
       let locSubtotal = 0;
       
-      // Fix encoding issue: Ensure proper UTF-8 encoding for special characters in location name
-      const locText = (loc || 'Ukendt lokation').replace(/[^\x00-\x7F]/g, function(char) {
-        // Map Danish and special characters correctly for PDF
-        const map = {
-          'ø': 'o', 'Ø': 'O',
-          'æ': 'ae', 'Æ': 'AE',
-          'å': 'aa', 'Å': 'AA',
-          'ü': 'u', 'Ü': 'U',
-          'í': 'i', 'Í': 'I'
-        };
-        return map[char] || char;
-      });
+      // Fix encoding issue: jsPDF doesn't handle UTF-8 well, so we need to convert special characters
+      const fixEncoding = (text) => {
+        if (!text) return '';
+        return String(text)
+          .replace(/ø/g, 'o').replace(/Ø/g, 'O')
+          .replace(/æ/g, 'ae').replace(/Æ/g, 'AE')
+          .replace(/å/g, 'aa').replace(/Å/g, 'AA')
+          .replace(/ü/g, 'u').replace(/Ü/g, 'U')
+          .replace(/í/g, 'i').replace(/Í/g, 'I');
+      };
+      const locText = fixEncoding(loc || 'Ukendt lokation');
       
       // Lokation header
       if(y>260){ 
@@ -16470,12 +16469,8 @@ async function generateVinReportPDF(r, forView = false){
       doc.setFillColor(245, 245, 245);
       doc.rect(tableLeft, y-2, tableWidth, 5, 'FD');
       doc.setFont('helvetica','bold'); doc.setFontSize(10);
-      // Fix encoding for subtotal header
-      const locSubtotalText = locText || (loc || 'Ukendt').replace(/[^\x00-\x7F]/g, function(char) {
-        const map = { 'ø': 'o', 'Ø': 'O', 'æ': 'ae', 'Æ': 'AE', 'å': 'aa', 'Å': 'AA', 'ü': 'u', 'Ü': 'U', 'í': 'i', 'Í': 'I' };
-        return map[char] || char;
-      });
-      doc.text(`Subtotal ${locSubtotalText}:`, colVinnavn, y+2);
+      // Use already fixed locText for subtotal header
+      doc.text(`Subtotal ${locText}:`, colVinnavn, y+2);
       doc.text(`${locSubtotal.toFixed(2)} kr.`, colLinjetotal, y+2);
       y+=7;
       grandTotal += locSubtotal;
