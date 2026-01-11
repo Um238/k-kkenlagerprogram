@@ -2871,9 +2871,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '5.24';
-const BUILD_DATE = '2026-01-10';
-const BUILD_TIME = '17:16';
+const APP_VERSION = '5.25';
+const BUILD_DATE = '2026-01-11';
+const BUILD_TIME = '08:10';
 
 // Standard vin-billede (base64 placeholder - skal erstattes med faktisk billede)
 // Dette er en placeholder - brugeren skal uploade et faktisk billede
@@ -15427,13 +15427,13 @@ function generateVinLabels() {
           JsBarcode(barcodeEl, barcodeValue, {
             format: 'EAN13', // EAN-13 format (standard on milk cartons and products) - requires 12 or 13 digits
             displayValue: true, // Show numbers below barcode (standard on products)
-            fontSize: 13, // Slightly larger font for better readability
+            fontSize: 14, // Larger font for better readability
             textMargin: 3, // Space between barcode and numbers
             textPosition: 'bottom',
             textAlign: 'center',
-            width: 1.0, // Increased width for better scanning (~6cm total width)
-            height: 50, // Increased height for better scanning
-            margin: 5, // Quiet zone (white space) on both sides - required for EAN-13 scanning
+            width: 1.2, // Increased width for better scanning (~7cm total width)
+            height: 60, // Increased height for better scanning
+            margin: 6, // Quiet zone (white space) on both sides - required for EAN-13 scanning
             background: '#ffffff',
             lineColor: '#000000'
           });
