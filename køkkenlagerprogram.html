@@ -40,6 +40,8 @@ nav .menu-item.active{background:var(--accent);border:1px solid #93c5fd}
 #content{padding:18px}
 .page{display:block}
 .hidden{display:none !important}
+/* Overstyr hidden når avanceretVinSystem er aktiv */
+#avanceretVinSystem:not(.hidden){display:block !important}
 .vinlager-section{display:block}
 .vinlager-section.hidden{display:none !important}
 .card{background:#fff;padding:12px;border-radius:8px;border:1px solid #e6e6e6}
@@ -98,8 +100,11 @@ table th{background:#fafafa;font-weight:800}
 .login-modal .actions{margin-top:20px;display:flex;gap:10px;justify-content:flex-end}
 .login-backdrop.hidden{display:none !important}
 body.login-active header,
-body.login-active nav,
+body.login-active nav{display:none !important}
+/* Tillad #content når avanceretVinSystem er aktiv */
 body.login-active #content{display:none !important}
+body.login-active #content #avanceretVinSystem:not(.hidden){display:block !important}
+body.login-active #content #avanceretVinSystem:not(.hidden){display:block !important; z-index:1000}
 .login-backdrop:not(.hidden){display:flex !important; visibility:visible !important; opacity:1 !important; z-index:2000 !important}
 
 /* [CSS 11] Number Pad */
@@ -1461,8 +1466,8 @@ a:hover{color:#45a049;text-decoration:none}
   </section>
 
   <!-- [HTML 3.5] AVANCERET VINLAGER SYSTEM -->
-  <section id="avanceretVinSystem" class="page hidden">
-    <div id="advanced-wine-root">
+  <section id="avanceretVinSystem" class="page hidden" style="display: block; padding: 20px; min-height: 100vh; width: 100%;">
+    <div id="advanced-wine-root" style="width: 100%; height: 100%;">
       <!-- React app mountes her -->
     </div>
   </section>
@@ -3065,9 +3070,9 @@ function copyInstallationId(){
 let masterVarelager = [];
 let lagerData = {};
 let lagerLokationer = ['Køl','Frost','Tørevare','Grønt'];
-const APP_VERSION = '5.36';
+const APP_VERSION = '5.40';
 const BUILD_DATE = '2026-01-11';
-const BUILD_TIME = '14:35';
+const BUILD_TIME = '15:35';
 
 // Standard vin-billede (base64 placeholder - skal erstattes med faktisk billede)
 // Dette er en placeholder - brugeren skal uploade et faktisk billede
@@ -9424,7 +9429,23 @@ function showScannerInstallationId(){
 function navClick(e){ document.querySelectorAll('nav .menu-item').forEach(it=>it.classList.remove('active')); e.target.classList.add('active'); showPage(e.target.dataset.target); }
 function showPage(id){ 
   document.querySelectorAll('#content section').forEach(s=>s.classList.add('hidden')); 
-  const el = $(id); 
+  
+  // Håndter avanceretVinSystem specielt - luk login og vis content
+  if(id === 'avanceretVinSystem'){
+    const loginModal = document.getElementById('loginModal') || document.querySelector('.login-backdrop');
+    if(loginModal){
+      loginModal.classList.add('hidden');
+      loginModal.style.display = 'none';
+    }
+    document.body.classList.remove('login-active');
+    const contentEl = document.getElementById('content');
+    if(contentEl){
+      contentEl.style.display = 'block';
+      contentEl.style.visibility = 'visible';
+    }
+  }
+  
+  const el = document.getElementById(id) || document.querySelector('#' + id) || (typeof $ !== 'undefined' ? $(id) : null); 
   if(el) el.classList.remove('hidden'); 
   
   // Reset manual sections when leaving systemOpsaetning page
@@ -9442,8 +9463,8 @@ function showPage(id){
   // Skjul eller vis menubaren baseret på hvilken side vi er på
   const nav = document.querySelector('nav#topnav');
   if(nav) {
-    if(id === 'vinlager') {
-      nav.style.display = 'none'; // Skjul menubaren i vinlager
+    if(id === 'vinlager' || id === 'avanceretVinSystem') {
+      nav.style.display = 'none'; // Skjul menubaren i vinlager og avanceret vin
     } else {
       nav.style.display = 'flex'; // Vis menubaren i køkken
     }
