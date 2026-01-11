@@ -9290,7 +9290,11 @@ function showPage(id){
   } 
   if(id==='labels') { updateAllSelects(); renderMasterTable(); updateLabelReolSelect(); } 
   if(id==='leverandor') renderLeverandorTable(); 
-  if(id==='master') { showMasterSection('add'); updateAllSelects(); } 
+  if(id==='master') { showMasterSection('add'); updateAllSelects(); }
+  if(id==='avanceretVinSystem') {
+    // React app mounts automatically when section becomes visible
+    // No additional initialization needed
+  } 
   if(id==='scanner') { loadScannerIntoPage(); }
   if(id==='licens') { 
     updateLicenseStatusDisplay(); // Opdater licens information når siden vises
